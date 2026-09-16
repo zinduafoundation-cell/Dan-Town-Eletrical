@@ -1,0 +1,2 @@
+export type POSSearchProduct = { name: string; sku: string; barcode: string | null };export function matchesPOSProduct(product : POSSearchProduct, searchTerm: string) {const query = searchTerm.trim().toLowerCase();if (!query) return true;return [product.name, product.sku, product.barcode ?? ""].some((value) => value.toLowerCase().includes(query));
+}

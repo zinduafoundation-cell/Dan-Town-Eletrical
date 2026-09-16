@@ -1,0 +1,2 @@
+# 01 Supplier Message Ingestion
+Trigger: verified WhatsApp/email webhook. Normalize sender, attachments, message text, supplier reference and correlation ID. Create `automation_jobs` with `RECEIVED`; reject unsigned or malformed input and retry only transient provider failures.

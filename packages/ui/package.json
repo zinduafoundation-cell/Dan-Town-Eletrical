@@ -1,0 +1,9 @@
+{
+  "name": "@dantown/ui",
+  "private": true,
+  "version": "0.1.0",
+  "exports": { ".": "./src/index.ts" },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

@@ -1,0 +1,2 @@
+# 06 Landed Cost Calculation
+Allocate transport and other costs according to a configured allocation policy, subtract supplier discounts, and apply tax only when configured. Persist every input and result in `landed_cost_calculations`.

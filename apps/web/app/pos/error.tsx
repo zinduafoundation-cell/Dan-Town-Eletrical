@@ -1,0 +1,3 @@
+"use client";import { useEffect } from "react";
+import Link from "next/link";export default function POSError({ error, reset } : { error: Error & { digest: string }; reset: () => void }) {useEffect(() => {console.error("DANTOWN POS ERROR", error);}, [error]);return <main className="route-state-page route-state-private"><div className="route-state-card route-state-error"><p className="eyebrow">Dantown POS</p><h1>The register needs another try.</h1><p>No sale was completed by this error boundary. Retry the workspace before continuing.</p><div className="hero-actions"><button type="button" className="button button-primary" onClick={() => reset()}>Retry POS</button><Link className="text-link" href="/pos">POS dashboard</Link></div></div></main>;
+}

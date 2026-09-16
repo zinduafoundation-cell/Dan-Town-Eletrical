@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { matchesPOSProduct } from "./product-search";describe("POS product search", () => {const product = { name : "Solar Inverter", sku: "INV-1000", barcode: "6161234567890" };it("matches product barcodes", () => {expect(matchesPOSProduct(product, "6161234567890")).toBe(true);});it("matches names and SKUs while ignoring case and whitespace", () => {expect(matchesPOSProduct(product, " inv-1000 ")).toBe(true);expect(matchesPOSProduct(product, "SOLAR")).toBe(true);});it("returns every product for an empty query", () => {expect(matchesPOSProduct(product, "")).toBe(true);});
+});

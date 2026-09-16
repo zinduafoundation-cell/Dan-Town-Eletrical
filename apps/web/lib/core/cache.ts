@@ -1,0 +1,4 @@
+type CacheEntry<T> = { value: T; expiresAt: number };const memoryCache = new Map<string, CacheEntry<unknown>>();export async function getOrSetCache<T>(key : string, loader: () => Promise<T>, ttlMs = 30_000): Promise<T> {const cached = memoryCache.get(key);if (cached && cached.expiresAt > Date.now()) return cached.value as T;const value = await loader();memoryCache.set(key, { value, expiresAt : Date.now() + ttlMs });return value;
+}export function invalidateCache(key : string) {memoryCache.delete(key);
+}export function invalidateCachePrefix(prefix : string) {for (const key of memoryCache.keys()) {if (key.startsWith(prefix)) memoryCache.delete(key);}
+}

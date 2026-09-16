@@ -1,0 +1,75 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
+"use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { createAuthClient } from "@dantown/auth";
+import { buttonClassName } from "@dantown/ui";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function signInWithGoogle() {
+    setLoading(true);
+    setError("");
+    const next = new URLSearchParams(window.location.search).get("next") || "/account";
+    const { error: authError } = await createAuthClient().auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        queryParams: { prompt: "select_account" }
+      }
+    });
+    if (authError) {
+      setError("Google sign-in is unavailable right now. Please try email and password.");
+      setLoading(false);
+    }
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    const form = new FormData(event.currentTarget);
+    const supabase = createAuthClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: String(form.get("email")),
+      password: String(form.get("password"))
+    });
+    if (authError) {
+      setError("The email or password was not recognised.");
+      setLoading(false);
+      return;
+    }
+    router.push(new URLSearchParams(window.location.search).get("next") || "/account");
+    router.refresh();
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="auth-panel">
+        <a className="brand" href="/">
+          <span className="brand-mark">D</span>
+          <span>DANTOWN <b>ELECTRICAL</b></span>
+        </a>
+        <h1>Welcome back.</h1>
+        <p className="auth-lead">Sign in to manage your account and orders.</p>
+        {error && <p className="auth-error">{error}</p>}
+        <button type="button" className="google-sign-in" onClick={signInWithGoogle} disabled={loading}>
+          <span className="google-mark">G</span>
+          {loading ? "Connecting..." : "Continue with Google"}
+        </button>
+        <div className="auth-divider"><span>or use email</span></div>
+        <form className="auth-form" onSubmit={submit}>
+          <label>Email<input name="email" type="email" autoComplete="email" required /></label>
+          <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
+          <Link className="text-link" href="/forgot-password">Forgot password</Link>
+          <button className={buttonClassName()} disabled={loading}>{loading ? "Signing in..." : "Sign in"}</button>
+        </form>
+        <p className="auth-switch">New to Dantown <Link href="/register">Create an account</Link></p>
+      </section>
+    </main>
+  );
+}

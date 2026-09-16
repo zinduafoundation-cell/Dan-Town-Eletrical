@@ -1,0 +1,2 @@
+# 10 Low Stock Alert
+Schedule a query against `inventory_health`, deduplicate alerts by product/warehouse window, and notify configured staff channels. Failed notifications are retried and logged without changing stock.

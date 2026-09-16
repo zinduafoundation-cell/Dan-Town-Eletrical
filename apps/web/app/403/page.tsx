@@ -1,0 +1,1 @@
+import Link from "next/link";export default function ForbiddenPage() { return <main className="forbidden"><div><p className="eyebrow">Dantown Electrical</p><h1>403</h1><p>You don&apos;t have permission to access this area.</p><Link className="text-link" href="/">Return home</Link></div></main>; }

@@ -1,0 +1,2 @@
+# 12 Price Update
+After approval, call the server-side price service. Write price history with source, reason and approver, then trigger cache/realtime invalidation. Never accept browser-supplied totals or prices as authoritative.

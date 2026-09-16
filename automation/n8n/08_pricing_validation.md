@@ -1,0 +1,2 @@
+# 08 Pricing Validation
+Run deterministic margin, discount, VAT and rounding checks. Auto-approve only high-confidence recommendations inside configured rules; otherwise create `REQUIRES_REVIEW` approval work.

@@ -1,0 +1,6 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { StorefrontShell } from "@/components/storefront";export const metadata : Metadata = {title: "Projects",description : "Discover recent project supply work and electrical installations supported by Dantown."
+};const projects = [{ slug : "kitale-retail-fitout", title: "Kitale Retail Fit-out", location: "Kitale", summary: "A clean lighting and power upgrade for a retail space requiring faster commissioning." },{ slug: "eldoret-commercial-build", title: "Eldoret Commercial Build", location: "Eldoret", summary: "Distribution and protection for a multi-unit office buildout with strict accessibility needs." },{ slug : "nakuru-solar-upgrade", title: "Nakuru Solar Upgrade", location: "Nakuru", summary: "Hybrid power integration paired with new lighting and panel improvements for an industrial site." }
+];export default function ProjectsPage() {return (<StorefrontShell><section className="page-shell"><div className="page-hero compact"><div><p className="eyebrow">Projects</p><h1>Work we support across Kenya.</h1></div></div><div className="project-grid">{projects.map((project) => (<Link key={project.slug} href={`/projects/${project.slug}`} className="project-card"><span>{project.location}</span><h3>{project.title}</h3><p>{project.summary}</p></Link>))}</div></section></StorefrontShell>);
+}

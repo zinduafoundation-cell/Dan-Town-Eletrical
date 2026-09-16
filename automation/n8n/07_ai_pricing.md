@@ -1,0 +1,2 @@
+# 07 AI Pricing
+Provide the AI agent with product, landed cost, historical/current prices, segment, stock and pricing rules. AI returns a recommendation and confidence only. It cannot publish prices or bypass minimum margin rules.

@@ -1,0 +1,3 @@
+"use client";import { useEffect } from "react";
+import { flushQueuedSales } from "@/lib/pos/offline-queue";export function PWARegister() {useEffect(() => {if ("serviceWorker" in navigator) {navigator.serviceWorker.register("/sw.js", { updateViaCache : "none" }).catch((error) => {console.error("Unable to register service worker : ", error);});}const syncSales = () => {flushQueuedSales().catch((error) => console.error("Unable to sync offline sales : ", error));};window.addEventListener("online", syncSales);syncSales();return () => window.removeEventListener("online", syncSales);}, []);return null;
+}

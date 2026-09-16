@@ -1,0 +1,2 @@
+# 15 Human Approval
+Poll or receive events for product drafts, possible matches, pricing approvals and failed jobs. Present only the necessary data in the admin inbox. Record reviewer, decision, note and timestamp; approval must call the server-side service.

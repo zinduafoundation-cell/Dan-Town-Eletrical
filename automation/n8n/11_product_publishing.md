@@ -1,0 +1,2 @@
+# 11 Product Publishing
+After product-draft approval, create or update the authoritative Supabase product and content records. Validate required catalog fields, write an audit event, then request application cache revalidation.

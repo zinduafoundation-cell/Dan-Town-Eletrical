@@ -1,0 +1,13 @@
+{
+  "source": "supplier-email-demo",
+  "supplier": "Demo Electrical Supplies",
+  "invoice_number": "DEMO-INV-001",
+  "invoice_date": "2026-08-26",
+  "currency": "KES",
+  "transport": 1200,
+  "items": [
+    { "product_name": "9W LED Downlight", "sku": "DEMO-LGT-9W", "quantity": 24, "unit": "piece", "unit_cost": 420, "discount": 0, "tax": 0 },
+    { "product_name": "13A Switched Socket", "sku": "WRONG-SKU-13A", "quantity": 12, "unit": "piece", "unit_cost": 550, "discount": 120, "tax": 0 },
+    { "product_name": "Solar Garden Bollard Demo", "quantity": 8, "unit": "piece", "unit_cost": 3800, "discount": 0, "tax": 608 }
+  ]
+}

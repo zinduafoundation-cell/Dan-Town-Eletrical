@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Dantown Electrical</title>
+  <rect width="64" height="64" rx="18" fill="#0251B0"/>
+  <path d="M18 13h15c10 0 17 7 17 19s-7 19-17 19H18V13Zm11 10v18h4c4 0 7-3 7-9s-3-9-7-9h-4Z" fill="#D1FF42"/>
+  <path d="m42 8-10 17h8l-7 15 16-20h-8l8-12Z" fill="#FFFFFF"/>
+</svg>

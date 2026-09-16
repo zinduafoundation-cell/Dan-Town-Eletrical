@@ -1,0 +1,3 @@
+"use client";import { useEffect } from "react";
+import Link from "next/link";export default function AccountError({ error, reset } : { error: Error & { digest: string }; reset: () => void }) {useEffect(() => {console.error("DANTOWN ACCOUNT ERROR", error);}, [error]);return <main className="route-state-page"><div className="route-state-card route-state-error"><p className="eyebrow">Dantown account</p><h1>Your account needs another try.</h1><p>Your orders and saved information are safe. Retry the page or return to the store.</p><div className="hero-actions"><button type="button" className="button button-primary" onClick={() => reset()}>Retry account</button><Link className="text-link" href="/shop">Continue shopping</Link></div></div></main>;
+}

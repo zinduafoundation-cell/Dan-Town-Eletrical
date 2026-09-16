@@ -1,0 +1,5 @@
+import { requireAuthorizedPermission } from "../../../lib/auth/server";
+import { createSupabaseServiceClient } from "../../../lib/supabase/server";
+import { PortalShell } from "../../portal-shell";
+import { KnowledgeManager, type KnowledgeEntryView } from "../../../components/admin/knowledge-manager";export const dynamic = "force-dynamic";export default async function KnowledgePage() {const context = await requireAuthorizedPermission("settings.manage");const { data } = await createSupabaseServiceClient().from("ai_knowledge_entries").select("id, title, category, content, status, updated_at").order("updated_at", { ascending : false });return <PortalShell title="Approved knowledge" description="Manage the published information DAN T AI is allowed to use." roles={context.roles} permissions={context.permissions} links={[{ label : "Overview", href: "/business-center" }, { label: "Knowledge", href: "/admin/knowledge", permission: "settings.manage" }]}><KnowledgeManager initialEntries={(data ?? []) as KnowledgeEntryView[]} /></PortalShell>;
+}

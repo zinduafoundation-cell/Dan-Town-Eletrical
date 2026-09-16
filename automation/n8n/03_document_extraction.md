@@ -1,0 +1,2 @@
+# 03 Document Extraction
+Send a document to the configured extraction provider. Map output into `NormalizedSupplierDocument` with supplier, invoice and item fields. Validate quantities, costs and dates; persist the extraction run and mark parsing failures `PROCESSING_FAILED`.

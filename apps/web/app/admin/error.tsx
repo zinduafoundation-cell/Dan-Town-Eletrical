@@ -1,0 +1,3 @@
+"use client";import { useEffect } from "react";
+import Link from "next/link";export default function AdminError({ error, reset } : { error: Error & { digest: string }; reset: () => void }) {useEffect(() => {console.error("DANTOWN CENTRE ERROR", error);}, [error]);return <main className="route-state-page route-state-private"><div className="route-state-card route-state-error"><p className="eyebrow">Dantown Centre</p><h1>The control centre needs another try.</h1><p>Your data was not changed. Retry the page or return to the Centre overview.</p><div className="hero-actions"><button type="button" className="button button-primary" onClick={() => reset()}>Retry</button><Link className="text-link" href="/admin">Centre overview</Link></div></div></main>;
+}

@@ -1,0 +1,5 @@
+import { requireAuthorizedPermission } from "../../../../lib/auth/server";
+import { PortalShell } from "../../../portal-shell";
+
+export const dynamic = "force-dynamic";
+export default async function AutomationPricingPage() { const context = await requireAuthorizedPermission("pricing.read"); return <PortalShell title="Pricing decisions." description="Recommendations are visible here; deterministic rules and approvals govern publication." roles={context.roles} permissions={context.permissions} links={[{ label: "Overview", href: "/admin/automation" }, { label: "Pricing", href: "/admin/automation/pricing" }, { label: "Inbox", href: "/admin/automation/inbox" }]}><div className="portal-grid"><article className="portal-card"><small>Recommendations</small><strong>Rule checked</strong></article><article className="portal-card"><small>Confidence</small><strong>Review required</strong></article><article className="portal-card"><small>History</small><strong>Auditable</strong></article></div></PortalShell>; }

@@ -1,0 +1,2 @@
+# 05 New Product Detection
+For `NEW_PRODUCT` matches, create a product draft with supplier data, cost, quantity, specifications and image references. Do not publish the catalog record until an authorized user reviews the draft.

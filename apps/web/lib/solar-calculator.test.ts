@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { calculateSolarLoad } from "./solar-calculator";describe("solar load calculator", () => {it("calculates load and rounded system recommendations", () => {expect(calculateSolarLoad([{ name : "Lights", watts: 10, hours: 5, quantity: 6 }])).toEqual({peakWatts : 60,dailyWh : 300,recommendedPanelWatts : 100,recommendedBatteryWh : 400,recommendedInverterWatts : 100});});
+});

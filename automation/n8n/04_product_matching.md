@@ -1,0 +1,2 @@
+# 04 Product Matching
+Call the product matching service using SKU, barcode, supplier SKU, normalized name and brand. Exact identifiers can be `MATCHED`; uncertain results are `POSSIBLE_MATCH`; unknown items are `NEW_PRODUCT`. Persist candidates and never auto-merge low-confidence products.

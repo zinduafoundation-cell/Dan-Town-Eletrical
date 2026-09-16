@@ -1,0 +1,3 @@
+"use client";import { useEffect } from "react";
+import Link from "next/link";export default function GlobalError({ error, reset } : { error: Error & { digest: string }; reset: () => void }) {useEffect(() => {console.error("DANTOWN ROUTE ERROR", error);}, [error]);return <main className="route-state-page"><div className="route-state-card route-state-error"><p className="eyebrow">Dantown Electrical</p><h1>That did not load correctly.</h1><p>Try again, or return to the store while we recover the page.</p><div className="hero-actions"><button type="button" className="button button-primary" onClick={() => reset()}>Try again</button><Link className="text-link" href="/">Return home</Link></div></div></main>;
+}

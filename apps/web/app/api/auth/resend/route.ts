@@ -1,0 +1,48 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
+import { publicEnv } from "../../../../lib/env";
+
+const resendSchema = z.object({
+  email: z.string().email().max(254),
+});
+
+export async function POST(request: Request) {
+  const parsed = resendSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+  }
+
+  const { email } = parsed.data;
+
+  try {
+    console.log("AUTH RESEND STARTED", { email });
+
+    const publicClient = createClient(publicEnv.NEXT_PUBLIC_SUPABASE_URL!, publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    const { error } = await publicClient.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+      },
+    });
+
+    if (error) {
+      console.error("AUTH RESEND ERROR", { error: error.message });
+      // Don't expose the actual error to prevent user enumeration
+      return NextResponse.json({ message: "If this email is registered, a verification link has been sent." }, { status: 200 });
+    }
+
+    console.log("AUTH RESEND SUCCESS", { email });
+    return NextResponse.json({ message: "Verification email sent. Please check your inbox." }, { status: 200 });
+  } catch (err) {
+    console.error("AUTH RESEND EXCEPTION", err);
+    return NextResponse.json({ message: "If this email is registered, a verification link has been sent." }, { status: 200 });
+  }
+}

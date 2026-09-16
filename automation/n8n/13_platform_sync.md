@@ -1,0 +1,2 @@
+# 13 Platform Sync
+Use Supabase as the shared read model for web, POS, admin and mobile. Revalidate affected web paths and use targeted Realtime subscriptions for inventory, price and order updates; do not copy catalogs into n8n.

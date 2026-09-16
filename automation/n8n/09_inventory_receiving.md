@@ -1,0 +1,2 @@
+# 09 Inventory Receiving
+After authorized receiving, call the existing inventory service/RPC with `PURCHASE` movement semantics and a source reference. Never update inventory directly from n8n. Reconcile quantity and preserve movement audit data.

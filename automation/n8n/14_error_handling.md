@@ -1,0 +1,2 @@
+# 14 Error Handling
+Catch validation, provider and database failures separately. Retry transient errors with bounded exponential backoff. Persist `PROCESSING_FAILED`, increment retry count, and move exhausted jobs to a dead-letter/manual-review state with the original correlation ID.

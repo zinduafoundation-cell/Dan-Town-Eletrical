@@ -1,0 +1,2 @@
+"use client";import { useEffect } from "react";export function SearchShortcut() {useEffect(() => {function focusSearch(event : KeyboardEvent) {if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {event.preventDefault();document.getElementById("marketplace-search").focus();}}window.addEventListener("keydown", focusSearch);return () => window.removeEventListener("keydown", focusSearch);}, []);return null;
+}

@@ -1,0 +1,2 @@
+# 02 Email Invoice Ingestion
+Trigger: supplier mailbox poll/webhook. Validate sender allowlist and attachment type (PDF, image, CSV, Excel). Store the attachment in Supabase Storage and create `supplier_documents`; quarantine unsupported files for manual review.
