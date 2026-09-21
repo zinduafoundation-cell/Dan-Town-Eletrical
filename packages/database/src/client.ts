@@ -2,21 +2,8 @@ import { createBrowserClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-const isBuildEnvironment = process.env.NEXT_PHASE === "phase-production-build";
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  (isBuildEnvironment ? "https://build-placeholder.supabase.co" : undefined);
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  (isBuildEnvironment ? "build-placeholder-anon-key" : undefined);
-
-if (!supabaseUrl) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-}
-
-if (!supabaseAnonKey) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export function createSupabaseBrowserClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -27,6 +14,6 @@ export function createSupabaseBrowserClient() {
 }
 
 export const supabase = createClient<Database>(
-  supabaseUrl ?? "",
-  supabaseAnonKey ?? ""
+  supabaseUrl ?? "https://build-placeholder.supabase.co",
+  supabaseAnonKey ?? "build-placeholder-anon-key"
 );
