@@ -5,6 +5,8 @@ import { ProductCard, StorefrontShell } from "@/components/storefront";
 import { getCatalogCategoryBySlug, getCatalogProducts } from "@dantown/database";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = createSupabaseServiceClient();

@@ -209,6 +209,18 @@ export function StorefrontShell({
           <Link href="/about">About Dantown</Link>
           <Link href="/contact">Contact</Link>
         </div>
+
+        <div className="footer-links-group">
+          <h3>Policies</h3>
+          <Link href="https://www.tronic.co.ke/pages/call-center-online-support" target="_blank" rel="noreferrer">Help Center</Link>
+          <Link href="https://www.tronic.co.ke/pages/exchange-policy" target="_blank" rel="noreferrer">Shipping Policy</Link>
+          <Link href="https://www.tronic.co.ke/pages/delivery" target="_blank" rel="noreferrer">Delivery Information</Link>
+          <Link href="https://www.tronic.co.ke/pages/refund-return-policy" target="_blank" rel="noreferrer">Return Policy</Link>
+          <Link href="https://www.tronic.co.ke/pages/warranty-terms-and-conditions" target="_blank" rel="noreferrer">Warranty Policy</Link>
+          <Link href="https://www.tronic.co.ke/pages/privacy-policy" target="_blank" rel="noreferrer">Privacy Policy</Link>
+          <Link href="https://www.tronic.co.ke/pages/terms-of-services" target="_blank" rel="noreferrer">Terms of Service</Link>
+          <Link href="https://www.tronic.co.ke/pages/cookie-policy" target="_blank" rel="noreferrer">Cookie Policy</Link>
+        </div>
       </footer>
 
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">

@@ -5,6 +5,8 @@ import { StorefrontShell } from "@/components/storefront";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getDivisionCategories, solarCategorySeeds } from "@/lib/division-data";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Solar Division", description: "Explore Dantown Electrical solar products and clean energy solutions." };
 
 export default async function SolarDivisionPage() {

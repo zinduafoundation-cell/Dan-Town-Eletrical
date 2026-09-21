@@ -4,6 +4,8 @@ import { getCatalogBrands } from "@dantown/database";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { BrandsBrowser } from "@/components/brands/brands-browser";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Brands",
   description: "Explore trusted electrical brands available through Dantown."

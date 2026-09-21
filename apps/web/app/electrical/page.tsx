@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowRight, Cable } from "lucide-react";
 import { StorefrontShell } from "@/components/storefront";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 import { electricalCategorySeeds, getDivisionCategories } from "@/lib/division-data";
 
 export const metadata: Metadata = { title: "Electrical Division", description: "Explore Dantown Electrical products for homes, businesses, and professional projects." };

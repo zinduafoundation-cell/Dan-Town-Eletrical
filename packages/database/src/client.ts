@@ -2,8 +2,13 @@ import { createBrowserClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const isBuildEnvironment = process.env.NEXT_PHASE === "phase-production-build";
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  (isBuildEnvironment ? "https://build-placeholder.supabase.co" : undefined);
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  (isBuildEnvironment ? "build-placeholder-anon-key" : undefined);
 
 if (!supabaseUrl) {
   throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");

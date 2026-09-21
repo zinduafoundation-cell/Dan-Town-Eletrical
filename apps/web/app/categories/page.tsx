@@ -4,6 +4,8 @@ import Link from "next/link";
 import { StorefrontShell } from "@/components/storefront";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Categories",
   description: "Browse electrical products by category."

@@ -68,6 +68,8 @@ For local development, use `supabase start` and `supabase db reset`. Seed files 
 
 Required public values are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Server-only operations may use `SUPABASE_SERVICE_ROLE_KEY`. Payment, email and AI variables remain placeholders in `.env.example` and are not implemented in this stage.
 
+For Vercel, add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and (for privileged catalog and admin operations) `SUPABASE_SERVICE_ROLE_KEY` to the project Environment Variables for the Production environment. The repository includes `vercel.json` so Vercel builds the `@dantown/web` workspace from the monorepo root.
+
 ### Stage 2 Scope Boundary
 
 The complete storefront, POS interface, mobile UI, real Daraja integration, AI provider connection, and production payment processing are intentionally deferred. Stage 4 contains an AI pricing boundary and mock workflow contracts, not a live AI integration. The next recommended stage is product/catalog and inventory UI integration against the authenticated database foundation.

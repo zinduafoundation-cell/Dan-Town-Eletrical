@@ -3,6 +3,8 @@ import { ProductCard, SearchForm, StorefrontShell } from "@/components/storefron
 import { getCatalogProducts } from "@dantown/database";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Deals & Offers",
   description: "Discover special deals and limited-time offers on electrical supplies from Dantown."
