@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireAuthorizedPermission } from "../../../../../lib/auth/server";
-import { createSupabaseServiceClient } from "../../../../../lib/supabase/server";
 
 const BUCKET = "product-images";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -8,6 +6,10 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/g
 
 export async function POST(request: Request) {
   try {
+    const [{ requireAuthorizedPermission }, { createSupabaseServiceClient }] = await Promise.all([
+      import("../../../../../lib/auth/server"),
+      import("../../../../../lib/supabase/server")
+    ]);
     await requireAuthorizedPermission("products.update");
     const form = await request.formData();
     const file = form.get("file");
