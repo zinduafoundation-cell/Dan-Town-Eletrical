@@ -282,6 +282,31 @@ export async function getCatalogProducts(
   } = {}
 ) {
   try {
+    const { data: categoriesData, error: categoriesError } = await client
+      .from("categories")
+      .select("id, name, slug, description, image_url, parent_id")
+      .eq("is_active", true);
+    if (categoriesError) throw categoriesError;
+
+    const categoriesByParent = new Map<string | null, string[]>();
+    for (const category of categoriesData ?? []) {
+      const children = categoriesByParent.get(category.parent_id ?? null) ?? [];
+      children.push(category.id);
+      categoriesByParent.set(category.parent_id ?? null, children);
+    }
+
+    const categoryIds = options.category?.trim()
+      ? (() => {
+          const root = (categoriesData ?? []).find((category) => category.slug === options.category?.trim());
+          if (!root) return [];
+          const ids = [root.id];
+          for (let index = 0; index < ids.length; index += 1) {
+            ids.push(...(categoriesByParent.get(ids[index]) ?? []));
+          }
+          return ids;
+        })()
+      : null;
+
     // Keep storefront reads authoritative: demo data must never mask a catalog outage.
     let query = client
       .from("products")
@@ -290,6 +315,11 @@ export async function getCatalogProducts(
       )
       .eq("is_active", true)
       .eq("status", "ACTIVE");
+
+    if (categoryIds) {
+      if (!categoryIds.length) return [];
+      query = query.in("category_id", categoryIds);
+    }
 
     // Apply search filter if provided
     if (options.search?.trim()) {
@@ -324,10 +354,7 @@ export async function getCatalogProducts(
 
     // These lookups are independent; run them together to keep navigation responsive.
     const [categoriesResult, brandsResult, imagesResult] = await Promise.all([
-      client
-        .from("categories")
-        .select("id, name, slug, description, image_url")
-        .eq("is_active", true),
+      Promise.resolve({ data: categoriesData, error: null }),
       client
         .from("brands")
         .select("id, name, slug, description, logo_url")
@@ -340,7 +367,6 @@ export async function getCatalogProducts(
         .order("sort_order", { ascending: true })
     ]);
 
-    const categoriesData = categoriesResult.data;
     const brandsData = brandsResult.data;
     const imagesData = imagesResult.data;
 
@@ -353,12 +379,6 @@ export async function getCatalogProducts(
 
     // Map database results to CatalogProduct type
     let products = data.map((product) => mapCatalogProduct(product, categoriesMap, brandsMap, imagesMap));
-
-    // Apply category filter if provided (client-side since DB joins aren't working)
-    if (options.category?.trim()) {
-      const categorySlug = options.category.trim();
-      products = products.filter(p => p.category?.slug === categorySlug);
-    }
 
     // Apply brand filter if provided (client-side since DB joins aren't working)
     if (options.brand?.trim()) {

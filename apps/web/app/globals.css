@@ -114,6 +114,9 @@ body { background: var(--paper); color: var(--ink); }
 .policy-hero h1 { font-size: clamp(36px, 6vw, 68px); letter-spacing: -.06em; margin: 0 0 14px; max-width: 760px; }
 .policy-hero p:last-child { color: #e6effb; font-size: 16px; line-height: 1.7; margin: 0; max-width: 680px; }
 .policy-hero .eyebrow { color: var(--dantown-lime); }
+.policy-nav { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.policy-nav a { background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--dantown-ink); font-size: 13px; padding: 9px 14px; text-decoration: none; }
+.policy-nav a:hover { border-color: var(--dantown-blue); color: var(--dantown-blue); }
 .policy-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .policy-card { align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 16px; display: flex; gap: 13px; padding: 24px; }
 .policy-card > svg { color: var(--dantown-blue); flex: 0 0 auto; }
@@ -124,8 +127,13 @@ body { background: var(--paper); color: var(--ink); }
 .policy-contact p { color: #334b65; margin: 7px 0 12px; }
 .policy-back-icon { transform: rotate(180deg); }
 @media (max-width: 800px) { .policy-grid { grid-template-columns: 1fr; }.policy-hero { border-radius: 16px; } }
+.policy-hero { overflow: hidden; position: relative; }
+.policy-hero::after { background: rgba(209,255,66,.22); border-radius: 50%; content: ""; height: 180px; position: absolute; right: -52px; top: -76px; width: 180px; }
 .store-footer { background: var(--surface); border-top-color: var(--line); color: var(--muted); }.store-footer h3 { color: var(--ink); }.store-footer .brand { color: var(--ink); }
 @media (max-width: 760px) { .dantown-hero { display: block; min-height: auto; padding: 52px 20px 40px; }.hero-carousel { padding-top: 62px; }.dantown-hero h1 { font-size: clamp(42px, 13vw, 60px); }.dantown-hero .hero-text { font-size: 16px; }.hero-actions { align-items: stretch; flex-direction: column; gap: 14px; }.hero-actions .button, .hero-outline-link, .hero-primary-action { justify-content: center; width: 100%; }.hero-promo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }.hero-carousel-visual { aspect-ratio: 1 / .9; border-radius: 22px; margin-top: 38px; }.hero-floating-promo { bottom: 18px; left: 18px; }.hero-carousel-controls { bottom: 18px; right: 18px; }.hero-carousel-indicators { bottom: 20px; left: 20px; }.hero-showcase { margin-top: 36px; min-height: 330px; padding: 18px; }.hero-showcase-card { padding: 18px; width: 72%; }.hero-showcase-card strong { font-size: 21px; }.dantown-section { padding: 54px 20px; }.dantown-section-heading { align-items: start; flex-direction: column; gap: 14px; }.solution-categories { grid-template-columns: repeat(2, 1fr); }.solution-category { align-items: start; flex-direction: column; min-height: 150px; }.solution-category > svg { display: none; }.dantown-feature-band { align-items: start; flex-direction: column; padding: 45px 20px; }.dantown-trust { align-items: start; flex-direction: column; gap: 17px; padding: 30px 20px 90px; } }
+.store-shell .page-shell { overflow: clip; }
+.store-shell .product-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.store-shell .product-card, .store-shell .category-family-card, .store-shell .brand-discovery-card { border-radius: 24px; }
 
 @media (max-width: 560px) { .hero-promo-grid { grid-template-columns: 1fr; } }
 .history-controls { align-items: center; background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 999px; bottom: 18px; box-shadow: 0 8px 24px rgba(24,37,34,.14); display: flex; gap: 2px; padding: 4px; position: fixed; right: 18px; z-index: 10000; }
