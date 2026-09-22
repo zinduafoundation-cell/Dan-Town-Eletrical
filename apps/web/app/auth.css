@@ -31,7 +31,7 @@
 .catalog-product-list { background: var(--white); border: 1px solid var(--line); }
 .catalog-product-row { align-items: center; border-bottom: 1px solid var(--line); display: grid; gap: 14px; grid-template-columns: 42px 1fr auto; padding: 12px 16px; }
 .catalog-product-row:last-child { border-bottom: 0; }
-.catalog-product-art { align-items: center; background: var(--lime); color: var(--green); display: inline-flex; font-family: var(--serif); font-size: 20px; height: 42px; justify-content: center; width: 42px; }
+.catalog-product-art { align-items: center; background: var(--lime); color: var(--green); display: inline-flex; font-family: var(--serif); font-size: 20px; height: 42px; justify-content: center; overflow: hidden; position: relative; width: 42px; }
 .catalog-product-row strong, .catalog-product-row small { display: block; }
 .catalog-product-row strong { font-family: var(--display); font-size: 13px; }
 .catalog-product-row small { color: var(--muted); font-size: 10px; margin-top: 3px; }

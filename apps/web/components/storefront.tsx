@@ -48,6 +48,8 @@ export function StorefrontShell({
             <Link href="/about">Delivery Information</Link>
             <Link href="/contact">Contact / Help</Link>
             <Link href="/account">{accountLabel}</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
           </nav>
         </div>
       </div>

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       email,
       password,
       options: {
-        emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+        emailRedirectTo: new URL("/auth/confirm", request.url).toString(),
         data: {
           full_name: fullName,
           phone,
