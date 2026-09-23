@@ -21,6 +21,8 @@ export type Database = {
       orders: { Row: Order; Insert: OrderInsert; Update: Partial<OrderInsert>; Relationships: [] };
       order_items: { Row: OrderItem; Insert: OrderItemInsert; Update: Partial<OrderItemInsert>; Relationships: [] };
       payments: { Row: Payment; Insert: PaymentInsert; Update: Partial<PaymentInsert>; Relationships: [] };
+      payment_transactions: { Row: PaymentTransaction; Insert: PaymentTransactionInsert; Update: Partial<PaymentTransactionInsert>; Relationships: [] };
+      paystack_webhook_events: { Row: PaystackWebhookEvent; Insert: PaystackWebhookEventInsert; Update: Partial<PaystackWebhookEventInsert>; Relationships: [] };
       pos_sessions: { Row: PosSession; Insert: PosSessionInsert; Update: Partial<PosSessionInsert>; Relationships: [] };
       pos_sync_records: { Row: PosSyncRecord; Insert: PosSyncRecordInsert; Update: Partial<PosSyncRecordInsert>; Relationships: [] };
       ai_knowledge_entries: { Row: AiKnowledgeEntry; Insert: AiKnowledgeEntryInsert; Update: Partial<AiKnowledgeEntryInsert>; Relationships: [] };
@@ -300,6 +302,39 @@ export type OrderItem = {
 export type OrderItemInsert = Omit<OrderItem, "id"> & { id?: string };
 export type Payment = { id: string; order_id: string; method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; status: PaymentStatus; amount: number; currency: string; provider: string | null; created_at: string; updated_at: string };
 export type PaymentInsert = Omit<Payment, "id" | "created_at" | "updated_at" | "currency" | "provider"> & { id?: string; currency?: string; provider?: string | null };
+export type PaymentTransaction = {
+  id: string;
+  payment_id: string;
+  provider_reference: string | null;
+  checkout_request_id: string | null;
+  merchant_request_id: string | null;
+  result_code: string | null;
+  result_description: string | null;
+  response_payload: Json | null;
+  status: PaymentStatus;
+  processed_at: string | null;
+  created_at: string;
+};
+export type PaymentTransactionInsert = Omit<PaymentTransaction, "id" | "created_at"> & {
+  id?: string;
+  created_at?: string;
+};
+export type PaystackWebhookEvent = {
+  id: string;
+  provider: string;
+  event_name: string;
+  event_id: string | null;
+  provider_reference: string | null;
+  order_id: string | null;
+  payload: Json;
+  received_at: string;
+  created_at: string;
+};
+export type PaystackWebhookEventInsert = Omit<PaystackWebhookEvent, "id" | "received_at" | "created_at"> & {
+  id?: string;
+  received_at?: string;
+  created_at?: string;
+};
 export type PosSession = { id: string; employee_id: string; warehouse_id: string; status: "OPEN" | "CLOSED"; opening_balance: number; closing_balance: number | null; opened_at: string; closed_at: string | null };
 export type PosSessionInsert = Omit<PosSession, "id"> & { id?: string };
 export type PosSyncStatus = "PENDING" | "SYNCING" | "SYNCED" | "FAILED" | "CONFLICT";
