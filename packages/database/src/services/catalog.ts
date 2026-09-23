@@ -269,12 +269,16 @@ function getFilteredProducts(options: {
   return products;
 }
 
+const PRODUCT_LIST_SELECT =
+  "id, sku, name, slug, short_description, description, retail_price, contractor_price, wholesale_price, dealer_price, promotional_price, featured, category_id, brand_id";
+
 export async function getCatalogProducts(
   client: SupabaseClient<Database>,
   options: {
     search?: string;
     category?: string;
     brand?: string;
+    productIds?: string[];
     sort?: "featured" | "low" | "high";
     page?: number;
     pageSize?: number;
@@ -285,11 +289,12 @@ export async function getCatalogProducts(
     // Keep storefront reads authoritative: demo data must never mask a catalog outage.
     let query = client
       .from("products")
-      .select(
-        "id, sku, name, slug, short_description, description, retail_price, contractor_price, wholesale_price, dealer_price, promotional_price, promotion_label, featured, category_id, brand_id"
-      )
-      .eq("is_active", true)
-      .eq("status", "ACTIVE");
+      .select(PRODUCT_LIST_SELECT)
+      .eq("is_active", true);
+
+    if (options.productIds?.length) {
+      query = query.in("id", options.productIds);
+    }
 
     // Apply search filter if provided
     if (options.search?.trim()) {
@@ -368,8 +373,12 @@ export async function getCatalogProducts(
 
     return products;
   } catch (err) {
+      if (options.allowFallback) {
+        return getFilteredProducts(options);
+      }
+
       console.error("Exception fetching products:", err);
-      return options.allowFallback ? getFilteredProducts(options) : [];
+      return [];
   }
 }
 
@@ -410,8 +419,7 @@ export async function getCatalogProductCount(
     let query = client
       .from("products")
       .select("id", { count: "exact", head: true })
-      .eq("is_active", true)
-      .eq("status", "ACTIVE");
+      .eq("is_active", true);
 
     if (options.search?.trim()) {
       const searchTerm = options.search.trim();
@@ -438,12 +446,9 @@ export async function getCatalogProductBySlug(
   try {
     const { data, error } = await client
       .from("products")
-      .select(
-        "id, sku, name, slug, short_description, description, retail_price, contractor_price, wholesale_price, dealer_price, promotional_price, promotion_label, featured, category_id, brand_id"
-      )
+      .select(PRODUCT_LIST_SELECT)
       .eq("slug", slug)
       .eq("is_active", true)
-      .eq("status", "ACTIVE")
       .single();
 
     if (error || !data) return null;
