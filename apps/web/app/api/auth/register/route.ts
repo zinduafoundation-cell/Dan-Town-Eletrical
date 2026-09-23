@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "../../../../lib/supabase/admin";
-import { publicEnv } from "../../../../lib/env";
+import { getAppUrl, publicEnv } from "../../../../lib/env";
 
 const registrationSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
@@ -18,7 +18,14 @@ function isMissingSchemaError(error: { message?: string } | null | undefined) {
 }
 
 export async function POST(request: Request) {
-  const parsed = registrationSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Please check your registration details." }, { status: 400 });
+  }
+
+  const parsed = registrationSchema.safeParse(body);
   if (!parsed.success) {
     console.error("AUTH SIGNUP VALIDATION ERROR", parsed.error);
     return NextResponse.json({ error: "Please check your registration details." }, { status: 400 });
@@ -47,7 +54,7 @@ export async function POST(request: Request) {
       email,
       password,
       options: {
-        emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+        emailRedirectTo: `${getAppUrl(request)}/auth/confirm`,
         data: {
           full_name: fullName,
           phone,
@@ -77,7 +84,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
       }
       
-      return NextResponse.json({ error: `Account creation failed: ${errorMsg}` }, { status: 400 });
+      return NextResponse.json({ error: "Account creation failed. Please try again." }, { status: 400 });
     }
 
     if (!data.user) {

@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { publicEnv } from "../../../../lib/env";
+import { getAppUrl, publicEnv } from "../../../../lib/env";
 
 const resendSchema = z.object({
   email: z.string().email().max(254),
 });
 
 export async function POST(request: Request) {
-  const parsed = resendSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+  }
+
+  const parsed = resendSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
   }
@@ -29,7 +36,7 @@ export async function POST(request: Request) {
       type: "signup",
       email,
       options: {
-        emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+        emailRedirectTo: `${getAppUrl(request)}/auth/confirm`,
       },
     });
 
