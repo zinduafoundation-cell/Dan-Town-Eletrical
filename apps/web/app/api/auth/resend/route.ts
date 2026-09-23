@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       type: "signup",
       email,
       options: {
-        emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+        emailRedirectTo: new URL("/auth/confirm", request.url).toString(),
       },
     });
 

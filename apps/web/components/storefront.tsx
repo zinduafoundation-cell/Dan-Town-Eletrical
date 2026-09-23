@@ -48,6 +48,8 @@ export function StorefrontShell({
             <Link href="/about">Delivery Information</Link>
             <Link href="/contact">Contact / Help</Link>
             <Link href="/account">{accountLabel}</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
           </nav>
         </div>
       </div>
@@ -208,6 +210,17 @@ export function StorefrontShell({
           <h3>Company</h3>
           <Link href="/about">About Dantown</Link>
           <Link href="/contact">Contact</Link>
+        </div>
+
+        <div className="footer-links-group">
+          <h3>Policies</h3>
+          <Link href="/shipping">Shipping</Link>
+          <Link href="/delivery">Delivery</Link>
+          <Link href="/returns">Returns</Link>
+          <Link href="/warranty">Warranty</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/cookies">Cookies</Link>
         </div>
       </footer>
 

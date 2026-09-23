@@ -14,7 +14,7 @@ const catalogSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("brand"), name: z.string().trim().min(1), slug: z.string().trim().min(1), description: z.string().nullable().optional(), logoUrl: z.string().url().nullable().optional(), imageUrl: z.string().url().nullable().optional(), website: z.string().url().nullable().optional(), countryOfOrigin: z.string().trim().max(120).nullable().optional(), supplierRelationship: z.string().trim().max(240).nullable().optional() }),
   z.object({ type: z.literal("product"), name: z.string().trim().min(1), sku: z.string().trim().min(1), barcode: z.string().trim().max(64).nullable().optional(), slug: z.string().trim().min(1), retailPrice: z.number().nonnegative(), promotionalPrice: z.number().nonnegative().nullable().optional(), promotionLabel: z.enum(["New", "Best seller", "Discounted", "Hot", "Featured"]).nullable().optional(), featured: z.boolean().optional(), categoryId: z.string().uuid().nullable().optional(), brandId: z.string().uuid().nullable().optional(), imageUrl: z.string().url().nullable().optional() })
 ]);
-const productUpdateSchema = z.object({ productId: z.string().uuid(), name: z.string().trim().min(1), sku: z.string().trim().min(1), barcode: z.string().trim().max(64).nullable(), retailPrice: z.number().nonnegative(), promotionalPrice: z.number().nonnegative().nullable(), promotionLabel: z.enum(["New", "Best seller", "Discounted", "Hot", "Featured"]).nullable(), featured: z.boolean(), categoryId: z.string().uuid().nullable(), brandId: z.string().uuid().nullable() });
+const productUpdateSchema = z.object({ productId: z.string().uuid(), name: z.string().trim().min(1), sku: z.string().trim().min(1), barcode: z.string().trim().max(64).nullable(), retailPrice: z.number().nonnegative(), promotionalPrice: z.number().nonnegative().nullable(), promotionLabel: z.enum(["New", "Best seller", "Discounted", "Hot", "Featured"]).nullable(), featured: z.boolean(), categoryId: z.string().uuid().nullable(), brandId: z.string().uuid().nullable(), imageUrl: z.string().url().nullable().optional() });
 
 export async function POST(request: Request) {
   try {
@@ -59,6 +59,15 @@ export async function PATCH(request: Request) {
     const supabase = createSupabaseServiceClient();
     const { data, error } = await supabase.from("products").update({ name: parsed.data.name, sku: parsed.data.sku, barcode: parsed.data.barcode, slug: parsed.data.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), retail_price: parsed.data.retailPrice, promotional_price: parsed.data.promotionalPrice, promotion_label: parsed.data.promotionLabel, featured: parsed.data.featured, category_id: parsed.data.categoryId, brand_id: parsed.data.brandId, updated_by: context.userId === "dev-bypass-user" ? null : context.userId, updated_at: new Date().toISOString() }).eq("id", parsed.data.productId).select("id,name,sku,barcode,slug,retail_price,promotional_price,promotion_label,featured,status,is_active,category_id,brand_id").single();
     if (error) return NextResponse.json({ error: error.code === "23505" ? "That SKU or product slug is already in use." : error.message }, { status: error.code === "23505" ? 409 : 400 });
+    if (parsed.data.imageUrl) {
+      const { data: existingImage, error: existingImageError } = await supabase.from("product_images").select("id").eq("product_id", parsed.data.productId).eq("is_primary", true).maybeSingle();
+      if (existingImageError) throw existingImageError;
+      const imageQuery = existingImage
+        ? supabase.from("product_images").update({ image_url: parsed.data.imageUrl, alt_text: parsed.data.name }).eq("id", existingImage.id)
+        : supabase.from("product_images").insert({ product_id: parsed.data.productId, image_url: parsed.data.imageUrl, alt_text: parsed.data.name, sort_order: 0, is_primary: true, created_at: new Date().toISOString() });
+      const { error: imageError } = await imageQuery;
+      if (imageError) throw imageError;
+    }
     return NextResponse.json({ data });
   } catch (error) {
     console.error("CATALOG UPDATE ERROR", error);
