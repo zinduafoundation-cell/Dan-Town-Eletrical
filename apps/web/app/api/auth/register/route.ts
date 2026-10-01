@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { getAppUrl, publicEnv } from "../../../../lib/env";
+import { getAppUrl, getPublicEnv } from "../../../../lib/env";
 import { ensureCustomerProvisioning } from "../../../../lib/auth/provisioning";
 
 const registrationSchema = z.object({
@@ -32,13 +32,10 @@ export async function POST(request: Request) {
     console.log("AUTH SIGNUP STARTED", { email });
 
     // Step 1: Verify environment variables
-    if (!publicEnv.NEXT_PUBLIC_SUPABASE_URL || !publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error("AUTH SIGNUP ENV ERROR", "Missing Supabase environment variables");
-      return NextResponse.json({ error: "Server configuration error. Please contact support." }, { status: 500 });
-    }
+    const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY } = getPublicEnv();
 
     // Step 2: Use regular Supabase client to sign up (triggers email)
-    const publicClient = createClient(publicEnv.NEXT_PUBLIC_SUPABASE_URL, publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    const publicClient = createClient(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,

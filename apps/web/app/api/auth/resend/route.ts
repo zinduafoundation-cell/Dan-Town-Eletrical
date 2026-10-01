@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { getAppUrl, publicEnv } from "../../../../lib/env";
+import { getAppUrl, getPublicEnv } from "../../../../lib/env";
 
 const resendSchema = z.object({
   email: z.string().email().max(254),
@@ -24,8 +24,9 @@ export async function POST(request: Request) {
 
   try {
     console.log("AUTH RESEND STARTED", { email });
+    const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY } = getPublicEnv();
 
-    const publicClient = createClient(publicEnv.NEXT_PUBLIC_SUPABASE_URL!, publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    const publicClient = createClient(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,

@@ -87,21 +87,37 @@ describe("authorization boundaries", () => {
     const env = process.env as Record<string, string | undefined>;
     const previousNodeEnv = env.NODE_ENV;
     const previousOverride = env.NEXT_PUBLIC_ALLOW_AUTH_BYPASS;
+    const previousSupabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+    const previousSupabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     env.NODE_ENV = "development";
     env.NEXT_PUBLIC_ALLOW_AUTH_BYPASS = "false";
+    env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 
-    const result = await getPermissionGuard("orders.read");
-    expect(result.ok).toBe(false);
-    expect(result.status).toBe(401);
-    expect(result.message).toMatch(/authentication|required/i);
+    try {
+      const result = await getPermissionGuard("orders.read");
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe(401);
+      expect(result.message).toMatch(/authentication|required/i);
+    } finally {
+      env.NODE_ENV = previousNodeEnv;
 
-    env.NODE_ENV = previousNodeEnv;
-
-    if (previousOverride === undefined) {
-      delete env.NEXT_PUBLIC_ALLOW_AUTH_BYPASS;
-    } else {
-      env.NEXT_PUBLIC_ALLOW_AUTH_BYPASS = previousOverride;
+      if (previousOverride === undefined) {
+        delete env.NEXT_PUBLIC_ALLOW_AUTH_BYPASS;
+      } else {
+        env.NEXT_PUBLIC_ALLOW_AUTH_BYPASS = previousOverride;
+      }
+      if (previousSupabaseUrl === undefined) {
+        delete env.NEXT_PUBLIC_SUPABASE_URL;
+      } else {
+        env.NEXT_PUBLIC_SUPABASE_URL = previousSupabaseUrl;
+      }
+      if (previousSupabaseAnonKey === undefined) {
+        delete env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      } else {
+        env.NEXT_PUBLIC_SUPABASE_ANON_KEY = previousSupabaseAnonKey;
+      }
     }
   });
 });
