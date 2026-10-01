@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Database } from "@dantown/database";
 import { z } from "zod";
-import { getPermissionGuard } from "@/lib/auth/server";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import type { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,6 +45,10 @@ export async function POST(
   { params }: { params: Promise<{ productId: string }> },
 ) {
   try {
+    const [{ getPermissionGuard }, { createSupabaseServiceClient: createServiceClient }] = await Promise.all([
+      import("@/lib/auth/server"),
+      import("@/lib/supabase/server"),
+    ]);
     const guard = await getPermissionGuard("products.update");
     if (!guard.ok) {
       return NextResponse.json({ error: guard.message }, { status: guard.status });
@@ -80,7 +83,7 @@ export async function POST(
       return NextResponse.json({ error: "The image content does not match its file type." }, { status: 415 });
     }
 
-    const supabase = createSupabaseServiceClient();
+    const supabase = createServiceClient();
     const { data: product, error: productError } = await supabase
       .from("products")
       .select("id,name")
