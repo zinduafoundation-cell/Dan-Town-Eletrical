@@ -1,10 +1,124 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCatalogProducts } from "@dantown/database";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const supportedTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);function scoreProduct(product : { name: string; sku: string; short_description: string | null; description: string | null }, query: string) {const tokens = query.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 1);const haystack = `${product.name} ${product.sku} ${product.short_description ?? ""} ${product.description ?? ""}`.toLowerCase();const hits = tokens.filter((token) => haystack.includes(token)).length;return tokens.length ? hits / tokens.length : 0;
-}async function matchProducts(query : string) {const supabase = createSupabaseServiceClient();const products = await getCatalogProducts(supabase, { search : query });const ranked = products?.map((product) => ({ product, confidence : Math.max(0.55, scoreProduct(product, query)) }))?.sort((a, b) => b.confidence - a.confidence)?.slice(0, 8);const inventory = ranked.length ? await supabase.from("inventory").select("product_id, quantity, reserved_quantity").in("product_id", ranked.map(({ product }) => product.id)) : { data: [] };const stock = new Map((inventory.data ?? []).map((row) => [row.product_id, Math.max(0, Number(row.quantity) - Number(row.reserved_quantity))]));return ranked.map(({ product, confidence }) => {const availableQuantity = stock.get(product.id) ?? 0;return {requestedName : query,requestedQuantity : 1,status : availableQuantity > 0 ? "AVAILABLE" : "OUT_OF_STOCK",confidence,availableQuantity,product : { id: product.id, slug: product.slug, name: product.name, sku: product.sku, retail_price: product.retail_price, primary_image: product.primary_image, brand: product.brand ? { name: product.brand.name } : null }};});
-}async function extractRequestedItems(file : File, kind: "quotation" | "product") {if (file.type === "application/pdf") {throw new Error("PDF scanning is not available in this environment yet. Please upload a clear image of the quotation or search manually.");}const bytes = Buffer.from(await file.arrayBuffer()).toString("base64");const prompt = kind === "quotation" ? "Read this quotation image and return JSON only in the form {\"items\" : [{\"requestedName\":\"string\",\"quantity\":1}]}. Include only clearly readable product line items. Do not invent missing values." : "Identify the product in this image and return JSON only in the form {\"items\":[{\"requestedName\":\"string\",\"quantity\":1}]}. Use cautious, generic wording if the label is unclear. Do not invent a brand or model.";const response = await fetch(process.env.AI_PROVIDER_BASE_URL.replace(/\/chat\/completions$/, "") || "https : //api.openai.com/v1/chat/completions", {method : "POST",headers : { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },body : JSON.stringify({model : process.env.OPENAI_VISION_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini",temperature : 0,response_format : { type: "json_object" },messages : [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:${file.type};base64,${bytes}` } }] }]})});if (!response.ok) throw new Error("The AI scan service is temporarily unavailable.");const body = await response.json() as { choices : Array<{ message: { content: string } }> };const content = body.choices[0].message.content;if (!content) throw new Error("The image could not be read confidently. Try a clearer photo showing the label or model number.");const parsed = JSON.parse(content) as { items : Array<{ requestedName: string; quantity: number }> };const items = (parsed.items ?? []).filter((item) => typeof item.requestedName === "string" && item.requestedName.trim()).slice(0, 25);if (!items.length) throw new Error("No readable product line items were found. Try a clearer photo.");return items;
-}export async function GET(request : Request) {const query = new URL(request.url).searchParams.get("query").trim();const parsed = z.string().min(2).max(160).safeParse(query);if (!parsed.success) return NextResponse.json({ error : "Enter a product name, brand or specification." }, { status: 400 });return NextResponse.json({ matches : await matchProducts(parsed.data) });
-}export async function POST(request : Request) {const form = await request.formData();const file = form.get("file");if (!(file instanceof File)) return NextResponse.json({ error : "Please choose a quotation or product image." }, { status: 400 });if (file.size > MAX_FILE_SIZE) return NextResponse.json({ error : "That file is too large. Please upload a file under 10 MB." }, { status: 413 });if (!supportedTypes.has(file.type)) return NextResponse.json({ error : "Unsupported file type. Use JPG, PNG, WEBP or PDF." }, { status: 415 });if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error : "Smart scanning is not configured yet. Use the manual product search below while the AI service is connected." }, { status: 503 });try {const kind = form.get("kind") === "product" ? "product" : "quotation";const items = await extractRequestedItems(file, kind);const matches = (await Promise.all(items.map(async (item) => {const matched = await matchProducts(item.requestedName!);return matched[0] ? { ...matched[0], requestedName : item.requestedName, requestedQuantity: Math.max(1, Number(item.quantity) || 1) } : {requestedName : item.requestedName,requestedQuantity : Math.max(1, Number(item.quantity) || 1),status : "NOT_FOUND" as const,confidence : 0,availableQuantity : 0,product : null};}))).flat();return NextResponse.json({ matches, message : "Your file has been analyzed against the live Dantown catalogue. Availability and prices come from the database." });} catch (error) {return NextResponse.json({ error : error instanceof Error ? error.message : "The file could not be analyzed." }, { status: 503 });}
+import { getAuthorizationContext } from "@/lib/auth/server";
+import { matchCatalogItems, matchCatalogProducts } from "@/lib/dantown-ai/product-matcher";
+import { parseSmartMatchFile } from "@/lib/dantown-ai/quotation-parser";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
+
+export const maxDuration = 45;
+
+const maxUploadBytes = 10 * 1024 * 1024;
+const supportedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+const rateBuckets = new Map<string, { count: number; expiresAt: number }>();
+
+function checkRateLimit(request: Request) {
+  const now = Date.now();
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+  const existing = rateBuckets.get(ip);
+  if (existing && existing.expiresAt > now && existing.count >= 10) return false;
+  if (!existing || existing.expiresAt <= now) rateBuckets.set(ip, { count: 1, expiresAt: now + 10 * 60_000 });
+  else existing.count += 1;
+  if (rateBuckets.size > 5000) {
+    for (const [key, bucket] of rateBuckets) if (bucket.expiresAt <= now) rateBuckets.delete(key);
+  }
+  return true;
+}
+
+function isAllowedFileSignature(file: File, bytes: Uint8Array) {
+  if (file.type === "image/jpeg") return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (file.type === "image/png") return bytes.slice(0, 8).join(",") === "137,80,78,71,13,10,26,10";
+  if (file.type === "image/webp") return String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
+  if (file.type === "application/pdf") return String.fromCharCode(...bytes.slice(0, 5)) === "%PDF-";
+  return false;
+}
+
+async function recordSmartMatchEvent(
+  userId: string | null,
+  action: string,
+  metadata: Record<string, number | string>,
+) {
+  const safeUserId = userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)
+    ? userId
+    : null;
+  const { error } = await createSupabaseServiceClient().from("audit_logs").insert({
+    user_id: safeUserId,
+    action,
+    resource_type: "smart_match",
+    resource_id: null,
+    new_data: metadata,
+  });
+  if (error) console.error("Unable to record Smart Match event:", error.message);
+}
+
+export async function GET(request: Request) {
+  if (!checkRateLimit(request)) return NextResponse.json({ error: "Too many searches. Please wait a few minutes and try again." }, { status: 429 });
+  const query = new URL(request.url).searchParams.get("query")?.trim() ?? "";
+  const parsed = z.string().min(2).max(160).safeParse(query);
+  if (!parsed.success) return NextResponse.json({ error: "Enter a product name, brand or specification." }, { status: 400 });
+
+  try {
+    const context = await getAuthorizationContext();
+    const matches = await matchCatalogProducts(createSupabaseServiceClient(), parsed.data);
+    await recordSmartMatchEvent(context?.userId ?? null, matches[0]?.product ? "SMART_MATCH_FOUND" : "SMART_MATCH_NOT_FOUND", {
+      match_count: matches.filter((match) => match.product).length,
+      method: "manual_search",
+    });
+    return NextResponse.json({ matches });
+  } catch (error) {
+    console.error("Smart Match product search failed:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Product search is temporarily unavailable." }, { status: 503 });
+  }
+}
+
+export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (contentLength > maxUploadBytes + 64 * 1024) return NextResponse.json({ error: "That file is too large. Please upload a file under 10 MB." }, { status: 413 });
+  if (!checkRateLimit(request)) return NextResponse.json({ error: "Too many scans. Please wait a few minutes and try again." }, { status: 429 });
+
+  let context: Awaited<ReturnType<typeof getAuthorizationContext>> = null;
+  try {
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!(file instanceof File)) return NextResponse.json({ error: "Please choose a quotation or product image." }, { status: 400 });
+    if (file.size === 0) return NextResponse.json({ error: "The selected file is empty." }, { status: 400 });
+    if (file.size > maxUploadBytes) return NextResponse.json({ error: "That file is too large. Please upload a file under 10 MB." }, { status: 413 });
+    if (!supportedMimeTypes.has(file.type)) return NextResponse.json({ error: "Unsupported file type. Use JPG, PNG, WEBP or PDF." }, { status: 415 });
+
+    const signature = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    if (!isAllowedFileSignature(file, signature)) return NextResponse.json({ error: "The file content does not match its file type. Please select a valid image or PDF." }, { status: 415 });
+
+    const kind = form.get("kind") === "product" ? "product" : "quotation";
+    context = await getAuthorizationContext();
+    const extracted = await parseSmartMatchFile(file, kind);
+    const matches = await matchCatalogItems(
+      createSupabaseServiceClient(),
+      extracted.map((item) => ({
+        requestedName: [item.brand, item.model, item.requestedName, ...Object.values(item.specifications)].filter(Boolean).join(" "),
+        requestedQuantity: item.quantity,
+      })),
+    );
+    const results = matches.map((match, index) => ({
+      ...match,
+      requestedName: extracted[index].requestedName,
+      extracted: {
+        brand: extracted[index].brand ?? null,
+        model: extracted[index].model ?? null,
+        specifications: extracted[index].specifications,
+        unit: extracted[index].unit,
+      },
+    }));
+    await recordSmartMatchEvent(context?.userId ?? null, kind === "quotation" ? "SMART_MATCH_QUOTATION_SCANNED" : "SMART_MATCH_PRODUCT_IDENTIFIED", {
+      item_count: results.length,
+      matched_count: results.filter((match) => match.product).length,
+      partial_count: results.filter((match) => match.status === "PARTIALLY_AVAILABLE").length,
+      unmatched_count: results.filter((match) => match.status === "NOT_FOUND").length,
+    });
+    return NextResponse.json({
+      matches: results,
+      message: `Analyzed ${results.length} item${results.length === 1 ? "" : "s"}. Current product details and available quantities are from Dantown's catalogue and inventory.`,
+    });
+  } catch (error) {
+    console.error("Smart Match scan failed:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "The file could not be analyzed. Try a clearer image or manual search." }, { status: 503 });
+  }
 }

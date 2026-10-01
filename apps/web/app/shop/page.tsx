@@ -75,6 +75,7 @@ export default async function ShopPage({
           <div>
             <p className="eyebrow">Shop everything</p>
             <h1>Premium electrical supply</h1>
+            <p>Have a product photo or a quotation? <Link href="/ai/smart-match">Let Dantown AI Smart Match help you find it.</Link></p>
           </div>
 
           <SearchForm initialValue={term} />

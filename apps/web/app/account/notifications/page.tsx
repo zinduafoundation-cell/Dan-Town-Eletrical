@@ -2,6 +2,7 @@ import { Bell, CheckCircle2 } from "lucide-react";
 import { requireAuthenticated } from "../../../lib/auth/server";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
 import { PortalShell } from "../../portal-shell";
+import { NotificationActions } from "@/components/account/notification-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function AccountNotificationsPage() {
             <h2>{unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You are all caught up."}</h2>
           </div>
           <Bell size={25} />
+          <NotificationActions unreadIds={notifications.filter((notification) => !notification.read_at).map((notification) => notification.id)} />
         </div>
 
         {notifications.length ? (
@@ -68,4 +70,3 @@ export default async function AccountNotificationsPage() {
     </PortalShell>
   );
 }
-

@@ -8,16 +8,17 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace @dantown/web",
-    "build": "npm run build --workspace @dantown/web",
-    "start": "npm run start --workspace @dantown/web",
-    "lint": "npm run lint --workspace @dantown/web",
-    "test": "npm run test --workspace @dantown/web",
-    "test:e2e": "npm run test:e2e --workspace @dantown/web",
-    "migrate": "node supabase-migrations.mjs",
-    "migrate-api": "node supabase-migrations-api.mjs",
-    "repair-pos-rpc": "node repair-pos-rpc.mjs"
-  },
+  "dev": "npm run dev --workspace @dantown/web",
+  "build": "npm run build --workspace @dantown/web",
+  "start": "npm run start --workspace @dantown/web",
+  "lint": "npm run lint --workspace @dantown/web",
+  "test": "npm run test --workspace @dantown/web",
+  "test:e2e": "npm run test:e2e --workspace @dantown/web",
+  "migrate": "node supabase-migrations.mjs",
+  "migrate-api": "node supabase-migrations-api.mjs",
+  "repair-pos-rpc": "node repair-pos-rpc.mjs",
+  "verify": "node ./scripts/verify.mjs"
+},
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
     "pg": "^8.23.0"

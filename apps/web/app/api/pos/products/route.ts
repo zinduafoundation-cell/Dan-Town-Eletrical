@@ -10,6 +10,7 @@ type ProductRow = {
   retail_price: number | null; vat_rate: number | null; category_id: string | null;
   categories: { name: string } | { name: string }[] | null;
   inventory: Array<{ quantity: number | null; reserved_quantity: number | null }> | null;
+  product_images: Array<{ image_url: string; is_primary: boolean; sort_order: number }> | null;
 };
 
 export async function GET(request: Request) {
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
     const result = await getOrSetCache(key, async () => {
       let query = createSupabaseServiceClient()
         .from("products")
-        .select("id,name,sku,barcode,description,retail_price,vat_rate,category_id,categories(name),inventory(quantity,reserved_quantity)", { count: "exact" })
+        .select("id,name,sku,barcode,description,retail_price,vat_rate,category_id,categories(name),inventory(quantity,reserved_quantity),product_images(image_url,is_primary,sort_order)", { count: "exact" })
         .eq("is_active", true)
         .eq("status", "ACTIVE");
       if (search) query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%,barcode.ilike.%${search}%`);
@@ -36,7 +37,8 @@ export async function GET(request: Request) {
       const products = ((data ?? []) as unknown as ProductRow[]).map((product) => {
         const category = Array.isArray(product.categories) ? product.categories[0] : product.categories;
         const qty = (product.inventory ?? []).reduce((total, row) => total + Math.max(0, Number(row.quantity ?? 0) - Number(row.reserved_quantity ?? 0)), 0);
-        return { id: product.id, name: product.name, sku: product.sku, barcode: product.barcode, description: product.description, price: Number(product.retail_price ?? 0), vatRate: Number(product.vat_rate ?? 0), category: category?.name ?? product.category_id ?? "Uncategorized", qty };
+        const images = [...(product.product_images ?? [])].sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
+        return { id: product.id, name: product.name, sku: product.sku, barcode: product.barcode, description: product.description, price: Number(product.retail_price ?? 0), vatRate: Number(product.vat_rate ?? 0), category: category?.name ?? product.category_id ?? "Uncategorized", qty, imageUrl: images[0]?.image_url ?? null };
       });
       return { products, count, page, limit };
     }, 5_000);

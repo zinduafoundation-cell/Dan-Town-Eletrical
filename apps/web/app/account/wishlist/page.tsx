@@ -20,8 +20,9 @@ export default async function WishlistPage() {
     : { data: [] };
 
   const productIds = (items ?? []).map((item) => item.product_id);
-  const catalogProducts = productIds.length ? await getCatalogProducts(supabase, { allowFallback: false }) : [];
-  const favorites = catalogProducts.filter((product) => productIds.includes(product.id));
+  const favorites = productIds.length
+    ? await getCatalogProducts(supabase, { productIds, pageSize: Math.min(productIds.length, 60), allowFallback: false })
+    : [];
 
   return (
     <StorefrontShell>

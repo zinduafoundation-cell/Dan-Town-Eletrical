@@ -4,6 +4,7 @@ import { getCatalogCategories, getCatalogProducts, getPublishedKnowledge } from 
 import { getCustomerOrders, getCustomerQuotes } from "@dantown/database";
 import type { Permission } from "@dantown/shared";
 import { createSupabaseServerClient } from "../supabase/server";
+import { getCentreMetrics } from "../centre/metrics";
 import { classifyQuestion } from "./intent";
 import { isSurfaceAllowed, isSurfaceIntentAllowed, type AiSurface } from "./surface";
 
@@ -13,36 +14,22 @@ function requires(context: AuthorizationContext | null, permission: Permission) 
   return Boolean(context && hasPermission(context, permission));
 }
 
-async function getSurfaceBusinessSummary(client: Awaited<ReturnType<typeof createSupabaseServerClient>>, surface: AiSurface) {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-
-  const [{ data: ordersToday }, { data: inventory }, { data: payments }, { data: syncRecords }] = await Promise.all([
-    client.from("orders").select("id, total, payment_status, order_status, sales_channel").gte("created_at", start.toISOString()),
-    client.from("inventory").select("quantity, reserved_quantity, reorder_level"),
-    client.from("payments").select("amount, status, created_at").gte("created_at", start.toISOString()),
-    client.from("pos_sync_records").select("status, retry_count, error_message")
-  ]);
-
-  const successfulToday = (payments ?? []).filter((payment) => payment.status === "SUCCESS");
-  const revenueToday = successfulToday.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const lowStock = (inventory ?? []).filter((row) => Number(row.quantity || 0) - Number(row.reserved_quantity || 0) <= Number(row.reorder_level || 0)).length;
-  const pendingSync = (syncRecords ?? []).filter((record) => ["PENDING", "SYNCING"].includes(record.status)).length;
-  const failedSync = (syncRecords ?? []).filter((record) => record.status === "FAILED").length;
-  const pendingOrders = (ordersToday ?? []).filter((order) => ["PENDING", "PAYMENT_PENDING", "PROCESSING"].includes(order.order_status)).length;
-  const posSales = (ordersToday ?? []).filter((order) => order.sales_channel === "POS" && order.payment_status === "SUCCESS").reduce((sum, order) => sum + Number(order.total || 0), 0);
+async function getSurfaceBusinessSummary(surface: AiSurface, permissions: Permission[]) {
+  const { metrics, source } = await getCentreMetrics(permissions);
   return {
     surface,
+    source,
     summary: {
-      revenueToday,
-      lowStock,
-      pendingOrders,
-      pendingSync,
-      failedSync,
-      posSales,
-      totalOrders: ordersToday?.length ?? 0,
-      totalPayments: payments?.length ?? 0
-    }
+      revenueToday: metrics.revenueToday,
+      lowStock: metrics.lowStock,
+      pendingOrders: metrics.pendingOrders,
+      pendingPayments: metrics.pendingPayments,
+      pendingSync: metrics.pendingSync,
+      failedSync: metrics.failedSync,
+      posSales: metrics.posSalesToday,
+      totalOrders: metrics.ordersToday,
+      eventDeliveryRisks: metrics.retryDomainEvents + metrics.deadLetterDomainEvents,
+    },
   };
 }
 
@@ -102,7 +89,7 @@ export async function runApprovedTool(question: string, context: AuthorizationCo
   }
 
   if (surface === "centre" || surface === "admin") {
-    return { tool: "getBusinessSummary", data: await getSurfaceBusinessSummary(client, surface) };
+    return { tool: "getBusinessSummary", data: await getSurfaceBusinessSummary(surface, context.permissions) };
   }
 
   return { tool: "authorization", data: "That information is not available for this account." };

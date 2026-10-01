@@ -1,0 +1,52 @@
+:root {
+  --color-brand-primary: #0251b0;
+  --color-brand-secondary: #071a33;
+  --color-brand-accent: #d1ff42;
+
+  --color-background: #071a33;
+  --color-background-subtle: #f3f6f9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #dbe5ef;
+  --color-text-muted: #aab8c8;
+  --color-border: rgba(255, 255, 255, 0.15);
+
+  --color-success: #16804a;
+  --color-warning: #a15c07;
+  --color-danger: #b42318;
+  --color-info: #0251b0;
+  --color-focus: #78b9ff;
+
+  --font-family-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-display: var(--font-family-sans);
+  --font-family-numeric: var(--font-family-sans);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 2px 12px rgba(7, 26, 51, 0.08);
+  --shadow-overlay: 0 18px 48px rgba(7, 26, 51, 0.2);
+
+  --z-header: 1000;
+  --z-navigation: 1100;
+  --z-dropdown: 2000;
+  --z-floating: 3000;
+  --z-modal: 5000;
+  --z-toast: 6000;
+}

@@ -40,6 +40,7 @@ export type Database = {
       wishlists: { Row: Wishlist; Insert: WishlistInsert; Update: Partial<WishlistInsert>; Relationships: [] };
       wishlist_items: { Row: WishlistItem; Insert: WishlistItemInsert; Update: Partial<WishlistItemInsert>; Relationships: [] };
       audit_logs: { Row: AuditLog; Insert: AuditLogInsert; Update: Partial<AuditLogInsert>; Relationships: [] };
+      domain_events: { Row: DomainEvent; Insert: DomainEventInsert; Update: Partial<DomainEventInsert>; Relationships: [] };
       notification_preferences: { Row: NotificationPreference; Insert: NotificationPreferenceInsert; Update: Partial<NotificationPreferenceInsert>; Relationships: [] };
       notifications: { Row: Notification; Insert: NotificationInsert; Update: Partial<NotificationInsert>; Relationships: [] };
       automation_jobs: { Row: AutomationJob; Insert: AutomationJobInsert; Update: Partial<AutomationJobInsert>; Relationships: [] };
@@ -50,7 +51,7 @@ export type Database = {
       price_history: { Row: PriceHistory; Insert: PriceHistoryInsert; Update: Partial<PriceHistoryInsert>; Relationships: [] };
     };
     Views: { inventory_health: { Row: InventoryHealth; Relationships: [] } };
-    Functions: { adjust_inventory: { Args: { target_product_id: string; target_warehouse_id: string; delta: number; target_movement_type: InventoryMovementType; target_reference_type?: string; target_reference_id?: string }; Returns: Inventory }; receive_purchase_order_item: { Args: { target_purchase_order_id: string; target_item_id: string; target_received_quantity: number; target_reference_id: string }; Returns: Json }; transfer_inventory: { Args: { target_product_id: string; target_source_warehouse_id: string; target_destination_warehouse_id: string; target_quantity: number; target_reference_id: string }; Returns: Json }; complete_pos_sale: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order }; complete_pos_sale_split: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json; sale_split_payments: Json }; Returns: Order }; create_pos_paystack_order: { Args: { sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order }; complete_pos_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order }; create_online_order: { Args: { order_number: string; buyer_user_id: string | null; customer_name: string; customer_phone: string; customer_email: string | null; fulfillment_type: string; shipping_details: Json; delivery_fee: number; requested_items: Json }; Returns: Order }; release_online_order: { Args: { order_id: string; release_reason?: string }; Returns: Order }; process_return: { Args: { order_id: string; refund_reason: string; refund_amount: number; staff_user_id: string | null }; Returns: Json } };
+    Functions: { adjust_inventory: { Args: { target_product_id: string; target_warehouse_id: string; delta: number; target_movement_type: InventoryMovementType; target_reference_type?: string; target_reference_id?: string }; Returns: Inventory }; receive_purchase_order_item: { Args: { target_purchase_order_id: string; target_item_id: string; target_received_quantity: number; target_reference_id: string }; Returns: Json }; transfer_inventory: { Args: { target_product_id: string; target_source_warehouse_id: string; target_destination_warehouse_id: string; target_quantity: number; target_reference_id: string }; Returns: Json }; complete_pos_sale: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order }; complete_pos_sale_split: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json; sale_split_payments: Json }; Returns: Order }; create_pos_paystack_order: { Args: { sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order }; complete_pos_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order }; create_online_order: { Args: { order_number: string; buyer_user_id: string | null; customer_name: string; customer_phone: string; customer_email: string | null; fulfillment_type: string; shipping_details: Json; delivery_fee: number; requested_items: Json }; Returns: Order }; release_online_order: { Args: { order_id: string; release_reason?: string }; Returns: Order }; process_return: { Args: { order_id: string; refund_reason: string; refund_amount: number; staff_user_id: string | null }; Returns: Json }; get_business_centre_metrics: { Args: Record<string, never>; Returns: BusinessCentreMetrics[] }; claim_domain_events: { Args: { worker_id: string; batch_size?: number; lease_seconds?: number }; Returns: DomainEvent[] }; ack_domain_event: { Args: { event_id: string; worker_id: string }; Returns: boolean }; retry_domain_event: { Args: { event_id: string; worker_id: string; failure_reason: string }; Returns: string | null } };
     Enums: { order_status: OrderStatus; payment_status: PaymentStatus; inventory_movement_type: InventoryMovementType };
     CompositeTypes: {};
   };
@@ -485,8 +486,69 @@ export type CustomerAddressInsert = {
   postal_code?: string | null;
   is_default?: boolean;
 };
-export type AuditLog = { id: string; user_id: string | null; action: string; resource_type: string; resource_id: string | null; old_data: Json | null; new_data: Json | null };
-export type AuditLogInsert = Omit<AuditLog, "id" | "old_data" | "new_data"> & { id?: string; old_data?: Json | null; new_data?: Json | null };
+export type AuditLog = { id: string; user_id: string | null; action: string; resource_type: string; resource_id: string | null; old_data: Json | null; new_data: Json | null; created_at: string };
+export type AuditLogInsert = Omit<AuditLog, "id" | "old_data" | "new_data" | "created_at"> & { id?: string; old_data?: Json | null; new_data?: Json | null };
+export type DomainEventStatus = "PENDING" | "PROCESSING" | "DELIVERED" | "RETRY" | "DEAD_LETTER";
+export type DomainEvent = {
+  id: string;
+  event_name: string;
+  aggregate_type: string;
+  aggregate_id: string | null;
+  correlation_id: string;
+  idempotency_key: string | null;
+  actor_user_id: string | null;
+  payload: Json;
+  status: DomainEventStatus;
+  attempts: number;
+  available_at: string;
+  claimed_at: string | null;
+  claimed_by: string | null;
+  delivered_at: string | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type DomainEventInsert = Omit<
+  DomainEvent,
+  "id" | "correlation_id" | "payload" | "status" | "attempts" | "available_at" | "claimed_at" | "claimed_by" | "delivered_at" | "last_error" | "created_at" | "updated_at"
+> & {
+  id?: string;
+  correlation_id?: string;
+  payload?: Json;
+  status?: DomainEventStatus;
+  attempts?: number;
+  available_at?: string;
+  claimed_at?: string | null;
+  claimed_by?: string | null;
+  delivered_at?: string | null;
+  last_error?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+export type BusinessCentreMetrics = {
+  revenue_today: number;
+  pos_sales_today: number;
+  online_sales_today: number;
+  orders_today: number;
+  pending_orders: number;
+  pending_payments: number;
+  low_stock_lines: number;
+  out_of_stock_lines: number;
+  product_count: number;
+  customer_count: number;
+  active_pos_sessions: number;
+  pos_transactions: number;
+  pending_sync: number;
+  failed_sync: number;
+  conflict_sync: number;
+  pending_domain_events: number;
+  retry_domain_events: number;
+  processing_domain_events: number;
+  dead_letter_domain_events: number;
+  ai_requests_today: number;
+  ai_held_actions_today: number;
+  ai_failures_today: number;
+};
 export type NotificationPreference = { user_id: string; email: boolean; sms: boolean; whatsapp: boolean; push: boolean; updated_at: string };
 export type NotificationPreferenceInsert = Omit<NotificationPreference, "updated_at"> & { updated_at?: string };
 export type Notification = { id: string; user_id: string; type: "ORDER" | "PAYMENT" | "DELIVERY" | "LOW_STOCK" | "QUOTE" | "SYSTEM" | "PROMOTION"; title: string; body: string; data: Json; read_at: string | null; created_at: string };

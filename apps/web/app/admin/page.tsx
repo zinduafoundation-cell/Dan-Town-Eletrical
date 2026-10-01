@@ -82,6 +82,7 @@ export default async function AdminPage() {
     { label: "Suppliers", href: "/admin/suppliers", permission: "products.read" as const },
     { label: "Purchases", href: "/admin/purchases", permission: "inventory.read" as const },
     { label: "Automation", href: "/admin/automation", permission: "automation.read" as const },
+    { label: "Smart Match activity", href: "/admin/ai/smart-match", permission: "orders.read" as const },
     { label: "Team", href: "/admin/team", permission: "users.read" as const },
     { label: "CEO view", href: "/admin/ceo", roles: ["CEO"] }
   ];

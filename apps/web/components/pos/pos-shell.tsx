@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, LogOut, Wifi, WifiOff, Home, Plus, History, Users, Package, DollarSign, FileText, Settings, type LucideIcon } from "lucide-react";
+import { Menu, LogOut, Wifi, WifiOff, Home, Plus, History, Users, Package, DollarSign, FileText, Settings, Zap, type LucideIcon } from "lucide-react";
 import type { Permission } from "@dantown/shared";
 import { getOfflineQueueSummary } from "@/lib/pos/offline-queue";
 
@@ -64,7 +64,7 @@ export function POSShell({
       <aside className="pos-sidebar" aria-label="POS Navigation">
         <div className="pos-sidebar-header">
           <div className="pos-logo">
-            <span className="pos-logo-mark">⚡</span>
+            <span className="pos-logo-mark"><Zap aria-hidden="true" size={18} /></span>
             <div>
               <div className="pos-logo-text">DANTOWN</div>
               <div className="pos-logo-subtext">POS</div>
@@ -74,7 +74,7 @@ export function POSShell({
 
         <nav className="pos-nav">
           {visibleNav.map((item) => (
-            <Link key={item.href} href={item.href} className={`pos-nav-item ${pathname === item.href || (item.href !== "/pos" && pathname.startsWith(`${item.href}/`)) ? "active" : ""}`} aria-current={pathname === item.href ? "page" : undefined}>
+            <Link key={item.href} href={item.href} className={`pos-nav-item ${pathname === item.href || (item.href !== "/pos" && pathname.startsWith(`${item.href}/`)) ? "active" : ""}`} aria-current={pathname === item.href || (item.href !== "/pos" && pathname.startsWith(`${item.href}/`)) ? "page" : undefined}>
               <item.icon size={20} />
               <span>{item.label}</span>
             </Link>

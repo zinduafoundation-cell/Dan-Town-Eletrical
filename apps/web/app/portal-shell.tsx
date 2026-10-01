@@ -19,6 +19,7 @@ type PortalShellProps = {
   }>;
   children: ReactNode;
   showBsk?: boolean;
+  wide?: boolean;
 };
 
 export function PortalShell({
@@ -28,7 +29,8 @@ export function PortalShell({
   permissions,
   links,
   children,
-  showBsk = false
+  showBsk = false,
+  wide = false
 }: PortalShellProps) {
   const pathname = usePathname();
   const visibleLinks = links.filter(
@@ -109,7 +111,7 @@ export function PortalShell({
           </Link>
         </div>
       </header>
-      <div className="portal-body">
+      <div className={`portal-body${wide ? " portal-body-wide" : ""}`}>
         <aside className="portal-sidebar" aria-label="Portal navigation">
           <div className="portal-sidebar-label">Workspace</div>
           {primary.length > 0 && (

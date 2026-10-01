@@ -6,13 +6,12 @@ import { ChevronDown, User } from "lucide-react";
 
 export function AccountMenu({ accountLabel = "Account", accountLinks = [{ label: "Account overview", href: "/account" }] }: { accountLabel?: string; accountLinks?: Array<{ label: string; href: string }> }) {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  const [canAccessWorkspace, setCanAccessWorkspace] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     fetch("/api/auth/session", { cache: "no-store" })
-      .then((response) => response.ok ? response.json() as Promise<{ userId: string | null; canAccessWorkspace?: boolean }> : { userId: null })
-      .then((session: { userId: string | null; canAccessWorkspace?: boolean }) => { setSignedIn(Boolean(session.userId)); setCanAccessWorkspace(Boolean(session.canAccessWorkspace)); })
+      .then((response) => response.ok ? response.json() as Promise<{ userId: string | null }> : { userId: null })
+      .then((session: { userId: string | null }) => { setSignedIn(Boolean(session.userId)); })
       .catch(() => setSignedIn(false));
   }, []);
 
@@ -35,10 +34,12 @@ export function AccountMenu({ accountLabel = "Account", accountLinks = [{ label:
     };
   }, []);
 
+  const visibleLinks = signedIn ? accountLinks.slice(0, 4) : [{ label: "Sign in", href: "/login" }, { label: "Create account", href: "/register" }];
+
   return <details className="account-popover" ref={menuRef}>
     <summary aria-label="Account menu" aria-haspopup="menu"><User size={16} /><span>{signedIn === null ? accountLabel : label}</span><ChevronDown size={14} /></summary>
     <div className="popover-panel">
-      {signedIn ? <>{accountLinks.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}<Link href="/account/orders">Orders</Link><Link href="/account/quotes">Quotations</Link>{canAccessWorkspace && <Link href="/business">Workspaces</Link>}<Link href="/logout">Sign out</Link></> : <><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></>}
+      {signedIn ? <>{visibleLinks.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}<Link href="/logout">Sign out</Link></> : <>{visibleLinks.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</>}
     </div>
   </details>;
 }

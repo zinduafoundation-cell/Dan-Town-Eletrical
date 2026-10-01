@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
-import { requireAuthorizedPermission } from "@/lib/auth/server";
+import { getPermissionGuard } from "@/lib/auth/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await requireAuthorizedPermission("orders.read");
+    const guard = await getPermissionGuard("orders.read");
+    if (!guard.ok) {
+      return NextResponse.json({ error: guard.message }, { status: guard.status });
+    }
+
     const supabase = createSupabaseServiceClient();
 
     const today = new Date().toISOString().split("T")[0];

@@ -11,7 +11,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { getCatalogProducts } from "@dantown/database";
-import { requireAuthenticated } from "../../lib/auth/server";
+import { isBskEmailAddress, requireAuthenticated } from "../../lib/auth/server";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { getDailyQuote } from "../../lib/daily-quote";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
@@ -22,13 +22,13 @@ const accountLinks = [
   { label: "Overview", href: "/account" },
   { label: "My Profile", href: "/account/profile" },
   { label: "My Purchases", href: "/account/orders" },
-  { label: "Electrical Quotations", href: "/account/quotations" },
-  { label: "My Projects", href: "/account/projects" },
-  { label: "Installation Tracking", href: "/account/installations" },
-  { label: "Saved Products", href: "/account/saved-products" },
+  { label: "Electrical Quotations", href: "/account/quotes" },
+  { label: "My Projects", href: "/account/projects", status: "Coming soon" },
+  { label: "Installation Tracking", href: "/account/installations", status: "Coming soon" },
+  { label: "Saved Products", href: "/account/wishlist" },
   { label: "Delivery Addresses", href: "/account/addresses" },
   { label: "Payment Methods", href: "/account/payments" },
-  { label: "Warranty & Documents", href: "/account/warranty" },
+  { label: "Warranty & Documents", href: "/account/warranty", status: "Coming soon" },
   { label: "Help Centre", href: "/account/support" },
   { label: "Account Preferences", href: "/account/settings" }
 ];
@@ -36,6 +36,7 @@ const accountLinks = [
 export default async function AccountPage() {
   const context = await requireAuthenticated();
   const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const [{ data: profileData }, { data: customerData }, { data: wishlist }] =
     await Promise.all([
       supabase
@@ -64,24 +65,27 @@ export default async function AccountPage() {
     status: null
   };
   const profile = profileData ?? { full_name: "", phone: null, status: null };
+  const isBskOwner = isBskEmailAddress(customer.email ?? user?.email ?? null);
 
   const [{ count: orderCount }, { count: quoteCount }, { data: recentOrders }] =
-    await Promise.all([
-      supabase
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .eq("customer_id", customer.id),
-      supabase
-        .from("quotations")
-        .select("id", { count: "exact", head: true })
-        .eq("customer_id", customer.id),
-      supabase
-        .from("orders")
-        .select("id, order_number, total, order_status, payment_status, created_at")
-        .eq("customer_id", customer.id)
-        .order("created_at", { ascending: false })
-        .limit(3)
-    ]);
+    customer.id
+      ? await Promise.all([
+          supabase
+            .from("orders")
+            .select("id", { count: "exact", head: true })
+            .eq("customer_id", customer.id),
+          supabase
+            .from("quotations")
+            .select("id", { count: "exact", head: true })
+            .eq("customer_id", customer.id),
+          supabase
+            .from("orders")
+            .select("id, order_number, total, order_status, payment_status, created_at")
+            .eq("customer_id", customer.id)
+            .order("created_at", { ascending: false })
+            .limit(3)
+        ])
+      : [{ count: 0 }, { count: 0 }, { data: [] }];
 
   const displayName = profile.full_name || customer.name || "Dantown customer";
   const firstName = displayName.split(" ")[0];
@@ -122,12 +126,18 @@ export default async function AccountPage() {
               <span className="account-avatar">{initials || "D"}</span>
               <strong>{displayName}</strong>
               <small>{customer.email || "Email not added yet"}</small>
+              {isBskOwner && (
+                <Link className="button button-primary" href="/business-center" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
+                  Open BSK
+                </Link>
+              )}
               <span className="account-verified"><ShieldCheck size={14} /> {profile.status || "Active customer"}</span>
             </div>
             <nav aria-label="Account navigation">
               {accountLinks.map((link) => (
                 <Link className={link.href === "/account" ? "active" : undefined} href={link.href} key={link.href}>
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.status && <small className="account-link-status">{link.status}</small>}
                 </Link>
               ))}
               <Link href="/logout">Sign out</Link>
@@ -147,8 +157,8 @@ export default async function AccountPage() {
             <div className="account-hub-stats">
               <HubStat icon={Package} label="Total purchases" value={String(orderCount ?? 0)} href="/account/orders" />
               <HubStat icon={Bell} label="Active orders" value={String(recentOrders?.filter((order) => !["DELIVERED", "COMPLETED", "CANCELLED"].includes(order.order_status)).length ?? 0)} href="/account/orders" />
-              <HubStat icon={Quote} label="Pending quotations" value={String(quoteCount ?? 0)} href="/account/quotations" />
-              <HubStat icon={Heart} label="Saved products" value={String(savedCount)} href="/account/saved-products" />
+              <HubStat icon={Quote} label="Pending quotations" value={String(quoteCount ?? 0)} href="/account/quotes" />
+              <HubStat icon={Heart} label="Saved products" value={String(savedCount)} href="/account/wishlist" />
             </div>
 
             <section className="content-panel account-hub-section">
@@ -170,7 +180,7 @@ export default async function AccountPage() {
 
             <div className="account-quick-actions">
               <QuickAction icon={FileText} title="Request a quotation" href="/request-quote" />
-              <QuickAction icon={Heart} title="View saved products" href="/account/saved-products" />
+              <QuickAction icon={Heart} title="View saved products" href="/account/wishlist" />
               <QuickAction icon={CircleUserRound} title="Update your profile" href="/account/profile" />
               <QuickAction icon={ShieldCheck} title="Contact support" href="/account/support" />
             </div>

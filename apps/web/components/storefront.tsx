@@ -97,6 +97,7 @@ export function StorefrontShell({
                 <Link href="/categories/solar-inverters">Inverters</Link>
                 <Link href="/categories/solar-batteries">Batteries</Link>
                 <Link href="/solar-calculator">Solar advisor</Link>
+                <Link href="/ai/smart-match">Dantown AI Smart Match</Link>
               </div>
               <div className="mega-menu-column">
                 <strong>Services</strong>
@@ -109,6 +110,7 @@ export function StorefrontShell({
 
           <div className="category-links">
             <Link href="/shop">Shop</Link>
+            <Link href="/ai/smart-match">Dantown AI Smart Match</Link>
             <Link href="/solar">Solar</Link>
             <Link href="/electrical">Electrical</Link>
             <Link href="/services">Services</Link>
@@ -149,6 +151,7 @@ export function StorefrontShell({
               <Link href="/solutions">Solutions</Link>
               <Link href="/services">Services</Link>
               <Link href="/solar-calculator">Solar Advisor</Link>
+              <Link href="/ai/smart-match">Dantown AI Smart Match</Link>
               <Link href="/projects">Projects</Link>
               <Link href="/request-quote">Request Quote</Link>
               <Link href="/about">About</Link>

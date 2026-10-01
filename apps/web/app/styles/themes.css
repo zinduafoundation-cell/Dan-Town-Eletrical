@@ -1,0 +1,72 @@
+.store-shell,
+.auth-page {
+  --color-background: #ffffff;
+  --color-background-subtle: #f3f6f9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f8fafc;
+  --color-text-primary: #071526;
+  --color-text-secondary: #334b65;
+  --color-text-muted: #62748a;
+  --color-border: #dbe3ec;
+  --color-focus: #0251b0;
+
+  --ink: var(--color-text-primary);
+  --muted: var(--color-text-muted);
+  --paper: var(--color-background);
+  --white: var(--color-surface);
+  --green: var(--color-brand-primary);
+  --lime: var(--color-brand-accent);
+  --coral: var(--color-danger);
+  --line: var(--color-border);
+}
+
+.portal {
+  --color-background: #071a33;
+  --color-background-subtle: #0b1c30;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #dbe5ef;
+  --color-text-muted: #aab8c8;
+  --color-border: rgba(255, 255, 255, 0.15);
+
+  --ink: var(--color-text-primary);
+  --muted: var(--color-text-muted);
+  --paper: var(--color-background);
+  --white: var(--color-surface);
+  --green: var(--color-brand-primary);
+  --lime: var(--color-brand-accent);
+  --coral: var(--color-danger);
+  --line: var(--color-border);
+}
+
+.pos-container {
+  --color-background: #f3f6f9;
+  --color-background-subtle: #eaf2fb;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-text-primary: #071526;
+  --color-text-secondary: #334b65;
+  --color-text-muted: #62748a;
+  --color-border: #dbe3ec;
+  --color-focus: #0251b0;
+
+  --ink: var(--color-text-primary);
+  --muted: var(--color-text-muted);
+  --paper: var(--color-background);
+  --white: var(--color-surface);
+  --green: var(--color-brand-primary);
+  --lime: var(--color-brand-accent);
+  --coral: var(--color-danger);
+  --line: var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.pos-sidebar {
+  background: var(--color-brand-primary);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: var(--color-focus);
+}

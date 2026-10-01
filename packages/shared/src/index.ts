@@ -28,7 +28,7 @@ export const permissions = [
   "quotes.read", "quotes.create", "quotes.update", "quotes.approve",
   "payments.read", "refunds.request", "refunds.approve",
   "reports.read", "finance.read", "users.read", "users.create", "users.update", "users.delete", "users.manage",
-  "roles.read", "roles.manage", "settings.manage", "audit_logs.read",
+  "roles.read", "roles.manage", "settings.manage", "audit_logs.read", "audit_logs.write", "permissions.manage",
   "automation.read", "automation.manage", "pricing.read", "pricing.manage", "pricing.approve"
 ] as const;
 

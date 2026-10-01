@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState, type PointerEvent } from "react";
 import { Bot, Send, X } from "lucide-react";
+import Link from "next/link";
 
 type Message = { role: "user" | "assistant"; content: string };
 const suggestions = ["Find a 2.5mm cable", "Do you have sockets?", "How do I request a quotation?", "Where is my order?"];
@@ -24,6 +25,7 @@ export function DanTAI() {
   const [escalationSuggested, setEscalationSuggested] = useState(false);
   const [escalationMessage, setEscalationMessage] = useState<string | null>(null);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const smartMatchSuggested = messages.some((message) => /\b(quotation|quote|invoice|upload|photo|picture|image|identify|match)\b/i.test(message.content));
   const dragState = useRef<{ offsetX: number; offsetY: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
 
@@ -112,6 +114,7 @@ export function DanTAI() {
       <div className="dan-ai-messages" aria-live="polite">
         {!messages.length && <div className="dan-ai-welcome"><Bot size={28} /><strong>How can I help?</strong><p>I can help you find products, check confirmed information, and guide you through Dantown services.</p><div className="dan-ai-suggestions">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => void ask(suggestion)}>{suggestion}</button>)}</div></div>}
         {messages.map((message, index) => <div key={`${message.role}-${index}`} className={`dan-ai-message ${message.role}`}><span>{message.content}</span></div>)}
+        {smartMatchSuggested && <Link className="dan-ai-handoff" href="/ai/smart-match">Scan a quotation or product photo</Link>}
         {loading && <div className="dan-ai-message assistant"><span className="dan-ai-typing">DAN T AI is checking...</span></div>}
         {error && <div className="dan-ai-error"><span>{error}</span><button type="button" onClick={() => void ask(input)}>Retry</button></div>}
         {escalationSuggested && !escalationMessage && <button className="dan-ai-handoff" type="button" onClick={() => void escalate()}>Talk to a Dantown team member</button>}

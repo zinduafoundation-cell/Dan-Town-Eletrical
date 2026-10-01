@@ -16,6 +16,9 @@ export type DomainEvent<TName extends keyof DomainEventMap = keyof DomainEventMa
   payload: DomainEventMap[TName];
 };
 
+// This module remains an in-process convenience for UI-local reactions only.
+// Material business events are durably mirrored from audit_logs by the database
+// outbox migration, so this listener map is never the source of truth.
 type EventHandler<TName extends keyof DomainEventMap> = (event: DomainEvent<TName>) => void | Promise<void>;
 const handlers = new Map<keyof DomainEventMap, Set<EventHandler<never>>>();
 

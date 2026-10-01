@@ -31,15 +31,6 @@ type IngestionPayload = {
   existingProductId?: string | null;
 };
 
-type ProductRow = {
-  id: string;
-  sku: string;
-  name: string;
-  slug: string;
-  brand_id: string | null;
-  category_id: string | null;
-};
-
 function approvalResponse(
   request: Request,
   data: Record<string, unknown>

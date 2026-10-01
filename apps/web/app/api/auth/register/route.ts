@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { createSupabaseAdminClient } from "../../../../lib/supabase/admin";
 import { getAppUrl, publicEnv } from "../../../../lib/env";
+import { ensureCustomerProvisioning } from "../../../../lib/auth/provisioning";
 
 const registrationSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
@@ -11,11 +11,6 @@ const registrationSchema = z.object({
   password: z.string().min(8).max(128),
   termsAccepted: z.literal(true),
 });
-
-function isMissingSchemaError(error: { message?: string } | null | undefined) {
-  const message = error?.message ?? "";
-  return /Could not find the table|schema cache|relation .* does not exist|does not exist in the schema/i.test(message);
-}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -94,98 +89,8 @@ export async function POST(request: Request) {
 
     console.log("AUTH SIGNUP SUCCESS", { userId: data.user.id, email });
 
-    // Step 3: Create customer record with the new user ID
-    const adminClient = createSupabaseAdminClient();
-
-    const { data: customer, error: customerError } = await adminClient
-      .from("customers")
-      .insert({
-        user_id: data.user.id,
-        name: fullName,
-        email,
-        phone,
-        customer_type: "RETAIL",
-        status: "ACTIVE",
-      })
-      .select("id")
-      .single();
-
-    if (customerError) {
-      console.error("CUSTOMER CREATE ERROR", { 
-        error: customerError.message,
-        code: customerError.code,
-        details: customerError.details
-      });
-      const message = isMissingSchemaError(customerError) ? "The connected Supabase project is missing required database tables. Please sync the migrations before creating an account." : "We could not finish creating your account.";
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-
-    if (!customer) {
-      console.error("CUSTOMER NOT RETURNED", { customerError });
-      return NextResponse.json({ error: "We could not finish creating your account." }, { status: 500 });
-    }
-
-    console.log("CUSTOMER CREATED", { customerId: customer.id });
-
-    // Step 4: Get or create CUSTOMER role
-    let customerRole = null as { id: string } | null;
-
-    const { data: existingCustomerRole, error: customerRoleLookupError } = await adminClient
-      .from("roles")
-      .select("id")
-      .eq("code", "CUSTOMER")
-      .maybeSingle();
-
-    if (customerRoleLookupError) {
-      console.error("CUSTOMER ROLE LOOKUP ERROR", { 
-        error: customerRoleLookupError.message,
-        code: customerRoleLookupError.code
-      });
-      const message = isMissingSchemaError(customerRoleLookupError) ? "The connected Supabase project is missing required database tables. Please sync the migrations before creating an account." : "We could not finish creating your account.";
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-
-    if (!existingCustomerRole) {
-      console.log("CUSTOMER ROLE NOT FOUND, CREATING");
-      const { data: createdRole, error: createdRoleError } = await adminClient
-        .from("roles")
-        .insert({ code: "CUSTOMER", name: "Customer", description: "Customer account access" })
-        .select("id")
-        .single();
-
-      if (createdRoleError) {
-        console.error("CUSTOMER ROLE CREATE ERROR", { 
-          error: createdRoleError.message,
-          code: createdRoleError.code
-        });
-        const message = isMissingSchemaError(createdRoleError) ? "The connected Supabase project is missing required database tables. Please sync the migrations before creating an account." : "We could not finish creating your account.";
-        return NextResponse.json({ error: message }, { status: 500 });
-      }
-
-      if (!createdRole) {
-        console.error("CUSTOMER ROLE CREATE NO RESULT");
-        return NextResponse.json({ error: "We could not finish creating your account." }, { status: 500 });
-      }
-
-      customerRole = createdRole;
-    } else {
-      customerRole = existingCustomerRole;
-    }
-
-    // Step 5: Assign CUSTOMER role to the user
-    const { error: assignmentError } = await adminClient.from("user_roles").insert({
-      user_id: data.user.id,
-      role_id: customerRole.id,
-    });
-
-    if (assignmentError) {
-      console.error("ROLE ASSIGNMENT ERROR", { 
-        error: assignmentError.message,
-        code: assignmentError.code
-      });
-      const message = isMissingSchemaError(assignmentError) ? "The connected Supabase project is missing required database tables. Please sync the migrations before creating an account." : "We could not finish creating your account.";
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
+    // Step 3: Set up the customer record and role through one idempotent path.
+    await ensureCustomerProvisioning(data.user);
 
     console.log("AUTH SIGNUP COMPLETE", { userId: data.user.id, email });
 
