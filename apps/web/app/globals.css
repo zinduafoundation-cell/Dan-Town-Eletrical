@@ -7856,3 +7856,95 @@ checkout-error
 checkout-field-error
 checkout-loader
 */
+.catalog-field-wide {
+  grid-column: 1 / -1;
+}
+
+.catalog-form-section-title {
+  border-top: 1px solid #dce5ef;
+  color: #123251;
+  font-size: 14px;
+  grid-column: 1 / -1;
+  margin: 26px 0 0;
+  padding-top: 20px;
+}
+
+.catalog-search-toolbar {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 220px) auto;
+  margin: 18px 0;
+}
+
+.catalog-search-input {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd8e5;
+  border-radius: 10px;
+  color: #46617d;
+  display: flex;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.catalog-search-input input {
+  background: transparent;
+  border: 0;
+  color: #102b46;
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  outline: 0;
+}
+
+.catalog-search-toolbar select {
+  background: #ffffff;
+  border: 1px solid #cbd8e5;
+  border-radius: 10px;
+  color: #102b46;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.catalog-pagination {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.catalog-pagination span {
+  color: #526174;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.catalog-product-row .catalog-edit-button {
+  white-space: nowrap;
+}
+
+.catalog-manager-form .catalog-product-image-field {
+  display: grid;
+}
+
+@media (max-width: 700px) {
+  .catalog-search-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-search-toolbar .button {
+    justify-content: center;
+  }
+
+  .catalog-field-wide {
+    grid-column: auto;
+  }
+
+  .catalog-product-row .catalog-edit-button {
+    min-width: 0;
+    padding-inline: 9px;
+  }
+}

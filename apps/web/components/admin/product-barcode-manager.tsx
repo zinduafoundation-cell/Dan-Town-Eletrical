@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { ScanLine } from "lucide-react";
 
-type Product = { id: string; name: string; sku: string; barcode: string | null; retail_price: number; category_id: string | null; brand_id: string | null };
+type Product = { id: string; name: string; sku: string; barcode?: string | null; retail_price: number; category_id?: string | null; brand_id?: string | null };
 
 export function ProductBarcodeManager({ products }: { products: Product[] }) {
   const [productId, setProductId] = useState(products[0]?.id ?? "");
@@ -24,7 +24,7 @@ export function ProductBarcodeManager({ products }: { products: Product[] }) {
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/catalog", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: selected.id, name: selected.name, sku: selected.sku, barcode: barcode.trim() || null, retailPrice: selected.retail_price, categoryId: selected.category_id, brandId: selected.brand_id }) });
+      const response = await fetch("/api/admin/catalog", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: selected.id, name: selected.name, sku: selected.sku, barcode: barcode.trim() || null, retailPrice: selected.retail_price, categoryId: selected.category_id ?? null, brandId: selected.brand_id ?? null }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to save barcode.");
       setMessage("Barcode saved for POS scanning.");

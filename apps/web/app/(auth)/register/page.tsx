@@ -18,7 +18,7 @@ export default function RegisterPage() {
     const { error: authError } = await createAuthClient().auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/account")}`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: { prompt: "select_account" },
       },
     });

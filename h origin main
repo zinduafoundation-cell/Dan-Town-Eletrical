@@ -1,0 +1,554 @@
+[1mdiff --git a/apps/web/app/api/admin/automation/product-approve/route.ts b/apps/web/app/api/admin/automation/product-approve/route.ts[m
+[1mindex 88bb71f..1e5a2c1 100644[m
+[1m--- a/apps/web/app/api/admin/automation/product-approve/route.ts[m
+[1m+++ b/apps/web/app/api/admin/automation/product-approve/route.ts[m
+[36m@@ -1,124 +1,462 @@[m
+ import { NextResponse } from "next/server";[m
+[31m-import { hasPermission } from "@dantown/auth";[m
+ import { z } from "zod";[m
+[31m-import { getAuthorizationContext } from "@/lib/auth/server";[m
+[31m-import { createSupabaseAdminClient } from "@/lib/supabase/admin";[m
+[31m-import { normalizeProductName, ProductSubmissionSchema, type ProductSubmission } from "@/lib/product-ingest/ingest";[m
+[32m+[m[32mimport type { ProductSubmission } from "@/lib/product-ingest/ingest";[m
+[32m+[m
+[32m+[m[32mexport const dynamic = "force-dynamic";[m
+ [m
+ const approvalSchema = z.object({[m
+   jobId: z.string().uuid("Job ID is invalid."),[m
+   decision: z.enum(["approve", "reject"]),[m
+[31m-  reviewNote: z.string().trim().max(500).nullable().optional()[m
+[32m+[m[32m  reviewNote: z.string().trim().max(500).nullable().optional(),[m
+ });[m
+ [m
+ async function parseApprovalPayload(request: Request) {[m
+[31m-  if ((request.headers.get("content-type") ?? "").includes("application/json")) return request.json();[m
+[32m+[m[32m  const contentType = request.headers.get("content-type") ?? "";[m
+[32m+[m
+[32m+[m[32m  if (contentType.includes("application/json")) {[m
+[32m+[m[32m    return request.json();[m
+[32m+[m[32m  }[m
+[32m+[m
+   const formData = await request.formData();[m
+[31m-  return { jobId: formData.get("jobId"), decision: formData.get("decision"), reviewNote: formData.get("reviewNote") ?? null };[m
+[32m+[m
+[32m+[m[32m  return {[m
+[32m+[m[32m    jobId: formData.get("jobId"),[m
+[32m+[m[32m    decision: formData.get("decision"),[m
+[32m+[m[32m    reviewNote: formData.get("reviewNote") ?? null,[m
+[32m+[m[32m  };[m
+ }[m
+ [m
+[31m-type IngestionPayload = { product?: Partial<ProductSubmission>; existingProductId?: string | null };[m
+[31m-type ProductRow = { id: string; sku: string; name: string; slug: string; brand_id: string | null; category_id: string | null };[m
+[32m+[m[32mtype IngestionPayload = {[m
+[32m+[m[32m  product?: Partial<ProductSubmission>;[m
+[32m+[m[32m  existingProductId?: string | null;[m
+[32m+[m[32m};[m
+[32m+[m
+[32m+[m[32mtype ProductRow = {[m
+[32m+[m[32m  id: string;[m
+[32m+[m[32m  sku: string;[m
+[32m+[m[32m  name: string;[m
+[32m+[m[32m  slug: string;[m
+[32m+[m[32m  brand_id: string | null;[m
+[32m+[m[32m  category_id: string | null;[m
+[32m+[m[32m};[m
+[32m+[m
+[32m+[m[32mfunction approvalResponse([m
+[32m+[m[32m  request: Request,[m
+[32m+[m[32m  data: Record<string, unknown>[m
+[32m+[m[32m) {[m
+[32m+[m[32m  const contentType = request.headers.get("content-type") ?? "";[m
+ [m
+[31m-function approvalResponse(request: Request, data: Record<string, unknown>) {[m
+[31m-  if ((request.headers.get("content-type") ?? "").includes("application/x-www-form-urlencoded")) {[m
+[31m-    const decision = typeof data.decision === "string" ? data.decision : "complete";[m
+[31m-    return NextResponse.redirect(new URL(`/admin/automation/inbox?status=${decision}`, request.url));[m
+[32m+[m[32m  if (contentType.includes("application/x-www-form-urlencoded")) {[m
+[32m+[m[32m    const decision =[m
+[32m+[m[32m      typeof data.decision === "string"[m
+[32m+[m[32m        ? data.decision[m
+[32m+[m[32m        : "complete";[m
+[32m+[m
+[32m+[m[32m    return NextResponse.redirect([m
+[32m+[m[32m      new URL([m
+[32m+[m[32m        `/admin/automation/inbox?status=${decision}`,[m
+[32m+[m[32m        request.url[m
+[32m+[m[32m      ),[m
+[32m+[m[32m      303[m
+[32m+[m[32m    );[m
+   }[m
+[31m-  return NextResponse.json({ ok: true, ...data });[m
+[32m+[m
+[32m+[m[32m  return NextResponse.json({[m
+[32m+[m[32m    ok: true,[m
+[32m+[m[32m    ...data,[m
+[32m+[m[32m  });[m
+ }[m
+ [m
+[31m-function slugify(value: string) {[m
+[31m-  return normalizeProductName(value).replace(/ /g, "-").slice(0, 90);[m
+[32m+[m[32mfunction slugify([m
+[32m+[m[32m  value: string,[m
+[32m+[m[32m  normalizeProductName: (value: string) => string[m
+[32m+[m[32m) {[m
+[32m+[m[32m  return normalizeProductName(value)[m
+[32m+[m[32m    .replace(/ /g, "-")[m
+[32m+[m[32m    .slice(0, 90);[m
+ }[m
+ [m
+ export async function POST(request: Request) {[m
+[31m-  const context = await getAuthorizationContext();[m
+[31m-  if (!context) return NextResponse.json({ error: "Authentication required." }, { status: 401 });[m
+[31m-  if (!hasPermission(context, "automation.manage") || !hasPermission(context, "products.update")) {[m
+[31m-    return NextResponse.json({ error: "Product approval permission required." }, { status: 403 });[m
+[31m-  }[m
+[31m-[m
+   try {[m
+[31m-    const payload = approvalSchema.parse(await parseApprovalPayload(request));[m
+[32m+[m[32m    /*[m
+[32m+[m[32m     * Load server-dependent modules at request time.[m
+[32m+[m[32m     * This prevents environment/database initialization[m
+[32m+[m[32m     * while Next.js/Vercel is collecting route data.[m
+[32m+[m[32m     */[m
+[32m+[m[32m    const [[m
+[32m+[m[32m      { hasPermission },[m
+[32m+[m[32m      { getAuthorizationContext },[m
+[32m+[m[32m      { createSupabaseAdminClient },[m
+[32m+[m[32m      {[m
+[32m+[m[32m        normalizeProductName,[m
+[32m+[m[32m        ProductSubmissionSchema,[m
+[32m+[m[32m      },[m
+[32m+[m[32m    ] = await Promise.all([[m
+[32m+[m[32m      import("@dantown/auth"),[m
+[32m+[m[32m      import("@/lib/auth/server"),[m
+[32m+[m[32m      import("@/lib/supabase/admin"),[m
+[32m+[m[32m      import("@/lib/product-ingest/ingest"),[m
+[32m+[m[32m    ]);[m
+[32m+[m
+[32m+[m[32m    const context = await getAuthorizationContext();[m
+[32m+[m
+[32m+[m[32m    if (!context) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error: "Authentication required.",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 401,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    if ([m
+[32m+[m[32m      !hasPermission(context, "automation.manage") ||[m
+[32m+[m[32m      !hasPermission(context, "products.update")[m
+[32m+[m[32m    ) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error: "Product approval permission required.",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 403,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    const payload = approvalSchema.parse([m
+[32m+[m[32m      await parseApprovalPayload(request)[m
+[32m+[m[32m    );[m
+[32m+[m
+     const supabase = createSupabaseAdminClient();[m
+[31m-    const { data: job, error: jobError } = await supabase.from("automation_jobs").select("id, status, payload").eq("id", payload.jobId).single();[m
+[31m-    if (jobError || !job) return NextResponse.json({ error: "Product ingestion job not found." }, { status: 404 });[m
+[31m-    if (job.status === "COMPLETED" || job.status === "PROCESSING_FAILED") return NextResponse.json({ error: "This ingestion job has already been resolved." }, { status: 409 });[m
+ [m
+[31m-    const ingestion = (job.payload as IngestionPayload | null) ?? {};[m
+[32m+[m[32m    const {[m
+[32m+[m[32m      data: job,[m
+[32m+[m[32m      error: jobError,[m
+[32m+[m[32m    } = await supabase[m
+[32m+[m[32m      .from("automation_jobs")[m
+[32m+[m[32m      .select("id, status, payload")[m
+[32m+[m[32m      .eq("id", payload.jobId)[m
+[32m+[m[32m      .single();[m
+[32m+[m
+[32m+[m[32m    if (jobError || !job) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error: "Product ingestion job not found.",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 404,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    if ([m
+[32m+[m[32m      job.status === "COMPLETED" ||[m
+[32m+[m[32m      job.status === "PROCESSING_FAILED"[m
+[32m+[m[32m    ) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error:[m
+[32m+[m[32m            "This ingestion job has already been resolved.",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 409,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    const ingestion =[m
+[32m+[m[32m      (job.payload as IngestionPayload | null) ?? {};[m
+[32m+[m
+[32m+[m[32m    /*[m
+[32m+[m[32m     * REJECT PRODUCT[m
+[32m+[m[32m     */[m
+     if (payload.decision === "reject") {[m
+[31m-      await supabase.from("automation_jobs").update({ status: "PROCESSING_FAILED", error_message: payload.reviewNote ?? "Rejected during product review.", completed_at: new Date().toISOString() }).eq("id", payload.jobId);[m
+[31m-      return approvalResponse(request, { decision: payload.decision, jobId: payload.jobId });[m
+[32m+[m[32m      await supabase[m
+[32m+[m[32m        .from("automation_jobs")[m
+[32m+[m[32m        .update({[m
+[32m+[m[32m          status: "PROCESSING_FAILED",[m
+[32m+[m[32m          error_message:[m
+[32m+[m[32m            payload.reviewNote ??[m
+[32m+[m[32m            "Rejected during product review.",[m
+[32m+[m[32m          completed_at: new Date().toISOString(),[m
+[32m+[m[32m        })[m
+[32m+[m[32m        .eq("id", payload.jobId);[m
+[32m+[m
+[32m+[m[32m      return approvalResponse(request, {[m
+[32m+[m[32m        decision: payload.decision,[m
+[32m+[m[32m        jobId: payload.jobId,[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /*[m
+[32m+[m[32m     * VALIDATE PRODUCT[m
+[32m+[m[32m     */[m
+[32m+[m[32m    const validated =[m
+[32m+[m[32m      ProductSubmissionSchema.safeParse([m
+[32m+[m[32m        ingestion.product[m
+[32m+[m[32m      );[m
+[32m+[m
+[32m+[m[32m    if (!validated.success) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error:[m
+[32m+[m[32m            "Queued product data is no longer valid.",[m
+[32m+[m[32m          details: validated.error.issues,[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 422,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+     }[m
+ [m
+[31m-    const validated = ProductSubmissionSchema.safeParse(ingestion.product);[m
+[31m-    if (!validated.success) return NextResponse.json({ error: "Queued product data is no longer valid.", details: validated.error.issues }, { status: 422 });[m
+     const product = validated.data;[m
+[31m-    const existingId = ingestion.existingProductId ?? null;[m
+[32m+[m[32m    const existingId =[m
+[32m+[m[32m      ingestion.existingProductId ?? null;[m
+[32m+[m
+     const now = new Date().toISOString();[m
+ [m
+[32m+[m[32m    /*[m
+[32m+[m[32m     * UPDATE EXISTING PRODUCT[m
+[32m+[m[32m     */[m
+     if (existingId) {[m
+[31m-      const { data: existing } = await supabase.from("products").select("id, sku, name, slug, brand_id, category_id").eq("id", existingId).single() as { data: ProductRow | null };[m
+[31m-      if (!existing) return NextResponse.json({ error: "The matched product no longer exists." }, { status: 409 });[m
+[32m+[m[32m      const {[m
+[32m+[m[32m        data: existing,[m
+[32m+[m[32m        error: existingError,[m
+[32m+[m[32m      } = await supabase[m
+[32m+[m[32m        .from("products")[m
+[32m+[m[32m        .select([m
+[32m+[m[32m          "id, sku, name, slug, brand_id, category_id"[m
+[32m+[m[32m        )[m
+[32m+[m[32m        .eq("id", existingId)[m
+[32m+[m[32m        .single();[m
+[32m+[m
+[32m+[m[32m      if (existingError || !existing) {[m
+[32m+[m[32m        return NextResponse.json([m
+[32m+[m[32m          {[m
+[32m+[m[32m            error:[m
+[32m+[m[32m              "The matched product no longer exists.",[m
+[32m+[m[32m          },[m
+[32m+[m[32m          {[m
+[32m+[m[32m            status: 409,[m
+[32m+[m[32m          }[m
+[32m+[m[32m        );[m
+[32m+[m[32m      }[m
+[32m+[m
+       const update = {[m
+         name: product.name,[m
+         sku: product.sku ?? existing.sku,[m
+         barcode: product.barcode ?? null,[m
+[31m-        cost_price: product.costPrice ?? undefined,[m
+[31m-        retail_price: product.sellingPrice ?? undefined,[m
+[31m-        wholesale_price: product.wholesalePrice ?? undefined,[m
+[31m-        description: product.description ?? null,[m
+[31m-        updated_by: context.userId === "dev-bypass-user" ? null : context.userId,[m
+[31m-        updated_at: now[m
+[32m+[m[32m        cost_price:[m
+[32m+[m[32m          product.costPrice ?? undefined,[m
+[32m+[m[32m        retail_price:[m
+[32m+[m[32m          product.sellingPrice ?? undefined,[m
+[32m+[m[32m        wholesale_price:[m
+[32m+[m[32m          product.wholesalePrice ?? undefined,[m
+[32m+[m[32m        description:[m
+[32m+[m[32m          product.description ?? null,[m
+[32m+[m[32m        updated_by:[m
+[32m+[m[32m          context.userId === "dev-bypass-user"[m
+[32m+[m[32m            ? null[m
+[32m+[m[32m            : context.userId,[m
+[32m+[m[32m        updated_at: now,[m
+       };[m
+[31m-      const { error } = await supabase.from("products").update(update).eq("id", existing.id);[m
+[31m-      if (error) throw error;[m
+[31m-      await supabase.from("automation_jobs").update({ status: "COMPLETED", error_message: null, completed_at: now }).eq("id", payload.jobId);[m
+[31m-      return approvalResponse(request, { decision: payload.decision, jobId: payload.jobId, productId: existing.id, action: "UPDATE_EXISTING" });[m
+[32m+[m
+[32m+[m[32m      const { error } = await supabase[m
+[32m+[m[32m        .from("products")[m
+[32m+[m[32m        .update(update)[m
+[32m+[m[32m        .eq("id", existing.id);[m
+[32m+[m
+[32m+[m[32m      if (error) {[m
+[32m+[m[32m        throw error;[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      await supabase[m
+[32m+[m[32m        .from("automation_jobs")[m
+[32m+[m[32m        .update({[m
+[32m+[m[32m          status: "COMPLETED",[m
+[32m+[m[32m          error_message: null,[m
+[32m+[m[32m          completed_at: now,[m
+[32m+[m[32m        })[m
+[32m+[m[32m        .eq("id", payload.jobId);[m
+[32m+[m
+[32m+[m[32m      return approvalResponse(request, {[m
+[32m+[m[32m        decision: payload.decision,[m
+[32m+[m[32m        jobId: payload.jobId,[m
+[32m+[m[32m        productId: existing.id,[m
+[32m+[m[32m        action: "UPDATE_EXISTING",[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /*[m
+[32m+[m[32m     * CREATE NEW PRODUCT[m
+[32m+[m[32m     */[m
+[32m+[m[32m    if ([m
+[32m+[m[32m      !product.sku ||[m
+[32m+[m[32m      product.sellingPrice == null[m
+[32m+[m[32m    ) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error:[m
+[32m+[m[32m            "New products require a SKU and selling price before approval.",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 422,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    const {[m
+[32m+[m[32m      data: duplicate,[m
+[32m+[m[32m      error: duplicateError,[m
+[32m+[m[32m    } = await supabase[m
+[32m+[m[32m      .from("products")[m
+[32m+[m[32m      .select("id")[m
+[32m+[m[32m      .eq("sku", product.sku)[m
+[32m+[m[32m      .maybeSingle();[m
+[32m+[m
+[32m+[m[32m    if (duplicateError) {[m
+[32m+[m[32m      throw duplicateError;[m
+     }[m
+ [m
+[31m-    if (!product.sku || product.sellingPrice == null) return NextResponse.json({ error: "New products require a SKU and selling price before approval." }, { status: 422 });[m
+[31m-    const { data: duplicate } = await supabase.from("products").select("id").eq("sku", product.sku).maybeSingle();[m
+[31m-    if (duplicate) return NextResponse.json({ error: "A product with this SKU already exists. Review it as an update instead." }, { status: 409 });[m
+[31m-    const { data: created, error: createError } = await supabase.from("products").insert({[m
+[31m-      sku: product.sku,[m
+[31m-      barcode: product.barcode ?? null,[m
+[31m-      name: product.name,[m
+[31m-      slug: slugify(`${product.sku}-${product.name}`),[m
+[31m-      short_description: null,[m
+[31m-      description: product.description ?? null,[m
+[31m-      category_id: null,[m
+[31m-      brand_id: null,[m
+[31m-      cost_price: product.costPrice ?? 0,[m
+[31m-      retail_price: product.sellingPrice,[m
+[31m-      contractor_price: null,[m
+[31m-      wholesale_price: product.wholesalePrice ?? null,[m
+[31m-      dealer_price: null,[m
+[31m-      promotional_price: null,[m
+[31m-      vat_rate: 16,[m
+[31m-      weight: null,[m
+[31m-      length: null,[m
+[31m-      width: null,[m
+[31m-      height: null,[m
+[31m-      warranty_period: null,[m
+[31m-      seo_title: null,[m
+[31m-      seo_description: null,[m
+[31m-      created_by: context.userId === "dev-bypass-user" ? null : context.userId,[m
+[31m-      updated_by: null,[m
+[31m-      created_at: now,[m
+[31m-      updated_at: now,[m
+[31m-      status: "DRAFT",[m
+[31m-      featured: false,[m
+[31m-      is_active: false[m
+[31m-    }).select("id").single();[m
+[31m-    if (createError || !created) throw createError ?? new Error("Product was not created.");[m
+[31m-    if (product.imageUrl) await supabase.from("product_images").insert({ product_id: created.id, image_url: product.imageUrl, alt_text: product.name, sort_order: 0, is_primary: true, created_at: now });[m
+[31m-    await supabase.from("automation_jobs").update({ status: "COMPLETED", error_message: null, completed_at: now }).eq("id", payload.jobId);[m
+[31m-    return approvalResponse(request, { decision: payload.decision, jobId: payload.jobId, productId: created.id, action: "CREATE_NEW" });[m
+[32m+[m[32m    if (duplicate) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error:[m
+[32m+[m[32m            "A product with this SKU already exists. Review it as an update instead.",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 409,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    const { data: created, error: createError } =[m
+[32m+[m[32m      await supabase[m
+[32m+[m[32m        .from("products")[m
+[32m+[m[32m        .insert({[m
+[32m+[m[32m          sku: product.sku,[m
+[32m+[m[32m          barcode: product.barcode ?? null,[m
+[32m+[m[32m          name: product.name,[m
+[32m+[m[32m          slug: slugify([m
+[32m+[m[32m            `${product.sku}-${product.name}`,[m
+[32m+[m[32m            normalizeProductName[m
+[32m+[m[32m          ),[m
+[32m+[m[32m          short_description: null,[m
+[32m+[m[32m          description:[m
+[32m+[m[32m            product.description ?? null,[m
+[32m+[m[32m          category_id: null,[m
+[32m+[m[32m          brand_id: null,[m
+[32m+[m[32m          cost_price:[m
+[32m+[m[32m            product.costPrice ?? 0,[m
+[32m+[m[32m          retail_price:[m
+[32m+[m[32m            product.sellingPrice,[m
+[32m+[m[32m          contractor_price: null,[m
+[32m+[m[32m          wholesale_price:[m
+[32m+[m[32m            product.wholesalePrice ?? null,[m
+[32m+[m[32m          dealer_price: null,[m
+[32m+[m[32m          promotional_price: null,[m
+[32m+[m[32m          vat_rate: 16,[m
+[32m+[m[32m          weight: null,[m
+[32m+[m[32m          length: null,[m
+[32m+[m[32m          width: null,[m
+[32m+[m[32m          height: null,[m
+[32m+[m[32m          warranty_period: null,[m
+[32m+[m[32m          seo_title: null,[m
+[32m+[m[32m          seo_description: null,[m
+[32m+[m[32m          created_by:[m
+[32m+[m[32m            context.userId === "dev-bypass-user"[m
+[32m+[m[32m              ? null[m
+[32m+[m[32m              : context.userId,[m
+[32m+[m[32m          updated_by: null,[m
+[32m+[m[32m          created_at: now,[m
+[32m+[m[32m          updated_at: now,[m
+[32m+[m[32m          status: "DRAFT",[m
+[32m+[m[32m          featured: false,[m
+[32m+[m[32m          is_active: false,[m
+[32m+[m[32m        })[m
+[32m+[m[32m        .select("id")[m
+[32m+[m[32m        .single();[m
+[32m+[m
+[32m+[m[32m    if (createError || !created) {[m
+[32m+[m[32m      throw ([m
+[32m+[m[32m        createError ??[m
+[32m+[m[32m        new Error("Product was not created.")[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /*[m
+[32m+[m[32m     * SAVE PRODUCT IMAGE[m
+[32m+[m[32m     */[m
+[32m+[m[32m    if (product.imageUrl) {[m
+[32m+[m[32m      const { error: imageError } =[m
+[32m+[m[32m        await supabase[m
+[32m+[m[32m          .from("product_images")[m
+[32m+[m[32m          .insert({[m
+[32m+[m[32m            product_id: created.id,[m
+[32m+[m[32m            image_url: product.imageUrl,[m
+[32m+[m[32m            alt_text: product.name,[m
+[32m+[m[32m            sort_order: 0,[m
+[32m+[m[32m            is_primary: true,[m
+[32m+[m[32m            created_at: now,[m
+[32m+[m[32m          });[m
+[32m+[m
+[32m+[m[32m      if (imageError) {[m
+[32m+[m[32m        console.error([m
+[32m+[m[32m          "Product image insert failed:",[m
+[32m+[m[32m          imageError[m
+[32m+[m[32m        );[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /*[m
+[32m+[m[32m     * COMPLETE AUTOMATION JOB[m
+[32m+[m[32m     */[m
+[32m+[m[32m    await supabase[m
+[32m+[m[32m      .from("automation_jobs")[m
+[32m+[m[32m      .update({[m
+[32m+[m[32m        status: "COMPLETED",[m
+[32m+[m[32m        error_message: null,[m
+[32m+[m[32m        completed_at: now,[m
+[32m+[m[32m      })[m
+[32m+[m[32m      .eq("id", payload.jobId);[m
+[32m+[m
+[32m+[m[32m    return approvalResponse(request, {[m
+[32m+[m[32m      decision: payload.decision,[m
+[32m+[m[32m      jobId: payload.jobId,[m
+[32m+[m[32m      productId: created.id,[m
+[32m+[m[32m      action: "CREATE_NEW",[m
+[32m+[m[32m    });[m
+   } catch (error) {[m
+[31m-    if (error instanceof z.ZodError) return NextResponse.json({ error: "Please provide a valid product approval request.", details: error.issues }, { status: 400 });[m
+[31m-    console.error("Product approval failed:", error);[m
+[31m-    return NextResponse.json({ error: error instanceof Error ? error.message : "Product approval failed." }, { status: 500 });[m
+[32m+[m[32m    if (error instanceof z.ZodError) {[m
+[32m+[m[32m      return NextResponse.json([m
+[32m+[m[32m        {[m
+[32m+[m[32m          error:[m
+[32m+[m[32m            "Please provide a valid product approval request.",[m
+[32m+[m[32m          details: error.issues,[m
+[32m+[m[32m        },[m
+[32m+[m[32m        {[m
+[32m+[m[32m          status: 400,[m
+[32m+[m[32m        }[m
+[32m+[m[32m      );[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    console.error([m
+[32m+[m[32m      "Product approval failed:",[m
+[32m+[m[32m      error[m
+[32m+[m[32m    );[m
+[32m+[m
+[32m+[m[32m    return NextResponse.json([m
+[32m+[m[32m      {[m
+[32m+[m[32m        error:[m
+[32m+[m[32m          error instanceof Error[m
+[32m+[m[32m            ? error.message[m
+[32m+[m[32m            : "Product approval failed.",[m
+[32m+[m[32m      },[m
+[32m+[m[32m      {[m
+[32m+[m[32m        status: 500,[m
+[32m+[m[32m      }[m
+[32m+[m[32m    );[m
+   }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m

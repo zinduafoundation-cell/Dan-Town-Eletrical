@@ -44,6 +44,7 @@ export default function CatalogWorkspace({
   categories,
   brands,
   products,
+  productCount,
 }: CatalogWorkspaceProps) {
   const [view, setView] = useState<WorkspaceView>("catalog");
 
@@ -85,8 +86,8 @@ export default function CatalogWorkspace({
           </p>
         </div>
         <div className="catalog-workspace-summary" aria-label="Catalog summary">
-          <strong>{products.length}</strong>
-          <span>recent products</span>
+          <strong>{productCount.toLocaleString()}</strong>
+          <span>catalog products</span>
         </div>
       </div>
 
@@ -123,6 +124,7 @@ export default function CatalogWorkspace({
             categories={categories}
             departments={departments}
             products={products}
+            productCount={productCount}
           />
         )}
         {view === "bulk" && (

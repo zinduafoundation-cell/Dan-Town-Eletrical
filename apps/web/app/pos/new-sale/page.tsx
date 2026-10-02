@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Product images are administrator-supplied remote URLs and need to remain usable without a restrictive build-time host allowlist. */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

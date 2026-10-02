@@ -1,17 +1,20 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
-import { ensureCustomerProvisioning } from "../../../lib/auth/provisioning";
+import { safeNextPath } from "../../../lib/auth/post-login";
 
-function safeNextPath(value: string | null) {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/account";
+function completeUrl(request: NextRequest, next: string | null) {
+  const url = new URL("/auth/complete", request.url);
+  const safeNext = safeNextPath(next);
+  if (safeNext) url.searchParams.set("next", safeNext);
+  return url;
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = safeNextPath(searchParams.get("next"));
+  const next = searchParams.get("next");
 
   if (!token_hash || !type) return NextResponse.redirect(new URL("/callback-error", request.url));
 
@@ -23,8 +26,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/callback-error", request.url));
     }
 
-    await ensureCustomerProvisioning(data.user);
-    return NextResponse.redirect(new URL(next, request.url));
+    return NextResponse.redirect(completeUrl(request, next));
   } catch (error) {
     console.error("AUTH CALLBACK EXCEPTION", error);
     return NextResponse.redirect(new URL("/callback-error", request.url));

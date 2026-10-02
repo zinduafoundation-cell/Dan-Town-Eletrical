@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Match previews use administrator-supplied remote catalog URLs and need to remain usable without a restrictive build-time host allowlist. */
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";

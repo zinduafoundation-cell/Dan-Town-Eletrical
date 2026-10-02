@@ -6,7 +6,13 @@ import { WarehouseForm } from "@/components/admin/warehouse-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function InventoryPage() {
+export default async function InventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const initialQuery = Array.isArray(params.q) ? params.q[0] ?? "" : params.q ?? "";
   const context = await requireAuthorizedPermission("inventory.read");
   const supabase = createSupabaseServiceClient();
   const [{ data: inventory }, { data: products }, { data: warehouses }, { data: categories }, { data: brands }] = await Promise.all([
@@ -69,6 +75,6 @@ export default async function InventoryPage() {
 
   return <PortalShell wide title="Stock & inventory." description="Search the full product catalog, view product photos and warehouse stock, and safely adjust the shared stock ledger." roles={context.roles} permissions={context.permissions} links={[{ label: "Overview", href: "/admin" }, { label: "Inventory", href: "/admin/inventory" }, { label: "Products", href: "/admin/catalog", permission: "products.read" }, { label: "Suppliers", href: "/admin/suppliers", permission: "products.read" }, { label: "Purchases", href: "/admin/purchases", permission: "inventory.read" }, { label: "Warehouses", href: "/admin/warehouses", permission: "inventory.read" }]}>
     <WarehouseForm initialWarehouses={(warehouses ?? []).map((warehouse) => ({ id: warehouse.id, name: warehouse.name }))} canManage={context.permissions.includes("inventory.adjust")} />
-    <InventoryWorkspace rows={rows} warehouses={(warehouses ?? []).map((warehouse) => ({ id: warehouse.id, name: warehouse.name }))} canAdjust={context.permissions.includes("inventory.adjust")} canTransfer={context.permissions.includes("inventory.adjust")} />
+    <InventoryWorkspace rows={rows} warehouses={(warehouses ?? []).map((warehouse) => ({ id: warehouse.id, name: warehouse.name }))} canAdjust={context.permissions.includes("inventory.adjust")} canTransfer={context.permissions.includes("inventory.adjust")} initialQuery={initialQuery} />
   </PortalShell>;
 }

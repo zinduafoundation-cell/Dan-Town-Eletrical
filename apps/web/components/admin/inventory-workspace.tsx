@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Inventory images are administrator-supplied remote URLs and need to remain usable without a restrictive build-time host allowlist. */
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
@@ -27,12 +28,12 @@ type InventoryRow = {
 
 type Warehouse = { id: string; name: string };
 
-type Props = { rows: InventoryRow[]; warehouses: Warehouse[]; canAdjust: boolean; canTransfer: boolean };
+type Props = { rows: InventoryRow[]; warehouses: Warehouse[]; canAdjust: boolean; canTransfer: boolean; initialQuery?: string };
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock" | "reserved" | "not-tracked" | "draft" | "published" | "pos";
 
-export function InventoryWorkspace({ rows: initialRows, warehouses, canAdjust, canTransfer }: Props) {
+export function InventoryWorkspace({ rows: initialRows, warehouses, canAdjust, canTransfer, initialQuery = "" }: Props) {
   const [rows, setRows] = useState(initialRows);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [filter, setFilter] = useState<StockFilter>("all");
   const [warehouseFilter, setWarehouseFilter] = useState("all");
   const [selected, setSelected] = useState<InventoryRow | null>(null);

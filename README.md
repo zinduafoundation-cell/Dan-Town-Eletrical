@@ -46,6 +46,9 @@ npm run test
 npm run test:e2e
 ```
 
+For the production Vercel, Supabase Auth, Google OAuth, cron, and user-provisioning
+setup, see [the deployment guide](docs/vercel-deployment.md).
+
 ## Validation
 
 Stage 1 was validated with `npm run lint` and `npm run build` on August 26, 2026. Both completed successfully. The production build currently exposes the `/` route only; business routes and data access belong to later stages.

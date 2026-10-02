@@ -1,18 +1,20 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { createAuthClient } from "@dantown/auth";
 import { buttonClassName } from "@dantown/ui";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const nextPath = () => {
+  const requestedNextPath = () => {
     const next = new URLSearchParams(window.location.search).get("next");
-    return next?.startsWith("/") && !next.startsWith("//") ? next : "/account";
+    return next?.startsWith("/") && !next.startsWith("//") ? next : null;
+  };
+  const completePath = () => {
+    const next = requestedNextPath();
+    return next ? `/auth/complete?next=${encodeURIComponent(next)}` : "/auth/complete";
   };
 
   async function signInWithGoogle() {
@@ -22,7 +24,7 @@ export default function LoginPage() {
       const { error: authError } = await createAuthClient().auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath())}`,
+          redirectTo: `${window.location.origin}/auth/callback${requestedNextPath() ? `?next=${encodeURIComponent(requestedNextPath()!)}` : ""}`,
           queryParams: { prompt: "select_account" }
         }
       });
@@ -49,14 +51,7 @@ export default function LoginPage() {
         return;
       }
 
-      const provisioningResponse = await fetch("/api/auth/provision", { method: "POST" });
-      if (!provisioningResponse.ok) {
-        setError("We could not finish setting up your account. Please try again.");
-        return;
-      }
-
-      router.push(nextPath());
-      router.refresh();
+      window.location.assign(completePath());
     } catch (signInError) {
       console.error("EMAIL SIGN-IN ERROR", signInError);
       setError("We could not complete sign-in. Check your connection and try again.");

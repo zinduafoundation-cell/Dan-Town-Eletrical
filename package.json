@@ -19,6 +19,9 @@
   "repair-pos-rpc": "node repair-pos-rpc.mjs",
   "verify": "node ./scripts/verify.mjs"
 },
+  "allowScripts": {
+    "unrs-resolver": true
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
     "pg": "^8.23.0"
