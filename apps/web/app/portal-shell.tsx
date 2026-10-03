@@ -70,12 +70,17 @@ export function PortalShell({
         "Audit Logs",
         "CEO view"
       ].includes(link.label)
-  );
+  );const activeHref = [...visibleLinks]
+    .filter(
+      (link) =>
+        pathname === link.href || pathname.startsWith(`${link.href}/`)
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const isActive = (href: string) => href === activeHref;
   const administration = visibleLinks.filter(
     (link) => !primary.includes(link) && !management.includes(link)
   );
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+  
   const renderLinks = (items: typeof visibleLinks) =>
     items.map((link) => (
       <Link
