@@ -10148,3 +10148,264 @@ body .store-shell .marketplace-search-form input:focus,
 body .store-shell .marketplace-search-form input:focus-visible,
 body .store-shell .page-hero form input:focus,
 body .store-shell .page-hero form input:focus-visible { box-shadow: none !important; outline: none !important; }
+/* ===== DANTOWN REDESIGN: OVERALL CLEAN-UP =====
+   Whole-site sweep: every leftover lime / dark-green style becomes orange / navy.
+   Paste at the VERY BOTTOM of globals.css (below all other redesign blocks).
+   Rules keep their original specificity, so the hand-tuned redesign blocks still win. ===== */
+:root {
+  --color-brand-accent: #f26a1b;
+  --dantown-lime: #f26a1b;
+  --lime: #f26a1b;
+  --secondary: #f26a1b;
+  --accent: #f26a1b;
+}
+.dan-ai-suggestions button { background:#f7f9fc; }
+.dan-ai-form input { background:#f7f9fc; }
+.dan-ai-form button { background:#f26a1b; color:#fff; }
+:root { --secondary:#f26a1b; --accent:#f26a1b; }
+.store-shell::after { background:rgba(242,106,27,.07); }
+.utility-links a:hover, .main-nav a:hover, .text-link:hover { color:#f26a1b; }
+.marketplace-search-form button { background:#f26a1b; }
+.hero-carousel::before { background:linear-gradient(90deg, rgba(242,106,27,.08) 1px, transparent 1px), linear-gradient(rgba(242,106,27,.08) 1px, transparent 1px); }
+.hero-slide-copy .eyebrow { color:#f26a1b; }
+.hero-carousel-meta strong { color:#f26a1b; }
+.hero-carousel-controls button:hover { background:#f26a1b; }
+.hero-carousel-indicators button.is-active { background:#f26a1b; }
+.dantown-hero h1 span { color:#f26a1b; }
+.hero-promo-card:hover, .hero-promo-card:focus-visible { border-color:#f26a1b; }
+.hero-promo-copy small { color:#f26a1b; }
+.hero-outline-link:hover { color:#f26a1b; }
+.hero-showcase-card svg { color:#f26a1b; }
+.hero-showcase-card small { color:#f26a1b; }
+.hero-showcase-card a:hover { color:#f26a1b; }
+.dantown-section-heading .eyebrow, .dantown-feature-band .eyebrow { color:#f26a1b; }
+.solution-category:hover { border-color:#f26a1b; }
+.solution-icon { color:#f26a1b; }
+.dantown-feature-band .button-secondary { border-color:#f26a1b; color:#f26a1b; }
+.policy-hero .eyebrow { color:#f26a1b; }
+.history-controls button:hover:not(:disabled) { background:#f26a1b; color:#fff; }
+.announcement span { color:#f26a1b; }
+.brand-mark { background:#f26a1b; color:#fff; }
+.business-center-button { background:linear-gradient(135deg, rgba(242,106,27,0.28), rgba(215,169,79,0.16)); }
+.button-secondary { background:#f26a1b; color:#fff; }
+.add-button { background:#f26a1b; }
+.quote-band { background:linear-gradient(135deg, #0b2a50 0%, #0b2a50 100%); }
+.quote-band .eyebrow { color:#f26a1b; }
+.quote-band h2 em { color:#f26a1b; }
+.solution-panel.highlight { background:linear-gradient(135deg, rgba(242,106,27,0.22), rgba(255,255,255,0.92)); }
+.service-icon { background:rgba(242,106,27,.32); }
+.service-callout .eyebrow { color:#f26a1b; }
+.route-state-private { background:#f1f5fa; }
+.solar-calculator-intro .eyebrow { color:#f26a1b; }
+.solar-add-load { background:#f26a1b; color:#fff; }
+.solar-load-row { background:#f7f9fc; }
+.solar-results .eyebrow { color:#f26a1b; }
+.solar-result svg { color:#f26a1b; }
+.announcement-bar span { color:#f26a1b; }
+.filter-chip.active { background:#f26a1b; }
+.thumb.active { background:#f26a1b; }
+.stock-badge { background:rgba(242,106,27,0.25); }
+.brands-filter input { background:#f7f9fc; }
+.brand-mark-wrapper { background:#f26a1b; }
+.newsletter-form button { background:#f26a1b; color:#fff; }
+.mini-art { background:linear-gradient(135deg, #f26a1b, #d7a94f); }
+:root { --color-secondary:#f26a1b; }
+@media (max-width: 560px) {
+  .store-shell .nav-more-panel a:hover { color:#f26a1b; }
+  .store-shell .category-menu-panel a:hover,
+  .store-shell .mobile-menu-panel a:hover,
+  .store-shell .popover-panel a:hover { color:#f26a1b; }
+  .welcome-entry-mark { background:#f26a1b; color:#fff; }
+  .welcome-entry-card > p:last-child span { color:#f26a1b; }
+  .floating-support-trigger:hover { background:#f26a1b; color:#fff; }
+  .floating-support-panel a:hover, .floating-support-panel button:hover { color:#f26a1b; }
+  .store-shell .checkout-page::before,
+  .store-shell .payment-page::before,
+  .store-shell .contact-page-shell::before { background:radial-gradient(circle, rgba(242,106,27,.2), transparent 68%); }
+  .store-shell .dan-ai-launcher { background:linear-gradient(135deg, #f26a1b, #d95a10); }
+  .store-shell .dantown-trust svg { color:#f26a1b; }
+  .store-shell .delivery-estimate-result { background:linear-gradient(135deg, rgba(2,81,176,.08), rgba(242,106,27,.12)); }
+}
+.store-shell .checkout-summary .summary-row.total strong { color:#f26a1b; }
+.store-shell .checkout-summary-trust svg { color:#f26a1b; }
+.store-shell { background:radial-gradient(circle at 8% 10%, rgba(242,106,27,.08), transparent 26rem),
+    linear-gradient(180deg, #071a33 0%, #0b2547 24rem, #f4f8fc 24rem, #f4f8fc 100%); }
+.store-shell .page-hero.compact::after { background:radial-gradient(circle, rgba(242,106,27,.18), transparent 68%); }
+.store-shell .add-button { background:linear-gradient(135deg, #f26a1b 0%, #ff8a3d 100%); }
+.store-shell .add-button:hover:not(:disabled),
+.store-shell .add-button:focus-visible { outline:3px solid rgba(242,106,27,.42); }
+.store-shell .product-gallery { background:radial-gradient(circle at 50% 35%, rgba(242,106,27,.24), transparent 14rem),
+    linear-gradient(145deg, #eaf3fc, #cfe2f5); }
+.store-shell .product-detail-image .product-tag { color:#ffb98a; }
+.route-state-card::before { background:linear-gradient(135deg, rgba(242,106,27,.42), transparent 58%); }
+.route-state-page { background:radial-gradient(circle at 18% 18%, rgba(242,106,27,.16), transparent 20rem),
+    linear-gradient(135deg, #071a33, #0d3764); }
+.route-state-spinner { box-shadow:0 0 0 7px rgba(242,106,27,.12); }
+.store-shell .summary-panel,
+.store-shell .checkout-summary,
+.store-shell .payment-total-card { background:radial-gradient(circle at 100% 0%, rgba(242,106,27,.2), transparent 16rem),
+    linear-gradient(145deg, #071a33, #0d3764); }
+.store-shell .summary-panel .button-primary,
+.store-shell .checkout-summary .button-primary { background:linear-gradient(135deg, #f26a1b, #ff8a3d); }
+.store-shell .route-state-page { background:radial-gradient(circle at 20% 20%, rgba(242,106,27,.16), transparent 20rem),
+    linear-gradient(135deg, #071a33, #0d3764); }
+.store-shell .route-state-card::before { background:linear-gradient(135deg, rgba(242,106,27,.42), transparent 55%); }
+.route-state-brand { background:linear-gradient(135deg, #f26a1b, #d95a10); }
+.route-state-card--loading .eyebrow { color:#f26a1b; }
+.route-state-progress span { background:#f26a1b; }
+.store-shell .payment-total-card .eyebrow { color:#f26a1b; }
+.store-shell .payment-total-card > div svg { color:#f26a1b; }
+.smart-match-hero .eyebrow { color:#f26a1b; }
+.smart-match-hero-badge { color:#f26a1b; }
+@media (max-width: 900px) {
+  .store-shell .add-button { background:linear-gradient(135deg, #f26a1b, #ff8a3d); }
+  .store-shell .add-button:hover:not(:disabled),
+  .store-shell .add-button:focus-visible { outline:3px solid rgba(242,106,27,.38); }
+  .store-shell .summary-panel .summary-row.total strong { color:#f26a1b; }
+}
+.category-family-arrow { background:#f26a1b; color:#fff; }
+.brand-discovery-card > span { background:#f26a1b; color:#fff; }
+.category-detail-copy .eyebrow, .brand-detail-copy .eyebrow { color:#f26a1b; }
+.detail-subcategory-row a { color:#f26a1b; }
+.brand-detail-hero .brand-mark-wrapper { background:#f26a1b; }
+.utility-bar { background:#0b2a50; }
+.icon-button.cart-button { background:#f1f5fa; }
+.division-hero .eyebrow { color:#f26a1b; }
+.division-hero-icon { background:rgba(242,106,27,.18); border:1px solid rgba(242,106,27,.4); color:#f26a1b; }
+.pos-sidebar { background:#0b2a50; }
+.pos-logo-mark { background:#f26a1b; color:#fff; }
+.pos-logo-subtext { color:#f26a1b; }
+.pos-nav-item:first-child { border-left-color:#f26a1b; }
+.pos-sidebar-button:hover { background:#f26a1b; color:#fff; }
+.pos-quick-action-button { background:#f26a1b; color:#fff; }
+.pos-recent-sales { background:#f7f9fc; }
+.pos-products-search, .pos-input { background:#f7f9fc; }
+.pos-category-filters button { background:#f1f5fa; }
+.pos-product-button, .pos-pay-button { background:#f26a1b; color:#fff; }
+.pos-held-sale { background:#f7f9fc; }
+.pos-payment-button { background:#f1f5fa; }
+.store-shell .mobile-bottom-nav a:hover { color:#f26a1b; }
+lters button { background:#f1f5fa; }
+.store-shell .utility-left svg { color:#f26a1b; }
+.store-shell .utility-tagline { color:#f26a1b; }
+.store-shell .marketplace-header .brand b { color:#f26a1b; }
+.store-shell .marketplace-search-form button { background:#f26a1b; color:#fff; }
+.header-ai-link > svg { color:#f26a1b; }
+.header-ai-link small { color:#f26a1b; }
+.store-shell .marketplace-category-nav .category-links a:hover { color:#f26a1b; }
+.store-shell .category-links a:hover { color:#f26a1b; }
+.store-shell .dantown-hero .button-primary { background:#f26a1b; color:#fff; }
+.store-shell .dantown-hero .button-primary:hover { background:#f26a1b; }
+.store-shell .solution-category:hover .solution-icon { background:#f26a1b; color:#fff; }
+.store-shell .dantown-category-section .text-link { border-bottom:2px solid #f26a1b; }
+.store-shell .dantown-category-card:hover .dantown-category-arrow,
+.store-shell .dantown-category-card:focus-visible .dantown-category-arrow { background:#f26a1b; color:#fff; }
+.store-shell .category-detail-copy .eyebrow,
+.store-shell .brand-detail-copy .eyebrow { color:#f26a1b; }
+.store-shell .detail-subcategory-row a:hover,
+.store-shell .detail-subcategory-row a:focus-visible { color:#f26a1b; }
+.pos-data-row { background:#f7f9fc; }
+.store-shell .about-hero h1 span,
+.store-shell .contact-hero h1 span { color:#f26a1b; }
+.store-shell .about-hero .eyebrow,
+.store-shell .contact-hero .eyebrow,
+.store-shell .services-hero .eyebrow { color:#f26a1b; }
+.store-shell .about-hero .button-primary,
+.store-shell .contact-hero .button-primary,
+.store-shell .services-hero .button-primary { background:#f26a1b; color:#fff; }
+.store-shell .about-hero-visual { border:1px solid rgba(242,106,27,.22); }
+.store-shell .service-callout .eyebrow { color:#f26a1b; }
+:root { --dantown-lime:#f26a1b; --lime:#f26a1b; --secondary:#f26a1b; --accent:#f26a1b; }
+::selection { background:#f26a1b; color:#fff; }
+::-webkit-scrollbar-thumb:hover { background:#f26a1b; }
+:where(a, button, input, select, textarea, summary):focus-visible { outline:2px solid #f26a1b; }
+.marketplace-search-form button:hover, .search-form button:hover, .hero-primary-action:hover, .button-primary:hover, .btn-primary:hover { background:#f26a1b; color:#fff; }
+.product-tag, .dantown-category-content small { background:#f26a1b; color:#fff; }
+.dantown-trust svg { color:#f26a1b; }
+.dan-ai-launcher:hover { background:#f26a1b; color:#fff; }
+.dan-ai-escalation { background:rgba(242,106,27,0.16); }
+.centre-command-trust { background:rgba(242,106,27,.34); }
+.mini-art { background:linear-gradient(135deg, #f26a1b, var(--dantown-blue)); }
+.account-hub-profile .account-avatar { background:#f26a1b; color:#fff; }
+.store-shell .hero-carousel .eyebrow { color:#f26a1b; }
+.store-shell .mega-menu-column strong { color:#f26a1b; }
+.guidance-ai-link { background:#f26a1b; color:#fff; }
+.guidance-icon { background:#f26a1b; color:#fff; }
+.store-shell .account-popover .popover-panel a:hover,
+.store-shell .all-categories-menu .category-menu-panel a:hover,
+.store-shell .mobile-menu .mobile-menu-panel a:hover { color:#f26a1b; }
+.payment-progress-step.is-complete
+  .payment-progress-step__circle { color:#050f1f; }
+.payment-option-card__radio { color:#050f1f; }
+.auth-form input { background:#f7f9fc; }
+.portal-header .brand-mark { background:#f26a1b; }
+.catalog-manager-message { background:rgba(242,106,27,.28); }
+.catalog-form-icon { background:rgba(242,106,27,.32); }
+.catalog-manager-form input, .catalog-manager-form textarea, .catalog-manager-form select { background:#f7f9fc; }
+.catalog-product-art { background:#f26a1b; color:#fff; }
+.barcode-form input, .barcode-form select { background:#f7f9fc; }
+.online-orders-intro { background:linear-gradient(135deg, rgba(255,255,255,.95), rgba(242,106,27,.14)); }
+.online-orders-channel { color:#ffb98a; }
+.online-orders-channel small { color:#c9d8ec; }
+.online-order-status { background:#e8f1fc; }
+.online-order-fulfillment { background:#f1f5fa; }
+.online-order-payment { background:#f1f5fa; }
+.portal { background:#f1f5fa; background-image:linear-gradient(135deg, rgba(242,106,27,.12), transparent 32%), linear-gradient(315deg, rgba(223,117,91,.06), transparent 28%); }
+.portal-live i { background:#f26a1b; box-shadow:0 0 0 4px rgba(242,106,27,.15); }
+.portal-sidebar a:hover, .portal-sidebar a.active { background:rgba(242,106,27,.25); }
+.portal-role { color:#ffb98a; }
+.portal-card tbody tr:hover { background:rgba(242,106,27,.1); }
+.centre-action-icon { background:rgba(242,106,27,.35); }
+.inventory-adjust-form input, .inventory-adjust-form textarea { background:#f7f9fc; }
+.inventory-transfer-form input, .inventory-transfer-form select { background:#f7f9fc; }
+.bulk-product-message { background:rgba(242,106,27,.24); }
+.bulk-product-list label:hover { background:#f1f5fa; }
+.purchase-form input, .purchase-form select { background:#f7f9fc; }
+.settings-icon { background:rgba(242,106,27,.35); }
+.settings-preference-list label { background:#f7f9fc; }
+.automation-status-panel { background:#0b2a50; }
+.automation-status-panel p:not(.eyebrow) { color:#c9d8ec; }
+.automation-status-panel .eyebrow { color:#f26a1b; }
+.automation-config-status .configured { background:#f26a1b; color:#fff; }
+.automation-config-status small { color:#c9d8ec; }
+.automation-status-grid small { color:#c9d8ec; }
+.automation-status-grid strong { color:#f26a1b; }
+.import-centre { background:#0b2a50; }
+.import-centre-copy { color:#c9d8ec; }
+.import-centre .eyebrow { color:#f26a1b; }
+.import-centre-icon { background:#f26a1b; color:#fff; }
+.import-preview strong { color:#f26a1b; }
+.forbidden { background:#f1f5fa; background-image:radial-gradient(circle at 78% 15%, rgba(242,106,27,.34), transparent 26%); }
+.callback-page { background:#f1f5fa; background-image:linear-gradient(135deg, rgba(242,106,27,.2), transparent 35%), radial-gradient(circle at 85% 80%, rgba(223,117,91,.12), transparent 25%); }
+.security-gate { background:#f1f5fa; background-image:linear-gradient(135deg, rgba(242,106,27,.18), transparent 40%), radial-gradient(circle at 82% 78%, rgba(223,117,91,.12), transparent 28%); }
+.pos-metric-lime .pos-metric-icon { background:rgba(242,106,27,.2); }
+.pos-search-wrapper { background:#f7f9fc; }
+.pos-camera-scan-button { background:#f26a1b; color:#fff; }
+.pos-camera-viewfinder span { border:2px solid #f26a1b; }
+.pos-category-filters button:hover, .pos-category-filters button.active { background:#f26a1b; border-color:#f26a1b; color:#fff; }
+.pos-product-button { background:#f26a1b; color:#fff; }
+.pos-qty-input { background:#f7f9fc; }
+.portal-gateway b { background:var(--dantown-lime, #f26a1b); }
+.portal-gateway:hover { color:var(--dantown-lime, #f26a1b); }
+.centre-status { background:#f7f9fc; }
+.account-avatar { background:#f26a1b; color:#fff; }
+.account-profile-panel .eyebrow { color:#f26a1b; }
+.account-status { color:#f26a1b; }
+.account-nav a:hover { color:#f26a1b; }
+.account-welcome-panel, .account-next-panel { background:linear-gradient(135deg, rgba(242,106,27,.42), rgba(255,255,255,.82)); }
+.account-next-panel .eyebrow { color:#f26a1b; }
+.account-next-panel .button-primary { background:#f26a1b; color:#fff; }
+.account-notification { background:#f7f9fc; }
+.account-notification-icon { background:#f26a1b; color:#fff; }
+.portal-header-gateway { background:var(--dantown-lime, #f26a1b); }
+.centre-unconfigured { background:#f7f9fc; }
+.pos-refund-dialog input, .pos-refund-dialog textarea { background:#f7f9fc; }
+@media (max-width: 560px) {
+  .pos-mobile-cart-button strong { color:#f26a1b; }
+}
+.team-invite-form input, .team-invite-form select { background:#f7f9fc; }
+.team-access-note { background:#f7f9fc; }
+.team-row { background:#f7f9fc; }
+.team-role-badge { background:rgba(242,106,27,.35); }
+.warehouse-form input { background:#f7f9fc; }
+.warehouse-row { background:#f7f9fc; }
