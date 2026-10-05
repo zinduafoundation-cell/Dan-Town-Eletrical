@@ -10128,3 +10128,23 @@ body .auth-form .text-link,
 body .auth-switch a { color: #0251b0; font-weight: 700; }
 body .auth-switch { color: #475a73; text-align: center; }
 body .auth-error { background: #ffeef0; border: 1px solid #f4b5bf; border-radius: 12px; color: #a3233b; padding: 12px 14px; }
+/* ===== DANTOWN REDESIGN: SHOP BANNER (PHONE) ===== */
+@media (max-width: 1024px) {
+  body .store-shell .page-hero,
+  body .store-shell .page-hero.compact {
+    align-items: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  body .store-shell .page-hero > *,
+  body .store-shell .page-hero.compact > * { max-width: 100% !important; min-width: 0 !important; width: 100% !important; }
+  body .store-shell .page-hero form,
+  body .store-shell .page-hero .marketplace-search-form { margin: 0 !important; width: 100% !important; }
+}
+
+/* the white search box shows the focus ring itself, so remove the square one inside */
+body .store-shell .marketplace-search-form input:focus,
+body .store-shell .marketplace-search-form input:focus-visible,
+body .store-shell .page-hero form input:focus,
+body .store-shell .page-hero form input:focus-visible { box-shadow: none !important; outline: none !important; }
