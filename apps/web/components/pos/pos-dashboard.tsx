@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TrendingUp, ShoppingCart, DollarSign, AlertCircle, Users, Package } from "lucide-react";
 import { getOfflineQueueSummary } from "@/lib/pos/offline-queue";
+import { summarizeOfflineQueue } from "@/lib/pos/queue-summary";
 
 type DashboardMetrics = {
   todaysSales: number;
@@ -27,6 +28,7 @@ export function POSDashboard() {
     lowStockCount: 0,
     recentSales: []
   });
+  const [queueSummary, setQueueSummary] = useState(() => summarizeOfflineQueue({ PENDING: 0, SYNCING: 0, SYNCED: 0, FAILED: 0, CONFLICT: 0 }));
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -50,6 +52,8 @@ export function POSDashboard() {
     fetchMetrics();
     const refreshQueue = () => {
       getOfflineQueueSummary().then((summary) => {
+        const queue = summarizeOfflineQueue(summary);
+        setQueueSummary(queue);
         setMetrics((current) => ({
           ...current,
           pendingSync: summary.PENDING + summary.SYNCING + summary.FAILED + summary.CONFLICT
@@ -149,6 +153,14 @@ export function POSDashboard() {
           <Link href="/pos/customers" className="pos-quick-action-button secondary"><Users size={18} /> Customers</Link>
           <Link href="/pos/inventory" className="pos-quick-action-button secondary"><Package size={18} /> Inventory</Link>
           <Link href="/pos/reports" className="pos-quick-action-button secondary"><TrendingUp size={18} /> Reports</Link>
+        </div>
+      </div>
+
+      <div className="pos-dashboard-section">
+        <h2>Offline sync status</h2>
+        <div className={`pos-sync-banner pos-sync-${queueSummary.tone}`}>
+          <strong>{queueSummary.headline}</strong>
+          <span>{queueSummary.details.filter(Boolean).join(" · ")}</span>
         </div>
       </div>
 

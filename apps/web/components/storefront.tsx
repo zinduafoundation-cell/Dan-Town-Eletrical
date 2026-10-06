@@ -17,6 +17,7 @@ import { SearchForm } from "@/components/search-form";
 import { PublicGuidance } from "@/components/public-guidance";
 import { WelcomeEntry } from "@/components/welcome-entry";
 import { FloatingSupportHub } from "@/components/floating-support-hub";
+import { defaultAccountLinks, storefrontPrimaryLinks } from "./account-navigation";
 
 type StorefrontShellProps = {
   children: ReactNode;
@@ -24,10 +25,6 @@ type StorefrontShellProps = {
   accountLabel?: string;
   accountLinks?: Array<{ label: string; href: string }>;
 };
-
-const defaultAccountLinks = [
-  { label: "Account", href: "/account" }
-];
 
 export function StorefrontShell({
   children,
@@ -109,14 +106,13 @@ export function StorefrontShell({
           </details>
 
           <div className="category-links">
-            <Link href="/shop">Shop</Link>
+            {storefrontPrimaryLinks.map((link) => (
+              <Link key={link.href} href={link.href}>{link.label}</Link>
+            ))}
             <Link href="/ai/smart-match">Dantown AI Smart Match</Link>
-            <Link href="/solar">Solar</Link>
             <Link href="/electrical">Electrical</Link>
-            <Link href="/services">Services</Link>
             <Link href="/deals">Deals</Link>
             <Link href="/brands">Brands</Link>
-            <Link href="/projects">Projects</Link>
             <details className="nav-more-menu">
               <summary>More <ChevronDown size={14} /></summary>
               <div className="nav-more-panel">
@@ -155,13 +151,16 @@ export function StorefrontShell({
               <Link href="/projects">Projects</Link>
               <Link href="/request-quote">Request Quote</Link>
               <Link href="/about">About</Link>
+              <Link href="/business-center">Dantown Centre</Link>
               <Link href="/contact">Contact</Link>
             </div>
 
             <div className="mobile-menu-section">
               <p>Account</p>
-              <Link href="/account">{accountLabel}</Link>
-              <Link href="/account/wishlist">Wishlist</Link>
+              {defaultAccountLinks.map((link) => (
+                <Link href={link.href} key={link.href}>{link.label}</Link>
+              ))}
+              <Link href="/logout">Sign out</Link>
             </div>
           </div>
         </details>

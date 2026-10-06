@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, User } from "lucide-react";
+import { getSignedInAccountLinks, type AccountNavLink } from "./account-navigation";
 
-export function AccountMenu({ accountLabel = "Account", accountLinks = [{ label: "Account overview", href: "/account" }] }: { accountLabel?: string; accountLinks?: Array<{ label: string; href: string }> }) {
+export function AccountMenu({ accountLabel = "Account", accountLinks = getSignedInAccountLinks() }: { accountLabel?: string; accountLinks?: AccountNavLink[] }) {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const menuRef = useRef<HTMLDetailsElement>(null);
 
@@ -34,7 +35,7 @@ export function AccountMenu({ accountLabel = "Account", accountLinks = [{ label:
     };
   }, []);
 
-  const visibleLinks = signedIn ? accountLinks.slice(0, 4) : [{ label: "Sign in", href: "/login" }, { label: "Create account", href: "/register" }];
+  const visibleLinks = signedIn ? getSignedInAccountLinks(accountLinks).slice(0, 6) : [{ label: "Sign in", href: "/login" }, { label: "Create account", href: "/register" }];
 
   return <details className="account-popover" ref={menuRef}>
     <summary aria-label="Account menu" aria-haspopup="menu"><User size={16} /><span>{signedIn === null ? accountLabel : label}</span><ChevronDown size={14} /></summary>
