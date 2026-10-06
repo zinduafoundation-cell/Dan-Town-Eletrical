@@ -11,7 +11,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     const { data: order, error: lookupError } = await supabase
       .from("orders")
-      .select("id, created_by, order_number, order_status, created_at")
+      .select("id, created_by, order_number, order_status, created_at, total, sales_channel")
       .eq("id", id)
       .maybeSingle();
 
@@ -28,13 +28,13 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "This order is outside the edit window and cannot be deleted." }, { status: 403 });
     }
 
-    await supabase.from("order_items").delete().eq("order_id", id);
-    await supabase.from("payments").delete().eq("order_id", id);
-
     const { error: deleteError } = await supabase.from("orders").delete().eq("id", id);
     if (deleteError) {
       throw deleteError;
     }
+
+    await supabase.from("order_items").delete().eq("order_id", id);
+    await supabase.from("payments").delete().eq("order_id", id);
 
     const { error: auditError } = await supabase.from("audit_logs").insert({
       user_id: context.userId === "dev-bypass-user" ? null : context.userId,
@@ -43,6 +43,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       resource_id: id,
       new_data: {
         order_number: order.order_number,
+        total: Number(order.total ?? 0),
+        sales_channel: order.sales_channel ?? "ONLINE",
         deleted_by: context.userId,
         deleted_by_role: isPrivileged ? "admin" : "customer",
         reason: isPrivileged ? "admin_delete" : "customer_delete",

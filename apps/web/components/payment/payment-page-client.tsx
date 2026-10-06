@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,6 +16,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { clearPendingPaymentReminder } from "@/lib/pending-payment";
 import { formatCurrency } from "@/lib/store-data";
 
 type PaymentMethod = "mpesa" | "card" | "cash";
@@ -36,6 +37,10 @@ export function PaymentPageClient({
   const [phone, setPhone] = useState("");
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    clearPendingPaymentReminder();
+  }, []);
 
   if (!orderId) {
     return (

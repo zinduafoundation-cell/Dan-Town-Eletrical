@@ -116,11 +116,30 @@ export function POSDashboard() {
     }
   ];
 
+  const operationalSummary = [
+    { label: "Completed", value: String(metrics.transactions || 0) },
+    { label: "Waiting", value: String(Math.max(metrics.pendingSync, 0)) },
+    { label: "Online", value: String(Math.max(metrics.transactions, 0)) },
+    { label: "POS", value: "Open" }
+  ];
+
   return (
     <div className="pos-dashboard">
       <div className="pos-dashboard-header">
         <h1>Dashboard</h1>
         <p>Today&apos;s performance at a glance</p>
+      </div>
+
+      <div className="pos-dashboard-section">
+        <h2>Operations board</h2>
+        <div className="pos-quick-actions">
+          {operationalSummary.map((item) => (
+            <div key={item.label} className="pos-quick-action-button secondary" style={{ justifyContent: "space-between" }}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Metric Cards */}

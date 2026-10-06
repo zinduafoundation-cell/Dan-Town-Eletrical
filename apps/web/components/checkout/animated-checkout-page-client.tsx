@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Loader2, MapPin, Search, ShieldCheck, Truck } from "lucide-react";
 import { useCart } from "@/components/cart/cart-context";
+import { savePendingPaymentReminder } from "@/lib/pending-payment";
 import { formatCurrency } from "@/lib/store-data";
 
 type Fulfilment = "pickup" | "delivery";
@@ -137,10 +138,11 @@ export function CheckoutPageClient() {
       const order = await orderResponse.json();
       if (!orderResponse.ok) throw new Error(order.error || "Unable to start your order.");
 
-      window.localStorage.setItem(
-        "dantown-pending-payment",
-        JSON.stringify({ orderId: order.orderId, orderNumber: order.orderNumber, total: order.total })
-      );
+      savePendingPaymentReminder({
+        orderId: order.orderId,
+        orderNumber: order.orderNumber,
+        total: order.total,
+      });
       router.push(`/payment?orderId=${encodeURIComponent(order.orderId)}&orderNumber=${encodeURIComponent(order.orderNumber)}&total=${encodeURIComponent(order.total)}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to continue to payment.");

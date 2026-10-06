@@ -4,25 +4,15 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type PendingPayment = {
-  orderId: string;
-  orderNumber: string;
-  total: number;
-};
-
-const STORAGE_KEY = "dantown-pending-payment";
+import { clearPendingPaymentReminder, readPendingPaymentReminder } from "@/lib/pending-payment";
 
 export function PendingPaymentReminder() {
-  const [pending, setPending] = useState<PendingPayment | null>(null);
+  const [pending, setPending] = useState<ReturnType<typeof readPendingPaymentReminder>>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      try {
-        const value = window.localStorage.getItem(STORAGE_KEY);
-        if (value) setPending(JSON.parse(value) as PendingPayment);
-      } catch {
-        window.localStorage.removeItem(STORAGE_KEY);
-      }
+      const reminder = readPendingPaymentReminder();
+      setPending(reminder);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -47,7 +37,10 @@ export function PendingPaymentReminder() {
     >
       <button
         type="button"
-        onClick={() => setPending(null)}
+        onClick={() => {
+          clearPendingPaymentReminder();
+          setPending(null);
+        }}
         aria-label="Dismiss payment reminder"
         style={{ position: "absolute", top: ".5rem", right: ".5rem", color: "inherit" }}
       >

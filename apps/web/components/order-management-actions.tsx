@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Clock3, Trash2, XCircle } from "lucide-react";
+import { clearPendingPaymentReminder } from "@/lib/pending-payment";
 import { getOrderEditExpiryLabel, isOrderModifiable } from "@/lib/order-edit-window";
 
 export function OrderManagementActions({
@@ -39,6 +40,10 @@ export function OrderManagementActions({
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(payload?.error || `Unable to ${action} this order.`);
+      }
+
+      if (action === "delete") {
+        clearPendingPaymentReminder();
       }
 
       setMessage(action === "cancel" ? "Order cancelled." : "Order deleted.");

@@ -33,14 +33,25 @@ export default async function BusinessCenterPage() {
   if (!authorized) redirect("/403");
 
   const supabase = createSupabaseServiceClient();
-  const [{ data: orders }, centreMetrics] = await Promise.all([
+  const [{ data: orders }, { data: deletedOrders }, centreMetrics] = await Promise.all([
     hasPermission(context, "orders.read")
       ? supabase.from("orders").select("id, order_number, total, payment_status, order_status, sales_channel, created_at").order("created_at", { ascending: false }).limit(8)
       : Promise.resolve({ data: [] }),
+    supabase.from("audit_logs").select("id, action, resource_id, created_at, new_data").in("action", ["ORDER_DELETED", "ORDER_DELETED_BY_ADMIN", "ORDER_AUTO_DELETED"]).order("created_at", { ascending: false }).limit(6),
     getCentreMetrics(context.permissions),
   ]);
   const { metrics, syncTrackingAvailable, source } = centreMetrics;
   const posOrders = (orders ?? []).filter((order) => order.sales_channel === "POS");
+  const deletedOrderArchive = (deletedOrders ?? []).map((entry) => {
+    const payload = ((entry.new_data as Record<string, unknown>) ?? {}) as Record<string, unknown>;
+    return {
+      id: entry.id,
+      orderNumber: String(payload.order_number ?? "Unknown order"),
+      deletedAt: String(payload.deleted_at ?? entry.created_at ?? ""),
+      reason: String(payload.reason ?? entry.action ?? "Deleted"),
+      deletedByRole: String(payload.deleted_by_role ?? "system"),
+    };
+  });
 
   return <PortalShell title="Dantown Centre" description="One live view of orders, revenue, inventory, customers, and operations." roles={context!.roles} permissions={context!.permissions} links={centreLinks}>
     <div className="centre-dashboard">
@@ -63,6 +74,10 @@ export default async function BusinessCenterPage() {
       <div className="centre-panels">
         <section className="portal-card centre-panel"><div className="centre-panel-heading"><div><p className="eyebrow">Unified operations</p><h2>Recent orders</h2></div><Link className="text-link" href="/admin/orders">Open orders <ArrowRight size={15} /></Link></div>{orders?.length ? <div className="centre-order-list">{orders.map((order) => <div className="centre-order-row" key={order.id}><div><strong>{order.order_number}</strong><small>{order.sales_channel} · {new Date(order.created_at).toLocaleString()}</small></div><div><strong>KSh {Number(order.total).toLocaleString()}</strong><small>{order.payment_status} · {order.order_status}</small></div></div>)}</div> : <p>No orders have been recorded yet.</p>}</section>
         <section className="portal-card centre-panel"><p className="eyebrow">Action queue</p><h2>Keep the business moving.</h2><div className="centre-action-list"><Link href="/pos/new-sale"><span>Open POS</span><ArrowRight size={15} /></Link><Link href="/admin/orders"><span>Review {metrics.pendingOrders} pending orders</span><ArrowRight size={15} /></Link><Link href="/admin/inventory"><span>Review {metrics.lowStock} low-stock lines</span><ArrowRight size={15} /></Link><Link href="/admin/payments"><span>Review {metrics.pendingPayments} pending payments</span><ArrowRight size={15} /></Link></div><div style={{ marginTop: 16 }}><SharedAIPanel title="Dan T AI Business Assistant" subtitle="Daily summary, alerts, and operational recommendations" surface="centre" suggestions={["What needs my attention today?", "Today's summary", "Low stock alerts"]} compact /></div></section>
+      </div>
+      <div className="centre-panels">
+        <section className="portal-card centre-panel"><div className="centre-panel-heading"><div><p className="eyebrow">Order flow</p><h2>Operational status</h2></div><Link className="text-link" href="/pos">Open POS <ArrowRight size={15} /></Link></div><div className="centre-status-grid"><Status label="Done today" value={String(metrics.ordersToday)} /><Status label="Waiting review" value={String(Math.max(metrics.pendingOrders, metrics.pendingPayments))} /><Status label="Online orders" value={String((orders ?? []).filter((order) => order.sales_channel === "ONLINE").length)} /><Status label="POS sales" value={String(posOrders.length)} /></div></section>
+        <section className="portal-card centre-panel"><div className="centre-panel-heading"><div><p className="eyebrow">Archive</p><h2>Deleted order bin</h2></div><Link className="text-link" href="/admin/orders">Review queue</Link></div>{deletedOrderArchive.length ? <div className="centre-order-list">{deletedOrderArchive.map((entry) => <div className="centre-order-row" key={entry.id}><div><strong>{entry.orderNumber}</strong><small>{entry.deletedByRole}</small></div><div><strong>{new Date(entry.deletedAt).toLocaleDateString("en-KE")}</strong><small>{entry.reason}</small></div></div>)}</div> : <p>No deleted orders have been archived yet.</p>}</section>
       </div>
       <div className="centre-panels">
         <section className="portal-card centre-panel"><div className="centre-panel-heading"><div><p className="eyebrow">Sales floor</p><h2>POS monitor</h2></div><Link className="text-link" href="/pos">Open POS <ArrowRight size={15} /></Link></div><div className="centre-status-grid"><Status label="Open cashier sessions" value={String(metrics.activePosSessions)} /><Status label="Transactions today" value={String(metrics.posTransactions)} /><Status label="POS sales today" value={`KSh ${Math.round(metrics.posSalesToday).toLocaleString()}`} /></div>{posOrders.length ? <p className="centre-note">Latest POS sale: {posOrders[0].order_number} at {new Date(posOrders[0].created_at).toLocaleTimeString()}</p> : <p className="centre-note">No POS sales have been recorded today.</p>}</section>
