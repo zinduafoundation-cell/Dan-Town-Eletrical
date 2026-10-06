@@ -10409,3 +10409,240 @@ lters button { background:#f1f5fa; }
 .team-role-badge { background:rgba(242,106,27,.35); }
 .warehouse-form input { background:#f7f9fc; }
 .warehouse-row { background:#f7f9fc; }
+/* ===== DANTOWN REDESIGN: POS PAGES + MOBILE NAV FIX =====
+   Paste at the VERY BOTTOM of globals.css (below the overall clean-up block). ===== */
+
+/* ---------- shared page frame ---------- */
+body .pos-data-page .pos-dashboard-header { margin-bottom: 18px; }
+body .pos-data-page .pos-dashboard-section { background: transparent; border: 0; box-shadow: none; padding: 0; }
+body .pos-empty {
+  background: #fff;
+  border: 1px dashed #cfdcec;
+  border-radius: 20px;
+  color: #475a73;
+  margin: 0;
+  padding: 44px 20px;
+  text-align: center;
+}
+
+/* ---------- badges ---------- */
+body .pos-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  line-height: 1;
+  padding: 6px 11px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+body .pos-badge-good { background: #e7f6ee; color: #16794f; }
+body .pos-badge-warn { background: #fff1e0; color: #a8610a; }
+body .pos-badge-bad  { background: #ffeef0; color: #c9304a; }
+body .pos-badge-info { background: #e8f1fc; color: #0251b0; }
+
+/* ---------- card grid (customers, settings, cash) ---------- */
+body .pos-card-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+
+/* customers */
+body .pos-customer-card {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e3e9f1;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(7,26,51,.05), 0 2px 8px rgba(7,26,51,.05);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 16px;
+  transition: transform .25s, box-shadow .25s, border-color .2s;
+}
+body .pos-customer-card:hover { border-color: #cfdcec; box-shadow: 0 8px 24px rgba(7,26,51,.1); transform: translateY(-2px); }
+body .pos-avatar {
+  align-items: center;
+  background: linear-gradient(135deg, #f26a1b, #ff9a4d);
+  border-radius: 14px;
+  box-shadow: 0 6px 14px rgba(242,106,27,.3);
+  color: #fff;
+  display: inline-flex;
+  font-size: 18px;
+  font-weight: 800;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+body .pos-customer-info { min-width: 0; }
+body .pos-customer-info strong { color: #0b1b2e; display: block; font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body .pos-customer-info span { color: #7a8aa0; display: block; font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body .pos-customer-tags { display: grid; gap: 6px; justify-items: end; }
+
+/* ---------- inventory ---------- */
+body .pos-stock-list { display: grid; gap: 10px; }
+body .pos-stock-row {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e3e9f1;
+  border-left: 5px solid #34c98b;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(7,26,51,.05);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(90px, .9fr) auto auto;
+  padding: 14px 18px;
+}
+body .pos-stock-low { border-left-color: #f2a23a; }
+body .pos-stock-out { border-left-color: #e0455e; }
+body .pos-stock-main strong { color: #0b1b2e; display: block; font-size: 14.5px; font-weight: 800; }
+body .pos-stock-main small { color: #7a8aa0; font-size: 12px; letter-spacing: .02em; }
+body .pos-stock-meter { background: #eef2f7; border-radius: 999px; height: 8px; overflow: hidden; }
+body .pos-stock-meter span { background: #34c98b; border-radius: 999px; display: block; height: 100%; }
+body .pos-stock-low .pos-stock-meter span { background: #f2a23a; }
+body .pos-stock-out .pos-stock-meter span { background: #e0455e; }
+body .pos-stock-numbers { display: grid; text-align: right; }
+body .pos-stock-numbers b { color: #071a33; font-size: 14px; font-weight: 800; }
+body .pos-stock-numbers small { color: #7a8aa0; font-size: 12px; }
+
+/* ---------- settings ---------- */
+body .pos-setting-card {
+  background: #fff;
+  border: 1px solid #e3e9f1;
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(7,26,51,.05), 0 2px 8px rgba(7,26,51,.05);
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+}
+body .pos-setting-icon { align-items: center; background: #fff1e8; border-radius: 14px; color: #f26a1b; display: inline-flex; height: 46px; justify-content: center; width: 46px; }
+body .pos-setting-card strong { color: #0b1b2e; font-size: 16px; font-weight: 800; margin-top: 6px; }
+body .pos-setting-card > span:not(.pos-setting-icon) { color: #475a73; font-size: 14px; line-height: 1.55; }
+body .pos-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+body .pos-chip { background: #f1f5fa; border-radius: 999px; color: #334b65; font-size: 13px; font-weight: 700; padding: 7px 14px; }
+
+/* ---------- cash ---------- */
+body .pos-total-banner {
+  align-items: center;
+  background: linear-gradient(120deg, #071a33, #0b2a50 70%, #0d3566);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(7,26,51,.18);
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 22px 26px;
+}
+body .pos-total-banner span { color: rgba(255,255,255,.75); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+body .pos-total-banner strong { color: #fff; font-size: clamp(26px, 4vw, 36px); font-weight: 800; letter-spacing: -0.02em; }
+body .pos-tender-card {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e3e9f1;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(7,26,51,.05), 0 2px 8px rgba(7,26,51,.05);
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+}
+body .pos-tender-icon { align-items: center; background: #e8f1fc; border-radius: 14px; color: #0251b0; display: inline-flex; flex: 0 0 auto; height: 52px; justify-content: center; width: 52px; }
+body .pos-tender-card strong { color: #7a8aa0; display: block; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+body .pos-tender-card span:not(.pos-tender-icon) { color: #071a33; display: block; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; }
+
+/* ---------- reports stats ---------- */
+body .pos-stat-row { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
+body .pos-stat-card { background: #fff; border: 1px solid #e3e9f1; border-radius: 18px; box-shadow: 0 1px 2px rgba(7,26,51,.05); padding: 18px 20px; }
+body .pos-stat-card:first-child { background: linear-gradient(135deg, #071a33, #0b2a50); border: 0; }
+body .pos-stat-card small { color: #7a8aa0; display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+body .pos-stat-card strong { color: #071a33; display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
+body .pos-stat-card:first-child small { color: rgba(255,255,255,.7); }
+body .pos-stat-card:first-child strong { color: #fff; }
+
+/* ---------- sales history / reports list ---------- */
+body .pos-sale-list { display: grid; gap: 10px; }
+body .pos-sale-row {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e3e9f1;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(7,26,51,.05);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.2fr) auto auto auto;
+  padding: 14px 18px;
+  transition: border-color .2s, box-shadow .2s;
+}
+body .pos-sale-row:hover { border-color: #cfdcec; box-shadow: 0 6px 20px rgba(7,26,51,.08); }
+body .pos-sale-main strong { color: #0b1b2e; display: block; font-size: 15px; font-weight: 800; letter-spacing: .01em; }
+body .pos-sale-main small { color: #7a8aa0; font-size: 12px; }
+body .pos-sale-amount { color: #071a33; font-size: 17px; font-weight: 800; text-align: right; white-space: nowrap; }
+body .pos-sale-status { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+body .pos-sale-action button { border-radius: 10px; font-weight: 700; white-space: nowrap; }
+
+/* ---------- tablet + phone ---------- */
+@media (max-width: 900px) {
+  body .pos-stock-row { grid-template-columns: minmax(0, 1fr) auto; }
+  body .pos-stock-meter { grid-column: 1 / -1; order: 3; }
+  body .pos-stock-numbers { text-align: left; }
+  body .pos-sale-row { grid-template-columns: minmax(0, 1fr) auto; }
+  body .pos-sale-status { grid-column: 1 / -1; justify-content: flex-start; }
+  body .pos-sale-action { grid-column: 1 / -1; }
+  body .pos-sale-action button { width: 100%; }
+}
+@media (max-width: 560px) {
+  body .pos-card-grid { grid-template-columns: 1fr; }
+  body .pos-stat-row { grid-template-columns: 1fr; }
+  body .pos-total-banner { padding: 18px 20px; }
+}
+
+/* ---------- POS phone bottom bar (fixes overlapping labels) ---------- */
+@media (max-width: 700px) {
+  body .pos-container { flex-direction: column; }
+  body .pos-sidebar {
+    background: #071a33;
+    border-top: 1px solid rgba(255,255,255,.1);
+    bottom: 0 !important;
+    box-shadow: 0 -6px 24px rgba(7,26,51,.25);
+    flex: 0 0 auto;
+    flex-direction: row;
+    height: calc(68px + env(safe-area-inset-bottom)) !important;
+    inset-inline: 0;
+    min-height: 0 !important;
+    padding: 4px 8px env(safe-area-inset-bottom) !important;
+    position: fixed !important;
+    top: auto !important;
+    z-index: 60;
+  }
+  body .pos-nav { display: flex !important; flex-direction: row; gap: 4px; height: 100%; overflow-x: auto; padding: 0 !important; scrollbar-width: none; width: 100%; }
+  body .pos-nav::-webkit-scrollbar { display: none; }
+  body .pos-nav-item,
+  body .pos-sidebar .pos-nav-item:first-child:not(.active) {
+    align-items: center;
+    border-radius: 12px;
+    border-top: 0 !important;
+    flex: 0 0 76px !important;
+    flex-direction: column !important;
+    font-size: 10.5px !important;
+    gap: 3px !important;
+    justify-content: center;
+    min-height: 56px;
+    padding: 6px 4px !important;
+    text-align: center;
+  }
+  body .pos-nav-item span { font-size: 10.5px !important; line-height: 1.1; white-space: nowrap; }
+  body .pos-nav-item svg { height: 20px; width: 20px; }
+  body .pos-sidebar .pos-nav-item.active { background: #f26a1b !important; box-shadow: 0 4px 12px rgba(242,106,27,.4); color: #fff; }
+  body .pos-main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+
+/* ---------- Dantown Centre phone menu (white-on-pale tabs fix) ---------- */
+@media (max-width: 960px) {
+  body .portal-sidebar { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; }
+  body .portal-sidebar a {
+    background: rgba(255,255,255,.1) !important;
+    border-radius: 999px;
+    color: #fff !important;
+    flex: 0 0 auto;
+    padding: 10px 18px;
+    white-space: nowrap;
+  }
+  body .portal-sidebar a.active { background: #f26a1b !important; box-shadow: 0 4px 12px rgba(242,106,27,.4); }
+}
