@@ -24,6 +24,45 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const { data: cancelled, error } = await supabase.rpc("release_online_order", { order_id: id, release_reason: body.data.reason || "Order cancelled by customer" });
     if (error || !cancelled) return NextResponse.json({ error: error?.message || "Unable to cancel order." }, { status: 400 });
+
+    const { error: auditError } = await supabase.from("audit_logs").insert({
+      user_id: context.userId === "dev-bypass-user" ? null : context.userId,
+      action: isPrivileged ? "ORDER_CANCELLED_BY_ADMIN" : "ORDER_CANCELLED",
+      resource_type: "order",
+      resource_id: id,
+      new_data: {
+        order_number: cancelled.order_number ?? order.id,
+        cancelled_by: context.userId,
+        release_reason: body.data.reason || "Order cancelled by customer",
+        cancelled_at: new Date().toISOString()
+      }
+    });
+    if (auditError) {
+      console.error("ORDER CANCEL AUDIT ERROR", auditError);
+    }
+
+    if (order.created_by) {
+      const notificationTitle = "Order status updated";
+      const notificationBody = `Your order ${cancelled.order_number ?? order.id} has been cancelled. It will be removed automatically after 6 hours.`;
+      const { error: notificationError } = await supabase.from("notifications").insert({
+        user_id: order.created_by,
+        type: "ORDER",
+        title: notificationTitle,
+        body: notificationBody,
+        read_at: null,
+        data: {
+          order_id: id,
+          order_number: cancelled.order_number ?? order.id,
+          status: "CANCELLED",
+          href: `/account/orders/${id}`
+        }
+      });
+
+      if (notificationError) {
+        console.error("Order cancellation notification failed", notificationError.message);
+      }
+    }
+
     return NextResponse.json({ success: true, order: cancelled });
   } catch (error) {
     console.error("ORDER CANCELLATION ERROR", error);

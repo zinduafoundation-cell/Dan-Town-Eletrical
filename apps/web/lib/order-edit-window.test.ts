@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getOrderEditWindow, isOrderModifiable } from "./order-edit-window";
+import {
+  getCancelledOrderAutoDeleteWindow,
+  getOrderEditWindow,
+  isCancelledOrderReadyForDeletion,
+  isOrderModifiable
+} from "./order-edit-window";
 
 describe("order edit window", () => {
   it("keeps pending orders modifiable within the customer action window", () => {
@@ -14,5 +19,15 @@ describe("order edit window", () => {
 
     expect(isOrderModifiable("PENDING", createdAt)).toBe(false);
     expect(isOrderModifiable("DELIVERED", createdAt)).toBe(false);
+  });
+
+  it("marks cancelled orders for automatic deletion only after six hours have elapsed", () => {
+    const cancelledAt = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+    const expiredCancelledAt = new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString();
+
+    expect(isCancelledOrderReadyForDeletion("CANCELLED", cancelledAt)).toBe(false);
+    expect(isCancelledOrderReadyForDeletion("CANCELLED", expiredCancelledAt)).toBe(true);
+    expect(isCancelledOrderReadyForDeletion("PENDING", cancelledAt)).toBe(false);
+    expect(getCancelledOrderAutoDeleteWindow(cancelledAt)?.getTime()).toBeGreaterThan(Date.now() - 5 * 60 * 60 * 1000);
   });
 });

@@ -11,7 +11,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     const { data: order, error: lookupError } = await supabase
       .from("orders")
-      .select("id, created_by, order_status, created_at")
+      .select("id, created_by, order_number, order_status, created_at")
       .eq("id", id)
       .maybeSingle();
 
@@ -34,6 +34,23 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const { error: deleteError } = await supabase.from("orders").delete().eq("id", id);
     if (deleteError) {
       throw deleteError;
+    }
+
+    const { error: auditError } = await supabase.from("audit_logs").insert({
+      user_id: context.userId === "dev-bypass-user" ? null : context.userId,
+      action: isPrivileged ? "ORDER_DELETED_BY_ADMIN" : "ORDER_DELETED",
+      resource_type: "order",
+      resource_id: id,
+      new_data: {
+        order_number: order.order_number,
+        deleted_by: context.userId,
+        deleted_by_role: isPrivileged ? "admin" : "customer",
+        reason: isPrivileged ? "admin_delete" : "customer_delete",
+        deleted_at: new Date().toISOString()
+      }
+    });
+    if (auditError) {
+      console.error("ORDER DELETE AUDIT ERROR", auditError);
     }
 
     return NextResponse.json({ success: true, deleted: true });

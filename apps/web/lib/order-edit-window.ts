@@ -1,5 +1,7 @@
 export const ORDER_EDIT_WINDOW_MINUTES = 30;
 export const ORDER_EDIT_WINDOW_MS = ORDER_EDIT_WINDOW_MINUTES * 60 * 1000;
+export const CANCELLED_ORDER_AUTO_DELETE_MINUTES = 6 * 60;
+export const CANCELLED_ORDER_AUTO_DELETE_MS = CANCELLED_ORDER_AUTO_DELETE_MINUTES * 60 * 1000;
 
 const TERMINAL_ORDER_STATUSES = new Set([
   "CANCELLED",
@@ -40,4 +42,24 @@ export function getOrderEditExpiryLabel(createdAt: string | Date | null | undefi
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+export function getCancelledOrderAutoDeleteWindow(cancelledAt: string | Date | null | undefined): Date | null {
+  if (!cancelledAt) return null;
+
+  const cancelled = cancelledAt instanceof Date ? cancelledAt : new Date(cancelledAt);
+  if (Number.isNaN(cancelled.getTime())) return null;
+
+  return new Date(cancelled.getTime() + CANCELLED_ORDER_AUTO_DELETE_MS);
+}
+
+export function isCancelledOrderReadyForDeletion(status: string | null | undefined, cancelledAt: string | Date | null | undefined): boolean {
+  if (!cancelledAt) return false;
+  const normalized = status?.toUpperCase();
+  if (!normalized || normalized !== "CANCELLED") return false;
+
+  const deleteAt = getCancelledOrderAutoDeleteWindow(cancelledAt);
+  if (!deleteAt) return false;
+
+  return Date.now() >= deleteAt.getTime();
 }

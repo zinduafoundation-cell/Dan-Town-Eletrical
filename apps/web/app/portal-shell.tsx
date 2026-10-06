@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { Permission, UserRole } from "@dantown/shared";
+import { OrderAttentionAlerts } from "@/components/admin/order-attention-alerts";
 import { WorkspaceQuickActions } from "@/components/admin/workspace-quick-actions";
 
 type PortalShellProps = {
@@ -95,6 +96,7 @@ export function PortalShell({
 
   return (
     <main className="portal">
+      <OrderAttentionAlerts />
       <header className="portal-header">
         <Link className="brand" href="/">
           <span className="brand-mark">D</span>
