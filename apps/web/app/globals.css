@@ -10646,3 +10646,365 @@ body .pos-sale-action button { border-radius: 10px; font-weight: 700; white-spac
   }
   body .portal-sidebar a.active { background: #f26a1b !important; box-shadow: 0 4px 12px rgba(242,106,27,.4); }
 }
+
+/* ---------- Catalog product form refresh ---------- */
+body .portal-main .catalog-manager { min-width: 0; }
+body .portal-main .catalog-composer-switcher {
+  background: #e9eef5;
+  border: 1px solid #dbe3ed;
+  border-radius: 14px;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 5px;
+}
+body .portal-main .catalog-composer-switcher button {
+  border-radius: 10px;
+  color: #506176;
+  min-height: 42px;
+  padding: 9px 17px;
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+body .portal-main .catalog-composer-switcher button:hover,
+body .portal-main .catalog-composer-switcher button.is-active {
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(11, 27, 46, .1);
+  color: #0b1b2e;
+}
+body .portal-main .catalog-manager-grid { display: block; }
+body .portal-main .catalog-manager-form.catalog-product-form,
+body .portal-main .catalog-edit-form {
+  background: #fff;
+  border: 1px solid #dce4ee;
+  border-radius: 22px;
+  box-shadow: 0 12px 34px rgba(11, 27, 46, .07);
+  display: grid;
+  gap: 24px;
+  padding: clamp(20px, 3vw, 36px);
+}
+body .portal-main .catalog-product-form-heading {
+  align-items: center;
+  border-bottom: 1px solid #e9eef4;
+  display: flex;
+  gap: 16px;
+  padding-bottom: 22px;
+}
+body .portal-main .catalog-product-form-heading .catalog-form-icon {
+  align-items: center;
+  background: #fff0e6;
+  border: 1px solid #ffdcc4;
+  border-radius: 16px;
+  color: #d95a10;
+  display: inline-flex;
+  flex: 0 0 52px;
+  height: 52px;
+  justify-content: center;
+  margin: 0;
+  width: 52px;
+}
+body .portal-main .catalog-product-form-heading .eyebrow { color: #d95a10; margin: 0 0 4px; }
+body .portal-main .catalog-product-form-heading h2 { color: #0b1b2e; font-size: clamp(24px, 3vw, 32px); margin: 0; }
+body .portal-main .catalog-product-form-heading p:last-child { color: #657487; font-size: 13px; line-height: 1.5; margin: 5px 0 0; }
+body .portal-main .catalog-product-fields { display: grid; gap: 18px; }
+body .portal-main .catalog-product-section {
+  background: #fbfcfe;
+  border: 1px solid #e5ebf2;
+  border-radius: 16px;
+  display: grid;
+  gap: 20px;
+  padding: clamp(16px, 2.5vw, 24px);
+}
+body .portal-main .catalog-product-section-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 13px;
+}
+body .portal-main .catalog-product-section-heading > span {
+  align-items: center;
+  background: #eaf1fa;
+  border-radius: 10px;
+  color: #0251b0;
+  display: inline-flex;
+  flex: 0 0 34px;
+  font-size: 11px;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+}
+body .portal-main .catalog-product-section-heading h3 {
+  color: #10243b;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 0;
+}
+body .portal-main .catalog-product-section-heading p {
+  color: #68788b;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+body .portal-main .catalog-fields-grid {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+body .portal-main .catalog-fields-grid > label:not(.catalog-checkbox),
+body .portal-main .catalog-product-media-fields > label:not(.catalog-checkbox) {
+  color: #26384d;
+  display: grid;
+  font-size: 11px;
+  font-weight: 750;
+  gap: 7px;
+  min-width: 0;
+}
+body .portal-main .catalog-manager-form.catalog-product-form input:not([type="checkbox"]):not([type="file"]),
+body .portal-main .catalog-manager-form.catalog-product-form select,
+body .portal-main .catalog-manager-form.catalog-product-form textarea,
+body .portal-main .catalog-edit-form input:not([type="checkbox"]):not([type="file"]),
+body .portal-main .catalog-edit-form select,
+body .portal-main .catalog-edit-form textarea {
+  background: #fff;
+  border: 1px solid #d8e1ec;
+  border-radius: 10px;
+  box-shadow: none;
+  color: #10243b;
+  font-size: 13px;
+  line-height: 1.4;
+  min-height: 46px;
+  padding: 11px 13px;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+  width: 100%;
+}
+body .portal-main .catalog-manager-form.catalog-product-form textarea,
+body .portal-main .catalog-edit-form textarea { min-height: 96px; resize: vertical; }
+body .portal-main .catalog-manager-form.catalog-product-form input::placeholder,
+body .portal-main .catalog-manager-form.catalog-product-form textarea::placeholder,
+body .portal-main .catalog-edit-form input::placeholder,
+body .portal-main .catalog-edit-form textarea::placeholder { color: #99a6b5; }
+body .portal-main .catalog-manager-form.catalog-product-form input:focus,
+body .portal-main .catalog-manager-form.catalog-product-form select:focus,
+body .portal-main .catalog-manager-form.catalog-product-form textarea:focus,
+body .portal-main .catalog-edit-form input:focus,
+body .portal-main .catalog-edit-form select:focus,
+body .portal-main .catalog-edit-form textarea:focus {
+  background: #fff;
+  border-color: #f26a1b;
+  box-shadow: 0 0 0 3px rgba(242, 106, 27, .15);
+  outline: 0;
+}
+body .portal-main .catalog-fields-grid > .catalog-field-wide { grid-column: 1 / -1; }
+body .portal-main .catalog-fields-grid > label.catalog-checkbox {
+  align-items: center;
+  align-self: stretch;
+  background: #fff;
+  border: 1px solid #e0e7ef;
+  border-radius: 10px;
+  color: #33465c;
+  display: flex;
+  font-size: 12px;
+  font-weight: 650;
+  gap: 10px;
+  line-height: 1.4;
+  min-height: 46px;
+  padding: 10px 12px;
+}
+body .portal-main .catalog-fields-grid > label.catalog-checkbox input[type="checkbox"] {
+  accent-color: #f26a1b;
+  flex: 0 0 17px;
+  height: 17px;
+  margin: 0;
+  width: 17px;
+}
+body .portal-main .catalog-product-media-fields {
+  align-items: stretch;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+body .portal-main .catalog-manager-form.catalog-product-form .catalog-product-image-field {
+  align-content: center;
+  background: #fff;
+  border: 1px dashed #cbd6e3;
+  border-radius: 12px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+}
+body .portal-main .catalog-product-image-field > span { color: #26384d; font-size: 12px; font-weight: 800; }
+body .portal-main .catalog-manager-form.catalog-product-form .catalog-product-image-field input[type="file"] {
+  background: #f8fafc;
+  border: 1px solid #dce4ee;
+  border-radius: 9px;
+  color: #506176;
+  font-size: 12px;
+  min-height: 44px;
+  padding: 8px;
+  width: 100%;
+}
+body .portal-main .catalog-product-image-field small { color: #748397; font-size: 11px; line-height: 1.5; }
+body .portal-main .catalog-product-submit {
+  align-items: center;
+  border-top: 1px solid #e9eef4;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding-top: 20px;
+}
+body .portal-main .catalog-product-submit p { color: #68788b; font-size: 12px; line-height: 1.5; margin: 0; }
+body .portal-main .catalog-product-submit .button-primary { background: #f26a1b; border: 0; border-radius: 11px; box-shadow: 0 7px 16px rgba(242,106,27,.22); color: #fff !important; min-height: 46px; padding: 12px 20px; }
+body .portal-main .catalog-product-submit .button-primary:hover { background: #db5d13; }
+
+@media (max-width: 900px) {
+  body .portal-main .catalog-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  body .portal-main .catalog-composer-switcher { display: flex; width: 100%; }
+  body .portal-main .catalog-composer-switcher button { flex: 1; font-size: 12px; padding-inline: 7px; }
+  body .portal-main .catalog-manager-form.catalog-product-form,
+  body .portal-main .catalog-edit-form { border-radius: 16px; gap: 17px; padding: 16px; }
+  body .portal-main .catalog-product-form-heading { align-items: flex-start; gap: 12px; }
+  body .portal-main .catalog-product-form-heading .catalog-form-icon { flex-basis: 44px; height: 44px; width: 44px; }
+  body .portal-main .catalog-product-section { border-radius: 13px; gap: 16px; padding: 14px; }
+  body .portal-main .catalog-fields-grid,
+  body .portal-main .catalog-product-media-fields { grid-template-columns: minmax(0, 1fr); }
+  body .portal-main .catalog-fields-grid > .catalog-field-wide { grid-column: auto; }
+  body .portal-main .catalog-product-submit { align-items: stretch; flex-direction: column; }
+  body .portal-main .catalog-product-submit .button-primary { justify-content: center; width: 100%; }
+}
+
+/* ---------- Catalog family and brand forms ---------- */
+body .portal-main .catalog-manager-form.catalog-simple-form {
+  background: #fff;
+  border: 1px solid #dce4ee;
+  border-radius: 22px;
+  box-shadow: 0 12px 34px rgba(11, 27, 46, .07);
+  display: grid;
+  gap: 20px;
+  max-width: 920px;
+  padding: clamp(20px, 3vw, 34px);
+}
+body .portal-main .catalog-simple-form-heading {
+  align-items: center;
+  border-bottom: 1px solid #e9eef4;
+  display: flex;
+  gap: 16px;
+  padding-bottom: 21px;
+}
+body .portal-main .catalog-simple-form-heading .catalog-form-icon {
+  align-items: center;
+  background: #eaf1fa;
+  border: 1px solid #d8e5f3;
+  border-radius: 15px;
+  color: #0251b0;
+  display: inline-flex;
+  flex: 0 0 50px;
+  height: 50px;
+  justify-content: center;
+  margin: 0;
+  width: 50px;
+}
+body .portal-main .catalog-simple-form-heading .catalog-form-icon-coral {
+  background: #fff0e6;
+  border-color: #ffdcc4;
+  color: #d95a10;
+}
+body .portal-main .catalog-simple-form-heading .eyebrow { color: #0251b0; margin: 0 0 4px; }
+body .portal-main .catalog-brand-form .catalog-simple-form-heading .eyebrow { color: #d95a10; }
+body .portal-main .catalog-simple-form-heading h2 { color: #0b1b2e; font-size: clamp(23px, 3vw, 29px); margin: 0; }
+body .portal-main .catalog-simple-form-heading p:last-child { color: #657487; font-size: 13px; line-height: 1.5; margin: 5px 0 0; }
+body .portal-main .catalog-simple-form-section {
+  background: #fbfcfe;
+  border: 1px solid #e5ebf2;
+  border-radius: 15px;
+  display: grid;
+  gap: 18px;
+  padding: clamp(16px, 2.5vw, 23px);
+}
+body .portal-main .catalog-simple-form-section-heading { align-items: flex-start; display: flex; gap: 12px; }
+body .portal-main .catalog-simple-form-section-heading > span {
+  align-items: center;
+  background: #eaf1fa;
+  border-radius: 9px;
+  color: #0251b0;
+  display: inline-flex;
+  flex: 0 0 32px;
+  font-size: 11px;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+}
+body .portal-main .catalog-brand-form .catalog-simple-form-section-heading > span { background: #fff0e6; color: #d95a10; }
+body .portal-main .catalog-simple-form-section-heading h3 { color: #10243b; font-size: 15px; font-weight: 800; margin: 0; }
+body .portal-main .catalog-simple-form-section-heading p { color: #68788b; font-size: 12px; line-height: 1.5; margin: 4px 0 0; }
+body .portal-main .catalog-simple-fields {
+  align-items: start;
+  display: grid;
+  gap: 15px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+body .portal-main .catalog-simple-fields > label {
+  color: #26384d;
+  display: grid;
+  font-size: 11px;
+  font-weight: 750;
+  gap: 7px;
+  min-width: 0;
+}
+body .portal-main .catalog-manager-form.catalog-simple-form input,
+body .portal-main .catalog-manager-form.catalog-simple-form select,
+body .portal-main .catalog-manager-form.catalog-simple-form textarea {
+  background: #fff;
+  border: 1px solid #d8e1ec;
+  border-radius: 10px;
+  box-shadow: none;
+  color: #10243b;
+  font-size: 13px;
+  line-height: 1.45;
+  min-height: 46px;
+  padding: 11px 13px;
+  transition: border-color .16s ease, box-shadow .16s ease;
+  width: 100%;
+}
+body .portal-main .catalog-manager-form.catalog-simple-form textarea { min-height: 100px; resize: vertical; }
+body .portal-main .catalog-manager-form.catalog-simple-form input::placeholder,
+body .portal-main .catalog-manager-form.catalog-simple-form textarea::placeholder { color: #99a6b5; }
+body .portal-main .catalog-manager-form.catalog-simple-form input:focus,
+body .portal-main .catalog-manager-form.catalog-simple-form select:focus,
+body .portal-main .catalog-manager-form.catalog-simple-form textarea:focus {
+  border-color: #f26a1b;
+  box-shadow: 0 0 0 3px rgba(242, 106, 27, .15);
+  outline: 0;
+}
+body .portal-main .catalog-simple-fields > .catalog-simple-field-wide { grid-column: 1 / -1; }
+body .portal-main .catalog-simple-form-footer {
+  align-items: center;
+  border-top: 1px solid #e9eef4;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding-top: 17px;
+}
+body .portal-main .catalog-simple-form-footer p { color: #68788b; font-size: 12px; line-height: 1.5; margin: 0; }
+body .portal-main .catalog-simple-form-footer .button-primary {
+  background: #f26a1b;
+  border: 0;
+  border-radius: 11px;
+  box-shadow: 0 7px 16px rgba(242, 106, 27, .22);
+  color: #fff !important;
+  min-height: 46px;
+  padding: 12px 20px;
+}
+body .portal-main .catalog-simple-form-footer .button-primary:hover { background: #db5d13; }
+
+@media (max-width: 600px) {
+  body .portal-main .catalog-manager-form.catalog-simple-form { border-radius: 16px; gap: 16px; padding: 16px; }
+  body .portal-main .catalog-simple-form-heading { align-items: flex-start; gap: 12px; }
+  body .portal-main .catalog-simple-form-heading .catalog-form-icon { flex-basis: 44px; height: 44px; width: 44px; }
+  body .portal-main .catalog-simple-form-section { border-radius: 13px; gap: 15px; padding: 14px; }
+  body .portal-main .catalog-simple-fields { grid-template-columns: minmax(0, 1fr); }
+  body .portal-main .catalog-simple-fields > .catalog-simple-field-wide { grid-column: auto; }
+  body .portal-main .catalog-simple-form-footer { align-items: stretch; flex-direction: column; }
+  body .portal-main .catalog-simple-form-footer .button-primary { justify-content: center; width: 100%; }
+}

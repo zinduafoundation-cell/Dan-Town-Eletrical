@@ -1,26 +1,56 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 "use client";
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createAuthClient } from "@dantown/auth";
 import { buttonClassName } from "@dantown/ui";
+
+function requestedNextPath() {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next?.startsWith("/") && !next.startsWith("//") ? next : null;
+}
+
+function completePath() {
+  const next = requestedNextPath();
+  return next ? `/auth/complete?next=${encodeURIComponent(next)}` : "/auth/complete";
+}
 
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const requestedNextPath = () => {
-    const next = new URLSearchParams(window.location.search).get("next");
-    return next?.startsWith("/") && !next.startsWith("//") ? next : null;
-  };
-  const completePath = () => {
-    const next = requestedNextPath();
-    return next ? `/auth/complete?next=${encodeURIComponent(next)}` : "/auth/complete";
-  };
+  const [rememberMe, setRememberMe] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void createAuthClient().auth.getSession()
+      .then(({ data: { session } }) => {
+        if (active && session) window.location.assign(completePath());
+        else if (active) setCheckingSession(false);
+      })
+      .catch((sessionError: unknown) => {
+        console.error("EXISTING SESSION CHECK ERROR", sessionError);
+        if (active) setCheckingSession(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function signInWithGoogle() {
     setLoading(true);
     setError("");
     try {
+      const preferenceResponse = await fetch("/api/auth/session-preference", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rememberMe }),
+      });
+      if (!preferenceResponse.ok) {
+        throw new Error("Could not save the sign-in preference.");
+      }
+
       const { error: authError } = await createAuthClient().auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -42,12 +72,18 @@ export default function LoginPage() {
     setError("");
     const form = new FormData(event.currentTarget);
     try {
-      const { error: authError } = await createAuthClient().auth.signInWithPassword({
-        email: String(form.get("email")),
-        password: String(form.get("password"))
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: String(form.get("email")),
+          password: String(form.get("password")),
+          rememberMe,
+        }),
       });
-      if (authError) {
-        setError("The email or password was not recognised.");
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.error || "The email or password was not recognised.");
         return;
       }
 
@@ -68,18 +104,33 @@ export default function LoginPage() {
           <span>DANTOWN <b>ELECTRICAL</b></span>
         </a>
         <h1>Welcome back.</h1>
-        <p className="auth-lead">Sign in to manage your account and orders.</p>
+        <p className="auth-lead">
+          {checkingSession ? "Checking for a saved sign-in..." : "Sign in to manage your account and orders."}
+        </p>
         {error && <p className="auth-error" role="alert" aria-live="assertive">{error}</p>}
-        <button type="button" className="google-sign-in" onClick={signInWithGoogle} disabled={loading}>
+        <button type="button" className="google-sign-in" onClick={signInWithGoogle} disabled={loading || checkingSession}>
           <span className="google-mark">G</span>
           {loading ? "Connecting..." : "Continue with Google"}
         </button>
         <div className="auth-divider"><span>or use email</span></div>
         <form className="auth-form" onSubmit={submit}>
-          <label>Email<input name="email" type="email" autoComplete="email" required /></label>
-          <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
+          <label>Email<input name="email" type="email" autoComplete="email" required disabled={checkingSession} /></label>
+          <label>Password<input name="password" type="password" autoComplete="current-password" required disabled={checkingSession} /></label>
+          <label className="auth-remember">
+            <input
+              name="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.currentTarget.checked)}
+              disabled={checkingSession}
+            />
+            <span>Remember me on this device for 30 days</span>
+          </label>
+          <p className="auth-remember-note">Signing out still ends your session. We never save your password.</p>
           <Link className="text-link" href="/forgot-password">Forgot password</Link>
-          <button className={buttonClassName()} disabled={loading}>{loading ? "Signing in..." : "Sign in"}</button>
+          <button className={buttonClassName()} disabled={loading || checkingSession}>
+            {checkingSession ? "Checking session..." : loading ? "Signing in..." : "Sign in"}
+          </button>
         </form>
         <p className="auth-switch">New to Dantown <Link href="/register">Create an account</Link></p>
       </section>

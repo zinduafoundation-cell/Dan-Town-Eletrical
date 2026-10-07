@@ -127,53 +127,62 @@ async function uploadProductImage(productId: string, file: File) {
 
 function ProductFields({ product, categories, brands }: { product?: Product; categories: Category[]; brands: Brand[] }) {
   return (
-    <>
-      <div className="catalog-fields-grid">
-        <label>Product name<input name="name" defaultValue={product?.name} placeholder="24W LED Panel Light" required /></label>
-        <label>SKU<input name="sku" defaultValue={product?.sku} placeholder="LGT-PNL-24W" required /></label>
-        <label>Barcode<input name="barcode" defaultValue={product?.barcode ?? ""} /></label>
-        <label>Storefront URL slug<input name="slug" defaultValue={product?.slug} placeholder="generated-from-product-name" /></label>
-        <label>Product type<input name="productType" defaultValue={product?.product_type ?? ""} placeholder="Lighting, solar, cable..." /></label>
-        <label>Internal code<input name="internalCode" defaultValue={product?.internal_code ?? ""} /></label>
-        <label>Manufacturer part number<input name="manufacturerPartNumber" defaultValue={product?.manufacturer_part_number ?? ""} /></label>
-        <label>Unit of measure<input name="unitOfMeasure" defaultValue={product?.unit_of_measure ?? "each"} required /></label>
-        <label>Short description<input name="shortDescription" defaultValue={product?.short_description ?? ""} maxLength={500} /></label>
-        <label className="catalog-field-wide">Product description<textarea name="description" defaultValue={product?.description ?? ""} maxLength={10000} rows={4} /></label>
-      </div>
-      <h3 className="catalog-form-section-title">Pricing and tax</h3>
-      <div className="catalog-fields-grid">
-        <label>Buying / cost price<input name="costPrice" type="number" min="0" step="0.01" defaultValue={product?.cost_price ?? 0} required /></label>
-        <label>Retail price<input name="retailPrice" type="number" min="0" step="0.01" defaultValue={product?.retail_price} placeholder="1800" required /></label>
-        <label>Promotion price<input name="promotionalPrice" type="number" min="0" step="0.01" defaultValue={product?.promotional_price ?? ""} placeholder="Optional" /></label>
-        <label>Contractor price<input name="contractorPrice" type="number" min="0" step="0.01" defaultValue={product?.contractor_price ?? ""} /></label>
-        <label>Wholesale price<input name="wholesalePrice" type="number" min="0" step="0.01" defaultValue={product?.wholesale_price ?? ""} /></label>
-        <label>Dealer price<input name="dealerPrice" type="number" min="0" step="0.01" defaultValue={product?.dealer_price ?? ""} /></label>
-        <label>Minimum selling price<input name="minimumSellingPrice" type="number" min="0" step="0.01" defaultValue={product?.minimum_selling_price ?? ""} /></label>
-        <label>Maximum suggested price<input name="maximumSuggestedPrice" type="number" min="0" step="0.01" defaultValue={product?.maximum_suggested_price ?? ""} /></label>
-        <label>VAT rate (%)<input name="vatRate" type="number" min="0" max="100" step="0.01" defaultValue={product?.vat_rate ?? 16} required /></label>
-        <label className="catalog-checkbox"><input name="taxInclusive" type="checkbox" defaultChecked={product?.tax_inclusive ?? false} /> Prices include VAT</label>
-        <label>Promotion label<select name="promotionLabel" defaultValue={product?.promotion_label ?? ""}><option value="">No label</option><option>New</option><option>Best seller</option><option>Discounted</option><option>Hot</option><option>Featured</option></select></label>
-      </div>
-      <h3 className="catalog-form-section-title">Merchandising and availability</h3>
-      <div className="catalog-fields-grid">
-        <label>Category / family<select name="categoryId" defaultValue={product?.category_id ?? ""}><option value="">No family</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.parent_id ? "↳ " : ""}{category.name}</option>)}</select></label>
-        <label>Brand<select name="brandId" defaultValue={product?.brand_id ?? ""}><option value="">No brand</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
-        <label>Lifecycle status<select name="status" defaultValue={product?.status ?? "DRAFT"}><option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="ARCHIVED">Archived</option></select></label>
-        <label className="catalog-checkbox"><input name="isActive" type="checkbox" defaultChecked={product?.is_active ?? false} /> Available on website and POS</label>
-        <label className="catalog-checkbox"><input name="featured" type="checkbox" defaultChecked={product?.featured ?? false} /> Show in featured products</label>
-        <label>Search tags<input name="tags" defaultValue={product?.tags.join(", ") ?? ""} placeholder="solar, outdoor, 24W" /></label>
-      </div>
-      <h3 className="catalog-form-section-title">Specifications and discovery</h3>
-      <div className="catalog-fields-grid">
-        <label>Weight (kg)<input name="weight" type="number" min="0" step="0.001" defaultValue={product?.weight ?? ""} /></label>
-        <label>Length (cm)<input name="length" type="number" min="0" step="0.001" defaultValue={product?.length ?? ""} /></label>
-        <label>Width (cm)<input name="width" type="number" min="0" step="0.001" defaultValue={product?.width ?? ""} /></label>
-        <label>Height (cm)<input name="height" type="number" min="0" step="0.001" defaultValue={product?.height ?? ""} /></label>
-        <label>Warranty (months)<input name="warrantyPeriod" type="number" min="0" step="1" defaultValue={product?.warranty_period ?? ""} /></label>
-        <label>SEO title<input name="seoTitle" defaultValue={product?.seo_title ?? ""} maxLength={180} /></label>
-        <label className="catalog-field-wide">SEO description<textarea name="seoDescription" defaultValue={product?.seo_description ?? ""} maxLength={320} rows={2} /></label>
-      </div>
-    </>
+    <div className="catalog-product-fields">
+      <section className="catalog-product-section">
+        <div className="catalog-product-section-heading"><span>01</span><div><h3>Product details</h3><p>Give the item a clear name and identify it for your team.</p></div></div>
+        <div className="catalog-fields-grid">
+          <label className="catalog-field-wide">Product name<input name="name" defaultValue={product?.name} placeholder="24W LED Panel Light" required /></label>
+          <label>SKU<input name="sku" defaultValue={product?.sku} placeholder="LGT-PNL-24W" required /></label>
+          <label>Barcode<input name="barcode" defaultValue={product?.barcode ?? ""} /></label>
+          <label>Product type<input name="productType" defaultValue={product?.product_type ?? ""} placeholder="Lighting, solar, cable..." /></label>
+          <label>Unit of measure<input name="unitOfMeasure" defaultValue={product?.unit_of_measure ?? "each"} required /></label>
+          <label>Manufacturer part number<input name="manufacturerPartNumber" defaultValue={product?.manufacturer_part_number ?? ""} /></label>
+          <label>Internal code<input name="internalCode" defaultValue={product?.internal_code ?? ""} /></label>
+          <label className="catalog-field-wide">Storefront URL slug<input name="slug" defaultValue={product?.slug} placeholder="generated-from-product-name" /></label>
+          <label className="catalog-field-wide">Short description<input name="shortDescription" defaultValue={product?.short_description ?? ""} maxLength={500} placeholder="A quick summary customers will see." /></label>
+          <label className="catalog-field-wide">Product description<textarea name="description" defaultValue={product?.description ?? ""} maxLength={10000} rows={4} placeholder="Describe the product, key benefits, and intended use." /></label>
+        </div>
+      </section>
+      <section className="catalog-product-section">
+        <div className="catalog-product-section-heading"><span>02</span><div><h3>Pricing and tax</h3><p>Set the customer price, costs, and any tax or promotion details.</p></div></div>
+        <div className="catalog-fields-grid">
+          <label>Buying / cost price<input name="costPrice" type="number" min="0" step="0.01" defaultValue={product?.cost_price ?? 0} required /></label>
+          <label>Retail price<input name="retailPrice" type="number" min="0" step="0.01" defaultValue={product?.retail_price} placeholder="1800" required /></label>
+          <label>Promotion price<input name="promotionalPrice" type="number" min="0" step="0.01" defaultValue={product?.promotional_price ?? ""} placeholder="Optional" /></label>
+          <label>Contractor price<input name="contractorPrice" type="number" min="0" step="0.01" defaultValue={product?.contractor_price ?? ""} /></label>
+          <label>Wholesale price<input name="wholesalePrice" type="number" min="0" step="0.01" defaultValue={product?.wholesale_price ?? ""} /></label>
+          <label>Dealer price<input name="dealerPrice" type="number" min="0" step="0.01" defaultValue={product?.dealer_price ?? ""} /></label>
+          <label>Minimum selling price<input name="minimumSellingPrice" type="number" min="0" step="0.01" defaultValue={product?.minimum_selling_price ?? ""} /></label>
+          <label>Maximum suggested price<input name="maximumSuggestedPrice" type="number" min="0" step="0.01" defaultValue={product?.maximum_suggested_price ?? ""} /></label>
+          <label>VAT rate (%)<input name="vatRate" type="number" min="0" max="100" step="0.01" defaultValue={product?.vat_rate ?? 16} required /></label>
+          <label className="catalog-checkbox"><input name="taxInclusive" type="checkbox" defaultChecked={product?.tax_inclusive ?? false} /><span>Prices include VAT</span></label>
+          <label>Promotion label<select name="promotionLabel" defaultValue={product?.promotion_label ?? ""}><option value="">No label</option><option>New</option><option>Best seller</option><option>Discounted</option><option>Hot</option><option>Featured</option></select></label>
+        </div>
+      </section>
+      <section className="catalog-product-section">
+        <div className="catalog-product-section-heading"><span>03</span><div><h3>Sales and visibility</h3><p>Organize the product and choose where it can be sold.</p></div></div>
+        <div className="catalog-fields-grid">
+          <label>Category / family<select name="categoryId" defaultValue={product?.category_id ?? ""}><option value="">No family</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.parent_id ? "↳ " : ""}{category.name}</option>)}</select></label>
+          <label>Brand<select name="brandId" defaultValue={product?.brand_id ?? ""}><option value="">No brand</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
+          <label>Lifecycle status<select name="status" defaultValue={product?.status ?? "DRAFT"}><option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="ARCHIVED">Archived</option></select></label>
+          <label className="catalog-checkbox"><input name="isActive" type="checkbox" defaultChecked={product?.is_active ?? false} /><span>Available on website and POS</span></label>
+          <label className="catalog-checkbox"><input name="featured" type="checkbox" defaultChecked={product?.featured ?? false} /><span>Show in featured products</span></label>
+          <label className="catalog-field-wide">Search tags<input name="tags" defaultValue={product?.tags.join(", ") ?? ""} placeholder="solar, outdoor, 24W" /></label>
+        </div>
+      </section>
+      <section className="catalog-product-section">
+        <div className="catalog-product-section-heading"><span>04</span><div><h3>Specifications and discovery</h3><p>Optional product dimensions, warranty, and search-engine details.</p></div></div>
+        <div className="catalog-fields-grid">
+          <label>Weight (kg)<input name="weight" type="number" min="0" step="0.001" defaultValue={product?.weight ?? ""} /></label>
+          <label>Length (cm)<input name="length" type="number" min="0" step="0.001" defaultValue={product?.length ?? ""} /></label>
+          <label>Width (cm)<input name="width" type="number" min="0" step="0.001" defaultValue={product?.width ?? ""} /></label>
+          <label>Height (cm)<input name="height" type="number" min="0" step="0.001" defaultValue={product?.height ?? ""} /></label>
+          <label>Warranty (months)<input name="warrantyPeriod" type="number" min="0" step="1" defaultValue={product?.warranty_period ?? ""} /></label>
+          <label>SEO title<input name="seoTitle" defaultValue={product?.seo_title ?? ""} maxLength={180} /></label>
+          <label className="catalog-field-wide">SEO description<textarea name="seoDescription" defaultValue={product?.seo_description ?? ""} maxLength={320} rows={2} /></label>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -322,9 +331,44 @@ export default function CatalogManager({ departments, categories: initialCategor
       <button type="button" role="tab" aria-selected={activeComposer === "brand"} className={activeComposer === "brand" ? "is-active" : undefined} onClick={() => setActiveComposer("brand")}>Add brand</button>
     </div>
     <div className="catalog-manager-grid">
-      {activeComposer === "category" && <form className="catalog-manager-form" onSubmit={(event) => submit(event, "category")}><div className="catalog-form-icon"><Tags size={18} /></div><p className="eyebrow">01 / Structure</p><h2>Create a product family</h2><p>Start with Lighting, Cables, Power, or another major Dantown range.</p><label>Name<input name="name" placeholder="Lighting" required /></label><label>Description<textarea name="description" placeholder="Products for bright, efficient spaces." rows={3} /></label><label>Department<select name="departmentId"><option value="">No department yet</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label><label>Image URL<input name="imageUrl" type="url" placeholder="https://..." /></label><label>Parent family<select name="parentId"><option value="">Top-level family</option>{categoryOptions.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label><button className="button button-primary" disabled={saving}><Plus size={16} /> Add family</button></form>}
-      {activeComposer === "brand" && <form className="catalog-manager-form" onSubmit={(event) => submit(event, "brand")}><div className="catalog-form-icon catalog-form-icon-coral"><ImagePlus size={18} /></div><p className="eyebrow">02 / Trust</p><h2>Add a brand</h2><p>Make the makers behind your products easy to discover and compare.</p><label>Brand name<input name="name" placeholder="Philips" required /></label><label>Description<textarea name="description" placeholder="Trusted lighting for modern spaces." rows={3} /></label><label>Logo URL<input name="logoUrl" type="url" placeholder="https://..." /></label><button className="button button-primary" disabled={saving}><Plus size={16} /> Add brand</button></form>}
-      {activeComposer === "product" && <form className="catalog-manager-form catalog-manager-form-wide" onSubmit={(event) => submit(event, "product")}><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><p className="eyebrow">03 / Sellable item</p><h2>Add a product</h2><p>Build a complete product record for your storefront, sales team, and inventory reports.</p><ProductFields categories={categories} brands={brands} /><label className="catalog-product-image-field"><span>Upload product photo</span><input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>JPG, PNG or WEBP · up to 6 MB. The primary image is shared with the storefront and POS.</small></label><label>Or use an existing image URL<input name="imageUrl" type="url" placeholder="https://..." /></label><button className="button button-primary" disabled={saving}><Plus size={16} /> Add product</button></form>}
+      {activeComposer === "category" && <form className="catalog-manager-form catalog-simple-form catalog-family-form" onSubmit={(event) => submit(event, "category")}>
+        <div className="catalog-simple-form-heading">
+          <div className="catalog-form-icon"><Tags size={19} /></div>
+          <div><p className="eyebrow">Catalog structure</p><h2>Create a product family</h2><p>Group related products so shoppers and staff can find them quickly.</p></div>
+        </div>
+        <section className="catalog-simple-form-section">
+          <div className="catalog-simple-form-section-heading"><span>01</span><div><h3>Family information</h3><p>Set a clear name and describe what belongs in this range.</p></div></div>
+          <div className="catalog-simple-fields">
+            <label>Name<input name="name" placeholder="Lighting" required /></label>
+            <label>Department<select name="departmentId"><option value="">No department yet</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
+            <label className="catalog-simple-field-wide">Description<textarea name="description" placeholder="Products for bright, efficient spaces." rows={3} /></label>
+          </div>
+        </section>
+        <section className="catalog-simple-form-section">
+          <div className="catalog-simple-form-section-heading"><span>02</span><div><h3>Placement and image</h3><p>Choose where this family sits and optionally add its image.</p></div></div>
+          <div className="catalog-simple-fields">
+            <label>Parent family<select name="parentId"><option value="">Top-level family</option>{categoryOptions.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+            <label>Image URL<input name="imageUrl" type="url" placeholder="https://example.com/family.jpg" /></label>
+          </div>
+        </section>
+        <div className="catalog-simple-form-footer"><p>Families help organize product browsing across Dantown.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding family..." : "Add family"}</button></div>
+      </form>}
+      {activeComposer === "brand" && <form className="catalog-manager-form catalog-simple-form catalog-brand-form" onSubmit={(event) => submit(event, "brand")}>
+        <div className="catalog-simple-form-heading">
+          <div className="catalog-form-icon catalog-form-icon-coral"><ImagePlus size={19} /></div>
+          <div><p className="eyebrow">Brand directory</p><h2>Add a brand</h2><p>Help customers recognize makers and compare trusted products.</p></div>
+        </div>
+        <section className="catalog-simple-form-section">
+          <div className="catalog-simple-form-section-heading"><span>01</span><div><h3>Brand profile</h3><p>Add the brand name and a short introduction.</p></div></div>
+          <div className="catalog-simple-fields">
+            <label>Brand name<input name="name" placeholder="Philips" required /></label>
+            <label>Logo URL<input name="logoUrl" type="url" placeholder="https://example.com/brand-logo.png" /></label>
+            <label className="catalog-simple-field-wide">Description<textarea name="description" placeholder="Trusted lighting for modern spaces." rows={4} /></label>
+          </div>
+        </section>
+        <div className="catalog-simple-form-footer"><p>Brand details make product discovery clearer for customers.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding brand..." : "Add brand"}</button></div>
+      </form>}
+      {activeComposer === "product" && <form className="catalog-manager-form catalog-manager-form-wide catalog-product-form" onSubmit={(event) => submit(event, "product")}><div className="catalog-product-form-heading"><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><div><p className="eyebrow">New inventory item</p><h2>Add a product</h2><p>Complete the essentials first. Optional details can be added as needed.</p></div></div><ProductFields categories={categories} brands={brands} /><section className="catalog-product-section catalog-product-media"><div className="catalog-product-section-heading"><span>05</span><div><h3>Product image</h3><p>Add a photo for the storefront and POS, or paste an image URL.</p></div></div><div className="catalog-product-media-fields"><label className="catalog-product-image-field"><span>Upload product photo</span><input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>JPG, PNG or WEBP · up to 6 MB. Used across the storefront and POS.</small></label><label>Or use an existing image URL<input name="imageUrl" type="url" placeholder="https://example.com/product.jpg" /></label></div></section><div className="catalog-product-submit"><p>Products marked active and available will appear in sales channels.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding product..." : "Add product"}</button></div></form>}
     </div>
     {editingProduct && <form className="catalog-manager-form catalog-manager-form-wide catalog-edit-form" onSubmit={updateProduct}><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><p className="eyebrow">Edit any product</p><h2>{editingProduct.name}</h2><ProductFields product={editingProduct} categories={categories} brands={brands} /><label className="catalog-product-image-field"><span>Replace primary product photo</span>{editingProduct.image_url && <img src={editingProduct.image_url} alt={`${editingProduct.name} current product photo`} />}<input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>Choose a new JPG, PNG or WEBP image, up to 6 MB. It will update storefront and POS.</small></label><div className="catalog-edit-actions"><a className="button button-secondary" href={`/admin/inventory?q=${encodeURIComponent(editingProduct.sku)}`}><ArrowLeftRight size={15} /> Manage stock by store</a><button type="button" className="button button-quiet" onClick={() => setEditingProduct(null)}>Cancel</button><button className="button button-primary" disabled={saving}>{saving ? "Saving..." : "Save product"}</button></div></form>}
     <section className="catalog-manager-list">

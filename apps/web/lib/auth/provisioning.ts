@@ -58,12 +58,60 @@ export async function ensureCustomerProvisioning(user: ProvisioningUser) {
   const customer = buildCustomerProvisioningInput(user);
   const roleId = await getCustomerRoleId();
 
-  const { error: customerError } = await adminClient
+  const { data: linkedCustomer, error: linkedCustomerError } = await adminClient
     .from("customers")
-    .upsert(customer, { onConflict: "user_id", ignoreDuplicates: true });
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (customerError) {
-    throw new CustomerProvisioningError("Could not create the customer record.", customerError);
+  if (linkedCustomerError) {
+    throw new CustomerProvisioningError("Could not look up the customer's existing record.", linkedCustomerError);
+  }
+
+  if (!linkedCustomer) {
+    let legacyCustomer: { id: string } | null = null;
+
+    for (const identity of [
+      customer.email ? { column: "email" as const, value: customer.email } : null,
+      customer.phone ? { column: "phone" as const, value: customer.phone } : null,
+    ]) {
+      if (!identity) continue;
+      const { data, error } = await adminClient
+        .from("customers")
+        .select("id")
+        .is("user_id", null)
+        .eq(identity.column, identity.value)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        throw new CustomerProvisioningError("Could not match the customer to an existing record.", error);
+      }
+      if (data) {
+        legacyCustomer = data;
+        break;
+      }
+    }
+
+    if (legacyCustomer) {
+      const { error: linkError } = await adminClient
+        .from("customers")
+        .update({ user_id: user.id })
+        .eq("id", legacyCustomer.id)
+        .is("user_id", null);
+
+      if (linkError && linkError.code !== "23505") {
+        throw new CustomerProvisioningError("Could not link the existing customer record.", linkError);
+      }
+    }
+
+    const { error: customerError } = await adminClient
+      .from("customers")
+      .upsert(customer, { onConflict: "user_id", ignoreDuplicates: true });
+
+    if (customerError) {
+      throw new CustomerProvisioningError("Could not create the customer record.", customerError);
+    }
   }
 
   const { error: assignmentError } = await adminClient

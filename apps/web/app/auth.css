@@ -11,6 +11,9 @@
 .google-mark { color: #4285f4; font-family: Arial, sans-serif; font-size: 18px; font-weight: 800; }
 .auth-divider { align-items: center; color: var(--muted); display: flex; font-size: 10px; gap: 10px; margin: 18px 0; text-transform: uppercase; }
 .auth-divider::before, .auth-divider::after { background: var(--line); content: ""; flex: 1; height: 1px; }
+.auth-form .auth-remember { align-items: center; display: flex; gap: 10px; }
+.auth-form .auth-remember input { accent-color: var(--green); height: 16px; margin: 0; padding: 0; width: 16px; }
+.auth-remember-note { color: var(--muted); font-size: 11px; line-height: 1.5; margin: -12px 0 0; }
 .catalog-form-icon { align-items: center; background: rgba(204,227,109,.32); border-radius: 50%; color: var(--green); display: inline-flex; height: 40px; justify-content: center; width: 40px; }
 .catalog-form-icon-coral { background: rgba(223,117,91,.16); color: var(--coral); }
 .catalog-form-icon-ochre { background: rgba(215,169,79,.25); color: #85631c; }
