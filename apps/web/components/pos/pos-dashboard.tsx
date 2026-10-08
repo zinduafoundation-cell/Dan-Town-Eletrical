@@ -1,10 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { TrendingUp, ShoppingCart, DollarSign, AlertCircle, Users, Package } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  ArrowDownRight,
+  ArrowUpRight,
+  CheckCircle2,
+  Clock3,
+  DollarSign,
+  Package,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  ShoppingCart,
+  TrendingUp,
+  Users,
+  Wifi,
+  WifiOff,
+  Zap,
+} from "lucide-react";
+
 import { getOfflineQueueSummary } from "@/lib/pos/offline-queue";
 import { summarizeOfflineQueue } from "@/lib/pos/queue-summary";
+import "./pos-monitor.css";
 
 type DashboardMetrics = {
   todaysSales: number;
@@ -14,196 +34,588 @@ type DashboardMetrics = {
   averageSale: number;
   pendingSync: number;
   lowStockCount: number;
-  recentSales: Array<{ id: string; orderNumber: string; total: number; createdAt: string }>;
+  recentSales: Array<{
+    id: string;
+    orderNumber: string;
+    total: number;
+    createdAt: string;
+  }>;
 };
 
+const EMPTY_METRICS: DashboardMetrics = {
+  todaysSales: 0,
+  transactions: 0,
+  cashSales: 0,
+  mPesaSales: 0,
+  averageSale: 0,
+  pendingSync: 0,
+  lowStockCount: 0,
+  recentSales: [],
+};
+
+const INITIAL_QUEUE = {
+  PENDING: 0,
+  SYNCING: 0,
+  SYNCED: 0,
+  FAILED: 0,
+  CONFLICT: 0,
+};
+
+const money = (value: number) =>
+  `KSh ${Number(value || 0).toLocaleString("en-KE", {
+    maximumFractionDigits: 2,
+  })}`;
+
+const number = (value: number) =>
+  Number(value || 0).toLocaleString("en-KE");
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  accent,
+  warning = false,
+  index,
+}: {
+  icon: typeof DollarSign;
+  label: string;
+  value: string;
+  detail: string;
+  accent: string;
+  warning?: boolean;
+  index: number;
+}) {
+  return (
+    <article
+      className={`pm-metric pm-accent-${accent} ${
+        warning ? "pm-metric-warning" : ""
+      }`}
+      style={{ animationDelay: `${index * 75}ms` }}
+    >
+      <div className="pm-metric-top">
+        <span className="pm-metric-icon">
+          <Icon size={21} strokeWidth={1.8} />
+        </span>
+        {warning ? (
+          <span className="pm-alert-dot" title="Needs attention" />
+        ) : (
+          <ArrowUpRight className="pm-trend-icon" size={17} />
+        )}
+      </div>
+
+      <p className="pm-metric-label">{label}</p>
+      <div className="pm-metric-value">{value}</div>
+      <p className="pm-metric-detail">{detail}</p>
+      <span className="pm-metric-glow" aria-hidden="true" />
+    </article>
+  );
+}
+
 export function POSDashboard() {
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
-    todaysSales: 0,
-    transactions: 0,
-    cashSales: 0,
-    mPesaSales: 0,
-    averageSale: 0,
-    pendingSync: 0,
-    lowStockCount: 0,
-    recentSales: []
-  });
-  const [queueSummary, setQueueSummary] = useState(() => summarizeOfflineQueue({ PENDING: 0, SYNCING: 0, SYNCED: 0, FAILED: 0, CONFLICT: 0 }));
+  const [metrics, setMetrics] =
+    useState<DashboardMetrics>(EMPTY_METRICS);
+
+  const [queueSummary, setQueueSummary] = useState(() =>
+    summarizeOfflineQueue(INITIAL_QUEUE)
+  );
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
+  const [apiError, setApiError] = useState(false);
+  const [clock, setClock] = useState<Date | null>(null);
+
+  const refreshQueue = useCallback(async () => {
+    try {
+      const summary = await getOfflineQueueSummary();
+      const queue = summarizeOfflineQueue(summary);
+
+      setQueueSummary(queue);
+
+      setMetrics((current) => ({
+        ...current,
+        pendingSync:
+          summary.PENDING +
+          summary.SYNCING +
+          summary.FAILED +
+          summary.CONFLICT,
+      }));
+    } catch {
+      // Keep the last known queue state if local storage is unavailable.
+    }
+  }, []);
+
+  const fetchMetrics = useCallback(async (manual = false) => {
+    if (manual) setRefreshing(true);
+
+    try {
+      const response = await fetch("/api/pos/dashboard", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Dashboard request failed: ${response.status}`);
+      }
+
+      const data = (await response.json()) as Partial<DashboardMetrics>;
+
+      setMetrics((current) => ({
+        ...current,
+        ...data,
+        // Local offline queue remains the source of truth for pending sync.
+        pendingSync: current.pendingSync,
+        recentSales: Array.isArray(data.recentSales)
+          ? data.recentSales
+          : current.recentSales,
+      }));
+
+      setApiError(false);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Failed to fetch POS dashboard metrics:", error);
+      setApiError(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        // Fetch from /api/pos/dashboard or similar
-        const response = await fetch("/api/pos/dashboard", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" }
-        }).catch(() => null);
+    setIsOnline(navigator.onLine);
+    setClock(new Date());
 
-        if (response?.ok) {
-          const data = await response.json();
-          setMetrics((current) => ({ ...data, pendingSync: current.pendingSync }));
-        }
-      } catch (err) {
-        console.error("Failed to fetch dashboard metrics:", err);
-      } finally {
-      }
-    };
+    const updateOnline = () => setIsOnline(navigator.onLine);
+    const updateClock = () => setClock(new Date());
 
-    fetchMetrics();
-    const refreshQueue = () => {
-      getOfflineQueueSummary().then((summary) => {
-        const queue = summarizeOfflineQueue(summary);
-        setQueueSummary(queue);
-        setMetrics((current) => ({
-          ...current,
-          pendingSync: summary.PENDING + summary.SYNCING + summary.FAILED + summary.CONFLICT
-        }));
-      }).catch(() => undefined);
-    };
-    refreshQueue();
-    window.addEventListener("dantown-pos-sync", refreshQueue);
-    const interval = setInterval(fetchMetrics, 30000); // Refresh every 30 seconds
+    window.addEventListener("online", updateOnline);
+    window.addEventListener("offline", updateOnline);
+
+    const clockInterval = window.setInterval(updateClock, 1000);
+    const metricsInterval = window.setInterval(
+      () => void fetchMetrics(),
+      30000
+    );
+
+    const syncListener = () => void refreshQueue();
+
+    window.addEventListener("dantown-pos-sync", syncListener);
+
+    void fetchMetrics();
+    void refreshQueue();
+
     return () => {
-      clearInterval(interval);
-      window.removeEventListener("dantown-pos-sync", refreshQueue);
+      window.removeEventListener("online", updateOnline);
+      window.removeEventListener("offline", updateOnline);
+      window.removeEventListener("dantown-pos-sync", syncListener);
+      window.clearInterval(clockInterval);
+      window.clearInterval(metricsInterval);
     };
-  }, []);
+  }, [fetchMetrics, refreshQueue]);
 
   const cards = [
     {
       icon: DollarSign,
-      label: "Today's Sales",
-      value: `KSh ${metrics.todaysSales.toLocaleString()}`,
-      color: "teal"
+      label: "Today's sales",
+      value: money(metrics.todaysSales),
+      detail: "Total recorded sales today",
+      accent: "mint",
     },
     {
       icon: ShoppingCart,
       label: "Transactions",
-      value: String(metrics.transactions),
-      color: "lime"
+      value: number(metrics.transactions),
+      detail: "Recorded transactions today",
+      accent: "blue",
     },
     {
       icon: TrendingUp,
-      label: "Cash Sales",
-      value: `KSh ${metrics.cashSales.toLocaleString()}`,
-      color: "yellow"
+      label: "Cash sales",
+      value: money(metrics.cashSales),
+      detail: "Paid through cash",
+      accent: "amber",
     },
     {
-      icon: TrendingUp,
-      label: "M-Pesa Sales",
-      value: `KSh ${metrics.mPesaSales.toLocaleString()}`,
-      color: "coral"
+      icon: Zap,
+      label: "M-Pesa sales",
+      value: money(metrics.mPesaSales),
+      detail: "Recorded M-Pesa sales",
+      accent: "violet",
     },
     {
-      icon: DollarSign,
-      label: "Average Sale",
-      value: `KSh ${metrics.averageSale.toLocaleString()}`,
-      color: "green"
+      icon: Activity,
+      label: "Average sale",
+      value: money(metrics.averageSale),
+      detail: "Average value per sale",
+      accent: "cyan",
     },
     {
-      icon: AlertCircle,
-      label: "Pending Sync",
-      value: String(metrics.pendingSync),
-      color: "orange",
-      highlight: metrics.pendingSync > 0
+      icon: RefreshCw,
+      label: "Pending sync",
+      value: number(metrics.pendingSync),
+      detail:
+        metrics.pendingSync > 0
+          ? "Transactions need attention"
+          : "No queued transactions",
+      accent: "orange",
+      warning: metrics.pendingSync > 0,
     },
     {
-      icon: AlertCircle,
-      label: "Low Stock",
-      value: String(metrics.lowStockCount),
-      color: "orange",
-      highlight: metrics.lowStockCount > 0
-    }
+      icon: Package,
+      label: "Low stock",
+      value: number(metrics.lowStockCount),
+      detail:
+        metrics.lowStockCount > 0
+          ? "Products need restocking"
+          : "No low-stock alerts reported",
+      accent: "rose",
+      warning: metrics.lowStockCount > 0,
+    },
   ];
 
-  const operationalSummary = [
-    { label: "Completed", value: String(metrics.transactions || 0) },
-    { label: "Waiting", value: String(Math.max(metrics.pendingSync, 0)) },
-    { label: "Online", value: String(Math.max(metrics.transactions, 0)) },
-    { label: "POS", value: "Open" }
+  const actions = [
+    {
+      href: "/pos/new-sale",
+      icon: Plus,
+      title: "New sale",
+      description: "Start a transaction",
+      primary: true,
+    },
+    {
+      href: "/pos/sales-history",
+      icon: ShoppingCart,
+      title: "Sales history",
+      description: "Review transactions",
+    },
+    {
+      href: "/pos/customers",
+      icon: Users,
+      title: "Customers",
+      description: "Customer records",
+    },
+    {
+      href: "/pos/inventory",
+      icon: Package,
+      title: "Inventory",
+      description: "Stock and products",
+    },
+    {
+      href: "/pos/reports",
+      icon: TrendingUp,
+      title: "Reports",
+      description: "Business performance",
+    },
   ];
+
+  const formattedTime = clock
+    ? clock.toLocaleTimeString("en-KE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    : "--:--:--";
 
   return (
-    <div className="pos-dashboard">
-      <div className="pos-dashboard-header">
-        <h1>Dashboard</h1>
-        <p>Today&apos;s performance at a glance</p>
+    <main className="pos-dashboard pm-monitor">
+      <div className="pm-atmosphere" aria-hidden="true">
+        <span className="pm-orb pm-orb-one" />
+        <span className="pm-orb pm-orb-two" />
+        <span className="pm-orb pm-orb-three" />
+        <span className="pm-grid" />
       </div>
 
-      <div className="pos-dashboard-section">
-        <h2>Operations board</h2>
-        <div className="pos-quick-actions">
-          {operationalSummary.map((item) => (
-            <div key={item.label} className="pos-quick-action-button secondary" style={{ justifyContent: "space-between" }}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
+      <div className="pm-content">
+        <header className="pm-header">
+          <div className="pm-heading">
+            <div className="pm-eyebrow">
+              <span className="pm-live-dot" />
+              DANTOWN ELECTRICAL
+              <span className="pm-eyebrow-divider">/</span>
+              POS CONTROL CENTER
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Metric Cards */}
-      <div className="pos-metrics-grid">
-        {cards.map((card, idx) => (
-          <div
-            key={idx}
-            className={`pos-metric-card pos-metric-${card.color} ${card.highlight ? "highlight" : ""}`}
-          >
-            <div className="pos-metric-icon">
-              <card.icon size={24} />
+            <h1>
+              POS <span>Monitor</span>
+            </h1>
+
+            <p>
+              Your sales floor at a glance. Monitor performance,
+              transactions and operations in one place.
+            </p>
+          </div>
+
+          <div className="pm-header-controls">
+            <div
+              className={`pm-connection ${
+                isOnline ? "is-online" : "is-offline"
+              }`}
+            >
+              {isOnline ? (
+                <Wifi size={16} />
+              ) : (
+                <WifiOff size={16} />
+              )}
+              <span>{isOnline ? "Network online" : "Network offline"}</span>
             </div>
-            <div className="pos-metric-content">
-              <div className="pos-metric-label">{card.label}</div>
-              <div className="pos-metric-value">{card.value}</div>
+
+            <button
+              type="button"
+              className="pm-refresh-button"
+              onClick={() => {
+                void fetchMetrics(true);
+                void refreshQueue();
+              }}
+              disabled={refreshing}
+            >
+              <RefreshCw
+                size={16}
+                className={refreshing ? "pm-spin" : ""}
+              />
+              <span>{refreshing ? "Refreshing" : "Refresh"}</span>
+            </button>
+          </div>
+        </header>
+
+        <section className="pm-status-strip" aria-label="POS status">
+          <div className="pm-status-main">
+            <span className="pm-status-icon">
+              <Activity size={19} />
+            </span>
+            <div>
+              <strong>Operations board</strong>
+              <span>Local system time · {formattedTime}</span>
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* Quick Actions */}
-      <div className="pos-dashboard-section">
-        <h2>Quick Actions</h2>
-        <div className="pos-quick-actions">
-          <Link href="/pos/new-sale" className="pos-quick-action-button primary">
-            <Plus size={20} />
-            New Sale
-          </Link>
-          <Link href="/pos/sales-history" className="pos-quick-action-button secondary"><ShoppingCart size={18} /> Sales History</Link>
-          <Link href="/pos/customers" className="pos-quick-action-button secondary"><Users size={18} /> Customers</Link>
-          <Link href="/pos/inventory" className="pos-quick-action-button secondary"><Package size={18} /> Inventory</Link>
-          <Link href="/pos/reports" className="pos-quick-action-button secondary"><TrendingUp size={18} /> Reports</Link>
-        </div>
-      </div>
-
-      <div className="pos-dashboard-section">
-        <h2>Offline sync status</h2>
-        <div className={`pos-sync-banner pos-sync-${queueSummary.tone}`}>
-          <strong>{queueSummary.headline}</strong>
-          <span>{queueSummary.details.filter(Boolean).join(" · ")}</span>
-        </div>
-      </div>
-
-      {/* Recent Sales */}
-      <div className="pos-dashboard-section">
-        <h2>Recent Sales</h2>
-        <div className="pos-recent-sales">
-          {metrics.recentSales.length > 0 ? metrics.recentSales.map((sale) => (
-            <div className="pos-data-row" key={sale.id}>
-              <strong>{sale.orderNumber}</strong>
-              <span>KSh {sale.total.toLocaleString()} · {new Date(sale.createdAt).toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit" })}</span>
+          <div className="pm-status-items">
+            <div className="pm-status-item">
+              <span className="pm-status-indicator pm-green" />
+              <span>Sales recorded</span>
+              <strong>{number(metrics.transactions)}</strong>
             </div>
-          )) : <p style={{ textAlign: "center", color: "#999", padding: "2rem" }}>No sales yet today. Start a new sale to see activity here.</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function Plus({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
+            <div className="pm-status-item">
+              <span
+                className={`pm-status-indicator ${
+                  metrics.pendingSync > 0 ? "pm-orange" : "pm-green"
+                }`}
+              />
+              <span>Waiting to sync</span>
+              <strong>{number(metrics.pendingSync)}</strong>
+            </div>
+
+            <div className="pm-status-item">
+              <ShieldCheck size={15} />
+              <span>POS workspace</span>
+              <strong>Active</strong>
+            </div>
+          </div>
+        </section>
+
+        {apiError && (
+          <div className="pm-error-banner" role="status">
+            <AlertCircle size={18} />
+            <div>
+              <strong>Dashboard data could not be refreshed</strong>
+              <span>
+                Showing the last available figures. Check your connection
+                and dashboard API.
+              </span>
+            </div>
+            <button type="button" onClick={() => void fetchMetrics(true)}>
+              Try again
+            </button>
+          </div>
+        )}
+
+        <section className="pm-section">
+          <div className="pm-section-heading">
+            <div>
+              <span className="pm-section-kicker">PERFORMANCE</span>
+              <h2>Today is overview</h2>
+            </div>
+            <span className="pm-updated">
+              <Clock3 size={14} />
+              {lastUpdated
+                ? `Updated ${lastUpdated.toLocaleTimeString("en-KE", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+                : "Waiting for data"}
+            </span>
+          </div>
+
+          <div className="pm-metrics-grid">
+            {cards.map((card, index) => (
+              <MetricCard
+                key={card.label}
+                {...card}
+                index={index}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="pm-section">
+          <div className="pm-section-heading">
+            <div>
+              <span className="pm-section-kicker">WORKSPACE</span>
+              <h2>Quick actions</h2>
+            </div>
+            <span className="pm-subtle-label">
+              <Zap size={14} />
+              Ready when you are
+            </span>
+          </div>
+
+          <div className="pm-actions-grid">
+            {actions.map((action) => {
+              const Icon = action.icon;
+
+              return (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className={`pm-action ${
+                    action.primary ? "pm-action-primary" : ""
+                  }`}
+                >
+                  <span className="pm-action-icon">
+                    <Icon size={21} />
+                  </span>
+                  <span className="pm-action-copy">
+                    <strong>{action.title}</strong>
+                    <small>{action.description}</small>
+                  </span>
+                  <ArrowUpRight className="pm-action-arrow" size={17} />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="pm-section">
+          <div className="pm-section-heading">
+            <div>
+              <span className="pm-section-kicker">RELIABILITY</span>
+              <h2>Offline sync monitor</h2>
+            </div>
+            {metrics.pendingSync === 0 ? (
+              <span className="pm-health-pill pm-health-good">
+                <CheckCircle2 size={14} />
+                Queue clear
+              </span>
+            ) : (
+              <span className="pm-health-pill pm-health-warning">
+                <AlertCircle size={14} />
+                Action needed
+              </span>
+            )}
+          </div>
+
+          <div className={`pm-sync-panel pm-sync-${queueSummary.tone}`}>
+            <div className="pm-sync-icon">
+              {metrics.pendingSync === 0 ? (
+                <CheckCircle2 size={23} />
+              ) : (
+                <RefreshCw size={23} />
+              )}
+            </div>
+            <div className="pm-sync-copy">
+              <strong>{queueSummary.headline}</strong>
+              <p>
+                {queueSummary.details.filter(Boolean).join(" · ") ||
+                  "Your local queue status is being monitored."}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="pm-text-button"
+              onClick={() => void refreshQueue()}
+            >
+              Check queue <ArrowUpRight size={15} />
+            </button>
+          </div>
+        </section>
+
+        <section className="pm-section pm-recent-section">
+          <div className="pm-section-heading">
+            <div>
+              <span className="pm-section-kicker">TRANSACTION FEED</span>
+              <h2>Recent sales</h2>
+            </div>
+            <Link href="/pos/sales-history" className="pm-view-all">
+              View history <ArrowUpRight size={15} />
+            </Link>
+          </div>
+
+          <div className="pm-sales-panel">
+            {metrics.recentSales.length > 0 ? (
+              <div className="pm-sales-list">
+                {metrics.recentSales.map((sale, index) => (
+                  <div
+                    className="pm-sale-row"
+                    key={sale.id}
+                    style={{ animationDelay: `${index * 45}ms` }}
+                  >
+                    <span className="pm-sale-icon">
+                      <ShoppingCart size={18} />
+                    </span>
+
+                    <div className="pm-sale-info">
+                      <strong>{sale.orderNumber}</strong>
+                      <span>
+                        {new Date(sale.createdAt).toLocaleString("en-KE", {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+
+                    <div className="pm-sale-amount">
+                      <strong>{money(sale.total)}</strong>
+                      <span>
+                        <CheckCircle2 size={12} /> Recorded
+                      </span>
+                    </div>
+
+                    <ArrowDownRight
+                      className="pm-sale-arrow"
+                      size={17}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="pm-empty-state">
+                <span className="pm-empty-icon">
+                  <ShoppingCart size={25} />
+                </span>
+                <strong>No sales to display yet</strong>
+                <p>
+                  Once sales are recorded today, your latest transactions
+                  will appear here.
+                </p>
+                <Link href="/pos/new-sale" className="pm-empty-action">
+                  <Plus size={16} /> Start a new sale
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <footer className="pm-footer">
+          <span>
+            <span className="pm-live-dot" />
+            Dantown POS Monitor
+          </span>
+          <span>Built for clarity. Designed for speed.</span>
+        </footer>
+      </div>
+    </main>
   );
 }
