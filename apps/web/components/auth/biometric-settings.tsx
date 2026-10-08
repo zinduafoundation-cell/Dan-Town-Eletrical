@@ -15,7 +15,7 @@ function guessDeviceName() {
   return "This device";
 }
 
-/** Staff manage the phones that can unlock their account with a fingerprint or face. */
+/** Staff manage the devices that can unlock their account with a fingerprint or face. */
 export function BiometricSettings() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [supported, setSupported] = useState(false);
@@ -66,8 +66,9 @@ export function BiometricSettings() {
       <p className="eyebrow">Your security</p>
       <h2 id="biometric-heading"><Fingerprint size={20} aria-hidden="true" /> Fingerprint &amp; face unlock</h2>
       <p>
-        Link your phone once. After that you can sign in without a password, open the Dantown Centre lock without typing a PIN,
-        and approve refunds and stock changes with a touch. Your fingerprint never leaves your phone.
+        Link each phone or computer separately after signing in with your staff account. Only a linked device can use its own
+        fingerprint or face to sign you in, open the Dantown Centre lock, and approve sensitive actions. Your biometric data
+        stays on that device. Remove a device here if it is lost or no longer trusted.
       </p>
       {devices.length ? (
         <ul className="biometric-devices">
@@ -83,7 +84,7 @@ export function BiometricSettings() {
       <button type="button" className="button button-primary" onClick={add} disabled={busy || !supported}>
         {busy ? "Waiting for your fingerprint..." : devices.length ? "Link another device" : "Link this device"}
       </button>
-      {!supported && <p className="centre-note">This browser cannot use fingerprint or face unlock. Use Chrome on Android, Safari on iPhone, or a screen lock on this device, over https.</p>}
+      {!supported && <p className="centre-note">This device or browser cannot use fingerprint or face unlock. Use a supported browser with this device&apos;s screen lock over https or localhost.</p>}
       {message && <p className="centre-note" role="status">{message}</p>}
     </section>
   );

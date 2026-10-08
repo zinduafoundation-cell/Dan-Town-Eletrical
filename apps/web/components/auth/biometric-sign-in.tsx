@@ -4,7 +4,7 @@ import { Fingerprint } from "lucide-react";
 import { useEffect, useState } from "react";
 import { isBiometricAvailable, signInWithBiometric } from "@/lib/auth/passkey-client";
 
-/** "Staff sign-in with fingerprint or face" – only shown on phones/laptops that can do it. */
+/** "Staff sign-in with fingerprint or face" – only shown on devices that can do it. */
 export function BiometricSignIn({ next }: { next?: string | null }) {
   const [available, setAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -29,8 +29,9 @@ export function BiometricSignIn({ next }: { next?: string | null }) {
     <div className="biometric-sign-in">
       <button type="button" className="google-sign-in" onClick={go} disabled={busy}>
         <Fingerprint size={18} aria-hidden="true" />
-        {busy ? "Waiting for your fingerprint..." : "Staff: sign in with fingerprint or face"}
+        {busy ? "Waiting for your fingerprint..." : "Staff: sign in with this device"}
       </button>
+      <p className="centre-note">Each device must be linked separately from your signed-in staff account.</p>
       {error && <p className="auth-error" role="alert">{error}</p>}
     </div>
   );
