@@ -7,7 +7,7 @@ import { CameraBarcodeScanner } from "@/components/pos/camera-barcode-scanner";
 import { CashSessionPanel } from "@/components/pos/cash-session";
 import { enqueueSale } from "@/lib/pos/offline-queue";
 import { matchesPOSProduct } from "@/lib/pos/product-search";
-import { createCashSession, readCashSession, recordCashSale, saveCashSession, type CashSession } from "@/lib/pos/cash-session";
+import { readCashSession, recordCashSale, saveCashSession, type CashSession } from "@/lib/pos/cash-session";
 import { createHeldSale, getHeldSales, removeHeldSale, upsertHeldSale, type HeldSale } from "@/lib/pos/held-sales";
 import { boughtTogether, money, parseSmartLine, quickCash, recordSale, topPicks, whatsappUrl } from "@/lib/pos/smart";
 
@@ -29,13 +29,6 @@ async function fetchProducts(search: string, limit = 100): Promise<Product[]> {
   return result.data as Product[];
 }
 
-async function fetchProductPage(search: string, page: number, limit = 100): Promise<{ list: Product[]; count: number | null }> {
-  const response = await fetch(`/api/pos/products?limit=${limit}&page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`);
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error ?? "Failed to load products.");
-  return { list: result.data as Product[], count: typeof result.count === "number" ? result.count : null };
-}
-
 export default function NewSalePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -54,32 +47,17 @@ export default function NewSalePage() {
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
-  const [cashSession, setCashSession] = useState<CashSession>(() => createCashSession(0));
-  const [sessionReady, setSessionReady] = useState(false);
-  const [held, setHeld] = useState<HeldSale[]>([]);
-  const [page, setPage] = useState(1);
-  const [productCount, setProductCount] = useState<number | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const cartRef = useRef<CartItem[]>([]);
+  const [cashSession, setCashSession] = useState<CashSession>(() => readCashSession());
+  const [held, setHeld] = useState<HeldSale[]>(() => getHeldSales());
   const [picks, setPicks] = useState<string[]>([]);
   const [seenProducts, setSeenProducts] = useState<Map<string, Product>>(() => new Map());
   const searchRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (sessionReady) saveCashSession(cashSession); }, [cashSession, sessionReady]);
+  useEffect(() => { saveCashSession(cashSession); }, [cashSession]);
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setCashSession(readCashSession());
-      setSessionReady(true);
-      setHeld(getHeldSales());
-      const query = new URLSearchParams(window.location.search).get("q");
-      if (query) {
-        setSearch(query);
-        window.history.replaceState(null, "", window.location.pathname);
-      }
-    }, 0);
+    const timer = window.setTimeout(() => setHeld(getHeldSales()), 0);
     return () => window.clearTimeout(timer);
   }, []);
-  useEffect(() => { cartRef.current = cart; }, [cart]);
 
   const remember = useCallback((list: Product[]) => {
     setSeenProducts((current) => {
@@ -92,14 +70,7 @@ export default function NewSalePage() {
   // Server-side search (fixes the old 40-product ceiling) with debounce.
   useEffect(() => {
     const timer = window.setTimeout(async () => {
-      try {
-        const { list, count } = await fetchProductPage(search.trim(), 1);
-        remember(list);
-        setProducts(list);
-        setPage(1);
-        setProductCount(count);
-        setPicks(topPicks());
-      }
+      try { const list = await fetchProducts(search.trim()); remember(list); setProducts(list); setPicks(topPicks()); }
       catch (error) { setMessage(error instanceof Error ? error.message : "Failed to load products."); }
       finally { setLoading(false); }
     }, search ? 250 : 0);
@@ -136,11 +107,10 @@ export default function NewSalePage() {
 
   const addToCart = useCallback((product: Product, qty = 1) => {
     if (product.qty < 1) return setMessage(`${product.name} is out of stock.`);
-    const alreadyInCart = cartRef.current.find((item) => item.id === product.id)?.cartQty ?? 0;
-    if (alreadyInCart + qty > product.qty) setMessage(`Only ${product.qty} of ${product.name} in stock.`);
     navigator.vibrate?.(12);
     setCart((current) => {
       const existing = current.find((item) => item.id === product.id);
+      if (existing && existing.cartQty + qty > product.qty) setMessage(`Only ${product.qty} of ${product.name} in stock.`);
       return existing ? current.map((item) => item.id === product.id ? { ...item, cartQty: Math.min(item.qty, item.cartQty + qty) } : item) : [...current, { ...product, cartQty: Math.min(product.qty, qty) }];
     });
   }, []);
@@ -197,26 +167,6 @@ export default function NewSalePage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [scanBarcode]);
 
-  const loadMore = async () => {
-    if (loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const nextPage = page + 1;
-      const { list, count } = await fetchProductPage(search.trim(), nextPage);
-      remember(list);
-      setProducts((current) => {
-        const known = new Set(current.map((product) => product.id));
-        return [...current, ...list.filter((product) => !known.has(product.id))];
-      });
-      setPage(nextPage);
-      if (count !== null) setProductCount(count);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to load more products.");
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
   const holdSale = () => {
     if (!cart.length) return;
     const sale = createHeldSale({
@@ -252,7 +202,6 @@ export default function NewSalePage() {
   };
 
   const completeSale = async () => {
-    if (processing || receipt) return;
     if (!cart.length) return setMessage("Cart is empty.");
     if (splitPayment && (splitTender === paymentMethod || splitAmount <= 0 || splitAmount >= total)) return setMessage("Choose a different second payment method and a valid amount.");
     if (change !== null && change < 0) return setMessage(`Cash received is Ksh ${Math.abs(change).toLocaleString()} short.`);
@@ -289,8 +238,8 @@ export default function NewSalePage() {
   });
 
   const whatsapp = receipt ? whatsappUrl(receipt.phone, `Dantown Electrical receipt ${receipt.receiptNumber}\n${receipt.lines.map((l) => `${l.qty} x ${l.name} - ${money(l.total)}`).join("\n")}\nTotal: ${money(receipt.amount)} (${receipt.paymentMethod})\nThank you!`) : null;
-  const renderTile = (product: Product, compact = false) => (
-    <button type="button" key={product.id} className={`px-tile ${compact ? "compact" : ""} ${product.qty === 0 ? "out" : ""}`} onClick={() => addToCart(product)} disabled={!product.qty}>
+  const ProductTile = ({ product, compact = false }: { product: Product; compact?: boolean }) => (
+    <button type="button" className={`px-tile ${compact ? "compact" : ""} ${product.qty === 0 ? "out" : ""}`} onClick={() => addToCart(product)} disabled={!product.qty}>
       {!compact && <span className="px-tile-img">{product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" /> : <b>{product.name.charAt(0)}</b>}</span>}
       <span className="px-tile-name">{product.name}</span>
       <span className="px-tile-meta">{product.sku}</span>
@@ -300,7 +249,7 @@ export default function NewSalePage() {
 
   return <div className="px-register">
     {message && <div className="px-toast" role="status"><AlertCircle size={18} /><span>{message}</span><button type="button" onClick={() => setMessage(null)} aria-label="Dismiss">×</button></div>}
-    {receipt && <div className="px-modal"><div className="px-receipt px-receipt-print" role="dialog" aria-modal="true" aria-label="Sale complete">
+    {receipt && <div className="px-modal"><div className="px-receipt px-receipt-print">
       <Receipt size={34} className="px-receipt-icon" /><h2>Sale complete</h2><p className="px-receipt-no">{receipt.receiptNumber}</p><p className="px-receipt-amount">{money(receipt.amount)}</p>
       <div className="px-receipt-lines">{receipt.lines.map((line, index) => <p key={index}><span>{line.qty} × {line.name}</span><b>{money(line.total)}</b></p>)}</div>
       <div className="px-receipt-meta"><p>Customer <b>{receipt.customer}</b></p><p>Payment <b>{receipt.paymentMethod}</b></p>{receipt.change !== null && <p>Cash {money(receipt.tendered ?? 0)} · Change <b>{money(receipt.change)}</b></p>}{receipt.servedBy && <p>Served by <b>{receipt.servedBy}{receipt.staffRole ? ` · ${receipt.staffRole}` : ""}</b></p>}<p>{receipt.date}</p></div>
@@ -314,10 +263,9 @@ export default function NewSalePage() {
         <CameraBarcodeScanner onDetected={(code) => void scanBarcode(code)} />
       </div>
       <p className="px-hint"><Sparkles size={12} /> Smart entry adds the best match · <kbd>F2</kbd> search · <kbd>F4</kbd> hold · <kbd>F8</kbd> pay</p>
-      {!search && pickProducts.length > 0 && <div className="px-picks"><h3>Your quick picks</h3><div>{pickProducts.map((product) => renderTile(product, true))}</div></div>}
+      {!search && pickProducts.length > 0 && <div className="px-picks"><h3>Your quick picks</h3><div>{pickProducts.map((product) => <ProductTile key={product.id} product={product} compact />)}</div></div>}
       <div className="px-chips">{categories.map((name) => <button type="button" key={name} className={category === name ? "active" : ""} onClick={() => setCategory(name)}>{name}</button>)}</div>
-      <div className="px-grid">{loading ? <p className="px-empty">Loading products...</p> : visible.length ? visible.map((product) => renderTile(product)) : <p className="px-empty">No products match “{search}”.</p>}</div>
-      {!loading && productCount !== null && products.length < productCount && <button type="button" className="px-btn px-loadmore" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? "Loading..." : `Show more products (${products.length} of ${productCount})`}</button>}
+      <div className="px-grid">{loading ? <p className="px-empty">Loading products…</p> : visible.length ? visible.map((product) => <ProductTile key={product.id} product={product} />) : <p className="px-empty">No products match “{search}”.</p>}</div>
     </section>
 
     <aside className="px-cart" id="pos-cart-section">
@@ -336,13 +284,13 @@ export default function NewSalePage() {
 
       {cart.length > 0 && <div className="px-checkout">
         <CashSessionPanel value={cashSession} onChange={setCashSession} />
-        <div className="px-field"><input value={customerSearch} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value.trim() || "Walk-in Customer"); setSelectedCustomer(null); }} placeholder="Walk-in customer (type to find or name one)" aria-label="Customer" autoComplete="off" />
+        <div className="px-field"><input value={customerSearch || customerName} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value || "Walk-in Customer"); setSelectedCustomer(null); }} placeholder="Customer (optional)" aria-label="Customer" />
           {customers.length > 0 && <div className="px-dropdown">{customers.map((customer) => <button type="button" key={customer.id} onClick={() => { setSelectedCustomer(customer); setCustomerName(customer.name); setCustomerSearch(customer.name); setCustomers([]); }}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</button>)}</div>}</div>
         <div className="px-tenders">{tenders.map(({ id, label, icon: Icon }) => <button type="button" key={id} className={paymentMethod === id ? "active" : ""} onClick={() => { setPaymentMethod(id); if (splitTender === id) setSplitTender(tenders.find((t) => t.id !== id)!.id); }}><Icon size={18} />{label}</button>)}</div>
         {paymentMethod === "cash" && !splitPayment && <div className="px-cash"><div className="px-quickcash">{quickCash(total).map((amount) => <button type="button" key={amount} className={tendered === amount ? "active" : ""} onClick={() => setTendered(amount)}>{amount === Math.ceil(total) ? "Exact" : amount.toLocaleString()}</button>)}</div>
           <input type="number" min={0} value={tendered || ""} onChange={(event) => setTendered(Number(event.target.value))} placeholder="Cash received" aria-label="Cash received" />
           {change !== null && <p className={`px-change ${change < 0 ? "short" : ""}`}>{change < 0 ? "Short" : "Change"} <b>{money(Math.abs(change))}</b></p>}</div>}
-        <label className="px-split"><input type="checkbox" checked={splitPayment} onChange={(event) => { setSplitPayment(event.target.checked); if (event.target.checked && splitTender === paymentMethod) setSplitTender(tenders.find((tender) => tender.id !== paymentMethod)!.id); }} /> Split payment</label>
+        <label className="px-split"><input type="checkbox" checked={splitPayment} onChange={(event) => setSplitPayment(event.target.checked)} /> Split payment</label>
         {splitPayment && <div className="px-splitrow"><select value={splitTender} onChange={(event) => setSplitTender(event.target.value as Tender)} aria-label="Second tender">{tenders.filter((t) => t.id !== paymentMethod).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select><input type="number" min={0.01} step={0.01} value={splitAmount || ""} onChange={(event) => setSplitAmount(Number(event.target.value))} placeholder="Second amount" aria-label="Second amount" /></div>}
         <div className="px-totals"><p><span>Subtotal</span><b>{money(subtotal)}</b></p><p><span>VAT</span><b>{money(vat)}</b></p></div>
         <button type="button" className="px-pay" onClick={completeSale} disabled={processing}><span>{processing ? "Processing…" : "Charge"}</span><strong>{money(total)}</strong></button>

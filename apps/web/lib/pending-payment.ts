@@ -1,10 +1,13 @@
 export const PENDING_PAYMENT_STORAGE_KEY = "dantown-pending-payment";
+const CLEAR_EVENT = "dantown:pending-payment-cleared";
 
 export type PendingPaymentReminderData = {
   orderId: string;
   orderNumber: string;
   total: number;
   createdAt?: string;
+  /** The signed-in account that created the order. Reminders are never shown to anyone else. */
+  userId?: string | null;
 };
 
 export function savePendingPaymentReminder(payload: PendingPaymentReminderData) {
@@ -24,7 +27,28 @@ export function savePendingPaymentReminder(payload: PendingPaymentReminderData) 
 
 export function clearPendingPaymentReminder() {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+  try {
+    window.localStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+    window.dispatchEvent(new Event(CLEAR_EVENT));
+  } catch {
+    // Storage can be unavailable in private browsing; nothing to clear then.
+  }
+}
+
+/** Call on sign-out so nothing belonging to the previous account is left on the device. */
+export function clearAccountScopedBrowserData() {
+  if (typeof window === "undefined") return;
+  clearPendingPaymentReminder();
+  try {
+    window.sessionStorage.removeItem("dantown-entry-seen-v1");
+  } catch {
+    // ignore
+  }
+}
+
+export function onPendingPaymentCleared(listener: () => void) {
+  window.addEventListener(CLEAR_EVENT, listener);
+  return () => window.removeEventListener(CLEAR_EVENT, listener);
 }
 
 export function readPendingPaymentReminder(): PendingPaymentReminderData | null {
@@ -51,6 +75,7 @@ export function readPendingPaymentReminder(): PendingPaymentReminderData | null 
       orderNumber: parsed.orderNumber,
       total: Number(parsed.total ?? 0),
       createdAt: parsed.createdAt ?? new Date().toISOString(),
+      userId: parsed.userId ?? null,
     };
   } catch {
     clearPendingPaymentReminder();

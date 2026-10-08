@@ -3,6 +3,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Search, X } from "lucide-react";
+import { fetchWithBiometric } from "@/lib/auth/passkey-client";
 
 type InventoryRow = {
   id: string;
@@ -72,7 +73,7 @@ export function InventoryWorkspace({ rows: initialRows, warehouses, canAdjust, c
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/inventory/adjust", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: selected.productId, warehouseId: selected.warehouseId, delta, reason }) });
+      const response = await fetchWithBiometric("/api/admin/inventory/adjust", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: selected.productId, warehouseId: selected.warehouseId, delta, reason }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to adjust stock");
       setRows((current) => current.map((row) => row.id === selected.id ? { ...row, quantity: row.quantity + delta } : row));

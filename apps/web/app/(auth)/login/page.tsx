@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { createAuthClient } from "@dantown/auth";
 import { buttonClassName } from "@dantown/ui";
+import { BiometricSignIn } from "@/components/auth/biometric-sign-in";
 
 function requestedNextPath() {
   const next = new URLSearchParams(window.location.search).get("next");
@@ -112,6 +113,7 @@ export default function LoginPage() {
           <span className="google-mark">G</span>
           {loading ? "Connecting..." : "Continue with Google"}
         </button>
+        <BiometricSignIn next={typeof window === "undefined" ? null : requestedNextPath()} />
         <div className="auth-divider"><span>or use email</span></div>
         <form className="auth-form" onSubmit={submit}>
           <label>Email<input name="email" type="email" autoComplete="email" required disabled={checkingSession} /></label>

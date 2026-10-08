@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { RotateCcw, X } from "lucide-react";
+import { fetchWithBiometric } from "@/lib/auth/passkey-client";
 
 export function RefundSaleButton({ orderId, orderNumber, total }: { orderId: string; orderNumber: string; total: number }) {
   const [open, setOpen] = useState(false);
@@ -15,7 +16,7 @@ export function RefundSaleButton({ orderId, orderNumber, total }: { orderId: str
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch(`/api/orders/${orderId}/return`, {
+      const response = await fetchWithBiometric(`/api/orders/${orderId}/return`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason, amount: Number(amount) })

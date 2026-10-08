@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { requireAuthorizedPermission, getStaffIdentity } from "@/lib/auth/server";
 import { POSShell } from "@/components/pos/pos-shell";
-import "../styles/pos.css";
 import "../styles/pos-premium.css";
 
 export const dynamic = "force-dynamic";

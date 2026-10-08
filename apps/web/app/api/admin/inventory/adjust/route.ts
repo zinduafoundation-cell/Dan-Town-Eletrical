@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthorizedPermission } from "../../../../../lib/auth/server";
 import { createSupabaseServerClient } from "../../../../../lib/supabase/server";
+import { requireBiometricStepUp } from "../../../../../lib/auth/passkeys";
 
 const adjustmentSchema = z.object({
   productId: z.string().uuid(),
@@ -13,6 +14,8 @@ const adjustmentSchema = z.object({
 export async function POST(request: Request) {
   try {
     const context = await requireAuthorizedPermission("inventory.adjust");
+    const stepUpRequired = await requireBiometricStepUp(context.userId);
+    if (stepUpRequired) return stepUpRequired;
     const parsed = adjustmentSchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: "Provide a product, warehouse, non-zero quantity, and reason." }, { status: 400 });
 

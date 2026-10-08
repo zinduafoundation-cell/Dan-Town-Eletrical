@@ -11008,3 +11008,30 @@ body .portal-main .catalog-simple-form-footer .button-primary:hover { background
   body .portal-main .catalog-simple-form-footer { align-items: stretch; flex-direction: column; }
   body .portal-main .catalog-simple-form-footer .button-primary { justify-content: center; width: 100%; }
 }
+/* ---------- Biometric security card ---------- */
+.biometric-card { display: grid; gap: 12px; max-width: 640px; }
+.biometric-card h2 { align-items: center; display: flex; gap: 8px; margin: 0; }
+.biometric-devices { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.biometric-devices li { align-items: center; background: rgba(7,21,38,.04); border-radius: 12px; display: flex; gap: 10px; padding: 10px 12px; }
+.biometric-devices li > span { display: grid; flex: 1; }
+.biometric-devices small { opacity: .65; }
+.biometric-devices button { background: transparent; border: 0; color: #c0392b; cursor: pointer; padding: 6px; }
+.biometric-sign-in { display: grid; gap: 8px; margin-bottom: 10px; }
+.biometric-sign-in .google-sign-in { align-items: center; display: flex; gap: 8px; justify-content: center; }
+
+/* ---------- Compare products ---------- */
+.product-compare-button { align-items: center; background: transparent; border: 1px solid var(--line, #d9dfe4); border-radius: 999px; cursor: pointer; display: inline-flex; font: inherit; font-size: .85rem; gap: 6px; padding: 7px 12px; }
+.product-compare-button.is-active { background: #f26a1b; border-color: #f26a1b; color: #fff; }
+.compare-tray { align-items: center; background: #071526; border-radius: 999px; bottom: 16px; box-shadow: 0 16px 40px rgba(7,21,38,.3); color: #fff; display: flex; gap: 12px; left: 50%; max-width: calc(100vw - 24px); padding: 8px 10px 8px 16px; position: fixed; transform: translateX(-50%); z-index: 9000; }
+.compare-tray > button { background: transparent; border: 0; color: inherit; cursor: pointer; display: grid; padding: 6px; }
+.compare-tray a[aria-disabled="true"] { opacity: .5; }
+.compare-toolbar { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin: 8px 0 14px; }
+.compare-scroll { border: 1px solid var(--line, #d9dfe4); border-radius: 16px; overflow-x: auto; }
+.compare-table { border-collapse: collapse; min-width: 560px; width: 100%; }
+.compare-table th, .compare-table td { border-bottom: 1px solid var(--line, #e6eaee); padding: 12px 14px; text-align: left; vertical-align: top; }
+.compare-table thead th { background: rgba(7,21,38,.03); min-width: 170px; position: relative; }
+.compare-table tbody th { background: rgba(7,21,38,.03); font-weight: 600; left: 0; position: sticky; width: 130px; }
+.compare-table td.is-best { background: rgba(46,160,67,.1); font-weight: 600; }
+.compare-image { background: #e8edf1 center / cover; border-radius: 12px; height: 90px; margin-bottom: 8px; }
+.compare-remove { background: #fff; border: 1px solid var(--line, #d9dfe4); border-radius: 50%; cursor: pointer; display: grid; height: 26px; place-items: center; position: absolute; right: 8px; top: 8px; width: 26px; }
+.compare-badge { align-items: center; background: #f26a1b; border-radius: 999px; color: #fff; display: inline-flex; font-size: .72rem; gap: 4px; margin-top: 6px; padding: 3px 8px; }

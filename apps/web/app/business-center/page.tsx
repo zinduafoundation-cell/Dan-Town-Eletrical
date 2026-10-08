@@ -9,6 +9,9 @@ import { redirect } from "next/navigation";
 import { SharedAIPanel } from "@/components/ai/shared-ai-panel";
 import { CommandCentreBar } from "@/components/centre/command-centre-bar";
 import { getCentreMetrics } from "@/lib/centre/metrics";
+import { getReorderList, getStaffActivityToday } from "@/lib/centre/insights";
+import { ReorderPanel, StaffActivityPanel } from "@/components/centre/insight-panels";
+import { BiometricSettings } from "@/components/auth/biometric-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +44,10 @@ export default async function BusinessCenterPage() {
     getCentreMetrics(context.permissions),
   ]);
   const { metrics, syncTrackingAvailable, source } = centreMetrics;
+  const [staffActivity, reorderLines] = await Promise.all([
+    hasPermission(context, "users.read") ? getStaffActivityToday().catch(() => []) : Promise.resolve(null),
+    hasPermission(context, "inventory.read") ? getReorderList().catch(() => []) : Promise.resolve(null),
+  ]);
   const posOrders = (orders ?? []).filter((order) => order.sales_channel === "POS");
   const deletedOrderArchive = (deletedOrders ?? []).map((entry) => {
     const payload = ((entry.new_data as Record<string, unknown>) ?? {}) as Record<string, unknown>;
@@ -83,6 +90,11 @@ export default async function BusinessCenterPage() {
         <section className="portal-card centre-panel"><div className="centre-panel-heading"><div><p className="eyebrow">Sales floor</p><h2>POS monitor</h2></div><Link className="text-link" href="/pos">Open POS <ArrowRight size={15} /></Link></div><div className="centre-status-grid"><Status label="Open cashier sessions" value={String(metrics.activePosSessions)} /><Status label="Transactions today" value={String(metrics.posTransactions)} /><Status label="POS sales today" value={`KSh ${Math.round(metrics.posSalesToday).toLocaleString()}`} /></div>{posOrders.length ? <p className="centre-note">Latest POS sale: {posOrders[0].order_number} at {new Date(posOrders[0].created_at).toLocaleTimeString()}</p> : <p className="centre-note">No POS sales have been recorded today.</p>}</section>
         <section className="portal-card centre-panel"><p className="eyebrow">Delivery health</p><h2>Sync and event queue</h2>{!syncTrackingAvailable ? <div className="centre-unconfigured"><strong>Server sync tracking requires migration 031</strong><p>Local POS queueing is available, but Centre monitoring becomes live after the offline sync migration is deployed.</p></div> : <><div className="centre-status-grid"><Status label="Pending sync" value={String(metrics.pendingSync)} /><Status label="Failed sync" value={String(metrics.failedSync)} /><Status label="Conflicts" value={String(metrics.conflictSync)} /></div>{source === "read-model" ? <div className="centre-status-grid" style={{ marginTop: 12 }}><Status label="Waiting delivery" value={String(metrics.pendingDomainEvents)} /><Status label="Retrying events" value={String(metrics.retryDomainEvents)} /><Status label="Dead letters" value={String(metrics.deadLetterDomainEvents)} /></div> : <p className="centre-note">Event delivery monitoring activates after the queued Centre migrations are deployed.</p>}</>}</section>
       </div>
+      {(staffActivity || reorderLines) && <div className="centre-panels">
+        {staffActivity && <StaffActivityPanel rows={staffActivity} />}
+        {reorderLines && <ReorderPanel lines={reorderLines} />}
+      </div>}
+      <BiometricSettings />
     </div>
   </PortalShell>;
 }

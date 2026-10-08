@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuthorizedPermission } from "../../../../../lib/auth/server";
 import { createSupabaseServiceClient } from "../../../../../lib/supabase/server";
+import { requireBiometricStepUp } from "../../../../../lib/auth/passkeys";
 
 const returnSchema = z.object({ reason: z.string().trim().min(3).max(240), amount: z.number().positive() });
 
@@ -9,6 +10,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const context = await requireAuthorizedPermission("refunds.request");
     const { id } = await params;
+    // Refunds move money: if this staff member has a linked phone, they must confirm with it first.
+    const stepUpRequired = await requireBiometricStepUp(context.userId);
+    if (stepUpRequired) return stepUpRequired;
     const body = returnSchema.safeParse(await request.json());
     if (!body.success) return NextResponse.json({ error: "Return reason and amount are required." }, { status: 400 });
 

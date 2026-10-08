@@ -9,11 +9,21 @@ const MAX_FAILURES = 5;
 const failures = new Map<string, { count: number; resetAt: number }>();
 
 function secret() {
-  return process.env.DANTOWN_QUICK_ACCESS_COOKIE_SECRET || process.env.DANTOWN_QUICK_ACCESS_PIN_HASH || "disabled";
+  const explicit = process.env.DANTOWN_QUICK_ACCESS_COOKIE_SECRET || process.env.DANTOWN_QUICK_ACCESS_PIN_HASH;
+  if (explicit) return explicit;
+  // Biometric-only setups have no PIN: derive a private secret from the server key instead of a guessable constant.
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) throw new Error("A server secret is required for the secondary lock.");
+  return createHmac("sha256", serviceKey).update("dantown-quick-access-v1").digest("hex");
 }
 
-export function isQuickAccessEnabled() {
+export function isPinConfigured() {
   return Boolean(process.env.DANTOWN_QUICK_ACCESS_PIN_HASH);
+}
+
+/** The secondary lock is on when a PIN is configured, or when DANTOWN_BIOMETRIC_GATE=on (fingerprint/face only). */
+export function isQuickAccessEnabled() {
+  return isPinConfigured() || process.env.DANTOWN_BIOMETRIC_GATE === "on";
 }
 
 function sign(value: string) {
