@@ -6,6 +6,6 @@
   "outputDirectory": "apps/web/.next",
   "crons": [
     { "path": "/api/internal/events/dispatch", "schedule": "0 2 * * *" },
-    { "path": "/api/internal/orders/cleanup", "schedule": "*/15 * * * *" }
+    { "path": "/api/internal/orders/cleanup", "schedule": "15 2 * * *" }
   ]
 }
