@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Explore trusted electrical brands available through Dantown."
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function BrandsPage() {
   const supabase = createSupabaseServiceClient();
   const brands = await getCatalogBrands(supabase);

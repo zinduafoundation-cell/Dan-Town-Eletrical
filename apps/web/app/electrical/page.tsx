@@ -6,6 +6,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { electricalCategorySeeds, getDivisionCategories } from "@/lib/division-data";
 
 export const metadata: Metadata = { title: "Electrical Division", description: "Explore Dantown Electrical products for homes, businesses, and professional projects." };
+export const dynamic = "force-dynamic";
 
 export default async function ElectricalDivisionPage() {
   const categories = await getDivisionCategories(createSupabaseServiceClient(), electricalCategorySeeds);

@@ -6,6 +6,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getDivisionCategories, solarCategorySeeds } from "@/lib/division-data";
 
 export const metadata: Metadata = { title: "Solar Division", description: "Explore Dantown Electrical solar products and clean energy solutions." };
+export const dynamic = "force-dynamic";
 
 export default async function SolarDivisionPage() {
   const categories = await getDivisionCategories(createSupabaseServiceClient(), solarCategorySeeds);

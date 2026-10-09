@@ -8,6 +8,8 @@ import { FeatureStrip } from "@/components/feature-strip";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCatalogProducts } from "@dantown/database";
 
+export const dynamic = "force-dynamic";
+
 const categories = [
   {
     name: "Solar",

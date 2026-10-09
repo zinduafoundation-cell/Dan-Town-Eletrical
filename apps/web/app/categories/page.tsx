@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Browse electrical products by category."
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function CategoriesPage() {
   const supabase = createSupabaseServiceClient();
   const [categories, { data: brandsData }] = await Promise.all([
