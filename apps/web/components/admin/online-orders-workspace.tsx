@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { MapPin, Package, Phone, ShoppingBag, Truck } from "lucide-react";
 import { OrderManagementActions } from "@/components/order-management-actions";
+import { OrderFulfillmentActions } from "@/components/admin/order-fulfillment-actions";
 
 export type OnlineOrder = {
   id: string;
   orderNumber: string;
+  salesChannel: "ONLINE" | "POS";
   customer: { name: string; phone: string | null; email: string | null } | null;
   subtotal: number;
   vat: number;
@@ -16,6 +18,12 @@ export type OnlineOrder = {
   orderStatus: string;
   fulfillmentType: "pickup" | "delivery";
   shippingAddress: { county: string; town: string; address: string } | null;
+  deliveryMethod: string | null;
+  deliveryCarrier: string | null;
+  deliveryTrackingReference: string | null;
+  deliveredAt: string | null;
+  deliveryConfirmedAt: string | null;
+  deliveryProofUrl: string | null;
   createdAt: string;
   items: Array<{ id: string; name: string; sku: string; quantity: number; unitPrice: number; lineTotal: number }>;
 };
@@ -49,7 +57,7 @@ function money(value: number) {
   return `KSh ${value.toLocaleString()}`;
 }
 
-export function OnlineOrdersWorkspace({ orders, isAdmin = true }: { orders: OnlineOrder[]; isAdmin?: boolean }) {
+export function OnlineOrdersWorkspace({ orders, isAdmin = false }: { orders: OnlineOrder[]; isAdmin?: boolean }) {
   const [view, setView] = useState<OrderView>("all");
   const [query, setQuery] = useState("");
 
@@ -77,24 +85,24 @@ export function OnlineOrdersWorkspace({ orders, isAdmin = true }: { orders: Onli
     <div className="online-orders-workspace">
       <div className="online-orders-intro">
         <div>
-          <p className="eyebrow">Website channel only</p>
-          <h2>Fulfil online purchases with confidence.</h2>
-          <p>Customer details, delivery instructions, items, payment, and totals stay together on every order.</p>
+          <p className="eyebrow">Customer orders</p>
+          <h2>Track every order from receipt through delivery or pickup.</h2>
+          <p>Customer details, transport, carrier, status, and delivery proof stay together for website and POS orders.</p>
         </div>
         <div className="online-orders-channel">
           <ShoppingBag size={18} />
-          <span>ONLINE</span>
-          <small>POS excluded</small>
+          <span>ALL CHANNELS</span>
+          <small>Online + POS</small>
         </div>
       </div>
 
       <div className="online-orders-toolbar">
         <label className="online-orders-search">
-          <span className="sr-only">Search online orders</span>
+          <span className="sr-only">Search orders</span>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order number, customer, phone or email..." />
         </label>
 
-        <div className="online-orders-tabs" role="tablist" aria-label="Online order status">
+        <div className="online-orders-tabs" role="tablist" aria-label="Order status">
           {(["all", "ongoing", "ready", "delivered", "cancelled"] as const).map((key) => (
             <button key={key} type="button" role="tab" aria-selected={view === key} className={view === key ? "is-active" : ""} onClick={() => setView(key)}>
               {key === "ready" ? "Ready / pickup" : key[0].toUpperCase() + key.slice(1)} <b>{counts[key]}</b>
@@ -109,8 +117,8 @@ export function OnlineOrdersWorkspace({ orders, isAdmin = true }: { orders: Onli
         ) : (
           <div className="online-orders-empty">
             <Package size={24} />
-            <h3>No online orders in this view.</h3>
-            <p>POS transactions are intentionally kept outside this workspace.</p>
+            <h3>No orders in this view.</h3>
+            <p>Website and POS orders will appear here as soon as they are created.</p>
           </div>
         )}
       </div>
@@ -131,6 +139,7 @@ function OnlineOrderCard({ order, isAdmin }: { order: OnlineOrder; isAdmin: bool
           <small>{new Date(order.createdAt).toLocaleString()}</small>
         </div>
         <div className="online-order-badges">
+          <span className="online-order-fulfillment">{order.salesChannel}</span>
           <span className={`online-order-status status-${order.orderStatus.toLowerCase()}`}>{statusLabels[order.orderStatus] ?? order.orderStatus}</span>
           <span className="online-order-fulfillment"><Truck size={14} /> {order.fulfillmentType === "pickup" ? "Customer pickup" : "Delivery"}</span>
         </div>
@@ -173,10 +182,24 @@ function OnlineOrderCard({ order, isAdmin }: { order: OnlineOrder; isAdmin: bool
             <div className="total"><dt>Total</dt><dd>{money(order.total)}</dd></div>
           </dl>
           <span className={`online-order-payment payment-${order.paymentStatus.toLowerCase()}`}>Payment : {order.paymentStatus}</span>
+          <OrderFulfillmentActions
+            orderId={order.id}
+            orderStatus={order.orderStatus}
+            fulfillmentType={order.fulfillmentType}
+            deliveryMethod={order.deliveryMethod}
+            carrier={order.deliveryCarrier}
+            trackingReference={order.deliveryTrackingReference}
+            isAdmin={isAdmin}
+          />
+          {order.deliveryConfirmedAt && (
+            <p className="delivery-proof-recorded">
+              Customer confirmed delivery on {new Date(order.deliveryConfirmedAt).toLocaleString("en-KE")}
+              {order.deliveryProofUrl && <> · <a href={order.deliveryProofUrl} target="_blank" rel="noreferrer">View proof</a></>}
+            </p>
+          )}
           <OrderManagementActions orderId={order.id} orderStatus={order.orderStatus} createdAt={order.createdAt} isAdmin={isAdmin} />
         </section>
       </div>
     </article>
   );
 }
-

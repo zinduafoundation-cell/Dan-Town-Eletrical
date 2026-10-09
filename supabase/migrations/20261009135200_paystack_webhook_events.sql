@@ -18,8 +18,22 @@ create unique index if not exists paystack_webhook_events_event_id_unique
 
 alter table public.paystack_webhook_events enable row level security;
 
-create policy if not exists "service role manages paystack webhook events"
-  on public.paystack_webhook_events
-  for all
-  using (true)
-  with check (true);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'paystack_webhook_events'
+      and policyname = 'service role manages paystack webhook events'
+  ) then
+    create policy "service role manages paystack webhook events"
+      on public.paystack_webhook_events
+      as permissive
+      for all
+      to service_role
+      using (true)
+      with check (true);
+  end if;
+end
+$$;

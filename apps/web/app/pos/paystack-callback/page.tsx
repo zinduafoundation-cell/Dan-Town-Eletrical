@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 
 export default function PaystackCallbackPage() {
   const params = useSearchParams();
@@ -18,6 +19,9 @@ export default function PaystackCallbackPage() {
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.error || "Payment could not be confirmed.");
         setMessage(`Payment confirmed for ${result.orderNumber}.`);
+        if (result.receipt?.receiptNumber && result.receipt?.currency && Array.isArray(result.receipt?.items)) {
+          showPOSReceiptEffect(result.receipt);
+        }
       })
       .catch((error: unknown) => setMessage(error instanceof Error ? error.message : "Payment could not be confirmed."));
   }, [orderId, reference]);

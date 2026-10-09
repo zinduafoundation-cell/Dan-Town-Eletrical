@@ -1,5 +1,5 @@
 export { createSupabaseBrowserClient } from "./client";
-export type { BusinessCentreMetrics, Database, DomainEvent, Inventory, InventoryHealth, Json, Order, OrderItem, Product } from "./types";
+export type { BusinessCentreMetrics, Database, DomainEvent, Inventory, InventoryHealth, Json, Order, OrderItem, OrderStatus, OrderStatusHistory, Product } from "./types";
 
 export { adjustInventory, getInventoryHealth } from "./services/inventory";
 export { createOrder, getCustomerOrders } from "./services/orders";

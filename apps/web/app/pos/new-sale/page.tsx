@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { APP_CURRENCY } from "@dantown/shared";
 import { AlertCircle, Banknote, Building2, CreditCard, Minus, Pause, Play, Plus, Receipt, Search, ShoppingCart, Smartphone, Sparkles, Trash2, type LucideIcon } from "lucide-react";
 import { CameraBarcodeScanner } from "@/components/pos/camera-barcode-scanner";
 import { CashSessionPanel } from "@/components/pos/cash-session";
@@ -10,6 +11,7 @@ import { matchesPOSProduct } from "@/lib/pos/product-search";
 import { readCashSession, recordCashSale, saveCashSession, type CashSession } from "@/lib/pos/cash-session";
 import { createHeldSale, getHeldSales, removeHeldSale, upsertHeldSale, type HeldSale } from "@/lib/pos/held-sales";
 import { boughtTogether, money, parseSmartLine, quickCash, recordSale, topPicks, whatsappUrl } from "@/lib/pos/smart";
+import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 
 type Product = { id: string; name: string; sku: string; barcode: string | null; price: number; vatRate: number; category: string; qty: number; imageUrl: string | null };
 type CartItem = Product & { cartQty: number };
@@ -217,6 +219,15 @@ export default function NewSalePage() {
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error ?? "Unable to complete sale.");
       setReceipt({ date: new Date(result.receipt.createdAt).toLocaleString(), customer: result.receipt.customer, phone: selectedCustomer?.phone ?? null, amount: Number(result.receipt.total), items: itemCount, lines, receiptNumber: result.receipt.receiptNumber, servedBy: result.receipt.servedBy, staffRole: result.receipt.staffRole, paymentMethod: result.receipt.paymentMethod, tendered: change !== null ? tendered : null, change });
+      showPOSReceiptEffect({
+        receiptNumber: result.receipt.receiptNumber,
+        currency: APP_CURRENCY,
+        items: cart.map((item) => ({
+          name: item.name,
+          qty: item.cartQty,
+          price: (item.price * item.cartQty + Math.round(item.price * item.cartQty * item.vatRate) / 100) / item.cartQty
+        }))
+      });
       recordSale(cartIds);
       if (cashPortionForCurrentSale > 0 && cashSession.status === "open") {
         setCashSession((current) => recordCashSale(current, cashPortionForCurrentSale));

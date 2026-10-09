@@ -3,10 +3,12 @@ import { ArrowLeft, Check, Circle } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireAuthenticated } from "../../../../lib/auth/server";
 import { createSupabaseServerClient } from "../../../../lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { StorefrontShell } from "@/components/storefront";
 import { buildOrderLifecycleTimeline, getOrderStatusLabel } from "@/lib/order-lifecycle";
 import { buildDeliveryStatusSummary } from "@/lib/delivery-status";
 import { OrderManagementActions } from "@/components/order-management-actions";
+import { DeliveryProofSubmission } from "@/components/account/delivery-proof-submission";
 import { getOrderEditExpiryLabel, isOrderModifiable } from "@/lib/order-edit-window";
 
 export const dynamic = "force-dynamic";
@@ -20,28 +22,35 @@ export default async function AccountOrderDetailPage({ params }: { params: Promi
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, order_number, subtotal, discount, vat, delivery_fee, total, order_status, payment_status, shipping_address, billing_address, created_at")
+    .select("id, order_number, subtotal, discount, vat, delivery_fee, total, order_status, payment_status, shipping_address, billing_address, notes, delivery_method, delivery_carrier, delivery_tracking_reference, delivered_at, delivery_proof_path, delivery_confirmed_at, created_at")
     .eq("id", id)
     .eq("customer_id", customer.id)
     .maybeSingle();
   if (!order) notFound();
 
-  const [{ data: items }, { data: payments }] = await Promise.all([
+  const [{ data: items }, { data: payments }, { data: history, error: historyError }] = await Promise.all([
     supabase.from("order_items").select("id, product_name_snapshot, sku_snapshot, unit_price, quantity, line_total").eq("order_id", order.id),
-    supabase.from("payments").select("method, status, amount, currency, created_at").eq("order_id", order.id).order("created_at", { ascending: false }).limit(1)
+    supabase.from("payments").select("method, status, amount, currency, created_at").eq("order_id", order.id).order("created_at", { ascending: false }).limit(1),
+    supabase.from("order_status_history").select("previous_status,new_status,note,created_at").eq("order_id", order.id).order("created_at", { ascending: true })
   ]);
+  if (historyError) throw new Error(`Unable to load order status history: ${historyError.message}`);
   const address = order.shipping_address && typeof order.shipping_address === "object" ? order.shipping_address as Record<string, unknown> : null;
   const deliverySummary = buildDeliveryStatusSummary({
-    status: "PENDING",
-    tracking_reference: undefined,
+    status: order.order_status,
+    tracking_reference: order.delivery_tracking_reference,
     scheduled_at: undefined,
-    delivered_at: undefined,
+    delivered_at: order.delivered_at,
     address
   });
-  const stages = buildOrderLifecycleTimeline(order.order_status);
-  const currentIndex = stages.findIndex((stage) => stage.complete && stage.stage === order.order_status) >= 0
-    ? stages.findIndex((stage) => stage.stage === order.order_status)
-    : stages.findLastIndex((stage) => stage.complete);
+  let deliveryProofUrl: string | null = null;
+  if (order.delivery_proof_path) {
+    const { data, error: proofUrlError } = await createSupabaseServiceClient()
+      .storage.from("delivery-proofs").createSignedUrl(order.delivery_proof_path, 300);
+    if (proofUrlError) throw new Error(`Unable to load delivery proof: ${proofUrlError.message}`);
+    deliveryProofUrl = data.signedUrl;
+  }
+  const fulfillmentType = String(order.notes ?? "").toLowerCase().includes("pickup") ? "pickup" : "delivery";
+  const stages = buildOrderLifecycleTimeline(order.order_status, fulfillmentType);
   const canModifyOrder = isOrderModifiable(order.order_status, order.created_at);
   const expiryLabel = getOrderEditExpiryLabel(order.created_at);
 
@@ -58,7 +67,7 @@ export default async function AccountOrderDetailPage({ params }: { params: Promi
         </div>
         <OrderManagementActions orderId={order.id} orderStatus={order.order_status} createdAt={order.created_at} />
         <section className="order-timeline">
-          {stages.map((stage, index) => {
+          {stages.map((stage) => {
             const complete = stage.complete;
             return <div className={complete ? "order-stage complete" : "order-stage"} key={stage.stage}><span>{complete ? <Check size={15} /> : <Circle size={11} />}</span><small>{stage.label}</small></div>;
           })}
@@ -77,15 +86,35 @@ export default async function AccountOrderDetailPage({ params }: { params: Promi
             <div className="order-total"><span>Total</span><strong>KSh {Number(order.total).toLocaleString("en-KE")}</strong></div>
             <p className="order-payment">Payment: {payments?.[0] ? `${payments[0].method} · ${payments[0].status}` : order.payment_status}</p>
             <div className="delivery-status-summary" style={{ marginTop: 18, borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 12 }}>
-              <p className="eyebrow">Delivery status</p>
+              <p className="eyebrow">{fulfillmentType === "pickup" ? "Pickup status" : "Delivery status"}</p>
               <strong>{deliverySummary.label}</strong>
               <small>Tracking: {deliverySummary.tracking}</small>
+              {order.delivery_method && <small>Transport: {order.delivery_method}</small>}
+              {order.delivery_carrier && <small>Carrier / driver: {order.delivery_carrier}</small>}
               <small>{deliverySummary.window}</small>
               <small>{deliverySummary.proof}</small>
+              {order.delivery_confirmed_at && <small>Customer confirmed: {new Date(order.delivery_confirmed_at).toLocaleString("en-KE")}</small>}
+              {deliveryProofUrl && <a href={deliveryProofUrl} target="_blank" rel="noreferrer">View submitted proof</a>}
             </div>
-            {address && <p className="order-address">Delivery address<br />{String(address.name ?? "")}<br />{String(address.address_line_1 ?? address.address ?? "")}<br />{String(address.city ?? address.town ?? "")}</p>}
+            {order.order_status === "DELIVERED" && (
+              <DeliveryProofSubmission orderId={order.id} proofRecorded={Boolean(order.delivery_confirmed_at && order.delivery_proof_path)} />
+            )}
+            {address && fulfillmentType === "delivery" && <p className="order-address">Delivery address<br />{String(address.name ?? "")}<br />{String(address.address_line_1 ?? address.address ?? "")}<br />{String(address.city ?? address.town ?? "")}</p>}
           </aside>
         </div>
+        {history?.length ? (
+          <section className="content-panel order-history-panel">
+            <p className="eyebrow">Order updates</p>
+            <h2>Status history</h2>
+            {history.map((entry) => (
+              <div className="order-history-row" key={`${entry.created_at}-${entry.new_status}`}>
+                <span>{new Date(entry.created_at).toLocaleString("en-KE")}</span>
+                <strong>{getOrderStatusLabel(entry.new_status)}</strong>
+                {entry.note && <span>{entry.note}</span>}
+              </div>
+            ))}
+          </section>
+        ) : null}
       </main>
     </StorefrontShell>
   );

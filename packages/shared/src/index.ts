@@ -1,5 +1,6 @@
 export const APP_NAME = "Dantown Electrical";
 export const APP_LOCATION = "Kitale, Kenya";
+export const APP_CURRENCY = "KES";
 
 export const userRoles = [
   "CEO",

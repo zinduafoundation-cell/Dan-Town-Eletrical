@@ -19,6 +19,7 @@ export type Database = {
       purchase_order_items: { Row: PurchaseOrderItem; Insert: PurchaseOrderItemInsert; Update: Partial<PurchaseOrderItemInsert>; Relationships: [] };
       product_drafts: { Row: ProductDraft; Insert: ProductDraftInsert; Update: Partial<ProductDraftInsert>; Relationships: [] };
       orders: { Row: Order; Insert: OrderInsert; Update: Partial<OrderInsert>; Relationships: [] };
+      order_status_history: { Row: OrderStatusHistory; Insert: OrderStatusHistoryInsert; Update: Partial<OrderStatusHistoryInsert>; Relationships: [] };
       order_items: { Row: OrderItem; Insert: OrderItemInsert; Update: Partial<OrderItemInsert>; Relationships: [] };
       payments: { Row: Payment; Insert: PaymentInsert; Update: Partial<PaymentInsert>; Relationships: [] };
       payment_transactions: { Row: PaymentTransaction; Insert: PaymentTransactionInsert; Update: Partial<PaymentTransactionInsert>; Relationships: [] };
@@ -233,6 +234,8 @@ export type ProductDraft = { id: string; status: string; created_at: string; upd
 export type ProductDraftInsert = Omit<ProductDraft, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
 export type InventoryHealth = Inventory & { available_quantity: number; is_low_stock: boolean };
 export type OrderStatus = "PENDING" | "PAYMENT_PENDING" | "PAID" | "PROCESSING" | "READY_FOR_PICKUP" | "READY_FOR_DELIVERY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED" | "REFUNDED" | "PARTIALLY_REFUNDED" | "FAILED";
+export type OrderStatusHistory = { id: string; order_id: string; previous_status: OrderStatus | null; new_status: OrderStatus; note: string | null; changed_by: string | null; created_at: string };
+export type OrderStatusHistoryInsert = Omit<OrderStatusHistory, "id" | "created_at"> & { id?: string; created_at?: string };
 export type PaymentStatus = "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED" | "CANCELLED" | "REFUNDED" | "PARTIALLY_REFUNDED";
 export type InventoryMovementType = "PURCHASE" | "SALE" | "RETURN" | "ADJUSTMENT" | "TRANSFER_IN" | "TRANSFER_OUT" | "DAMAGE" | "STOCK_COUNT" | "RESERVATION" | "RELEASE";
 export type Order = { 
@@ -258,6 +261,13 @@ export type Order = {
   offline_synced_at: string | null;
   shipping_address: Json | null;
   billing_address: Json | null;
+  delivery_method: string | null;
+  delivery_carrier: string | null;
+  delivery_tracking_reference: string | null;
+  delivered_at: string | null;
+  delivery_proof_path: string | null;
+  delivery_confirmed_at: string | null;
+  delivery_confirmed_by: string | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -286,6 +296,13 @@ export type OrderInsert = {
   offline_synced_at?: string | null;
   shipping_address?: Json | null;
   billing_address?: Json | null;
+  delivery_method?: string | null;
+  delivery_carrier?: string | null;
+  delivery_tracking_reference?: string | null;
+  delivered_at?: string | null;
+  delivery_proof_path?: string | null;
+  delivery_confirmed_at?: string | null;
+  delivery_confirmed_by?: string | null;
   notes?: string | null;
 };
 export type OrderItem = { 

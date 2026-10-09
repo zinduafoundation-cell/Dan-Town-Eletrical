@@ -7,6 +7,7 @@ export const ORDER_LIFECYCLE_STAGES = [
 ] as const;
 
 export type OrderLifecycleStage = typeof ORDER_LIFECYCLE_STAGES[number];
+type OrderTimelineStage = OrderLifecycleStage | "READY_FOR_PICKUP";
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Order received",
@@ -55,10 +56,13 @@ export function getCurrentOrderLifecycleIndex(currentStatus?: string | null): nu
   return ORDER_LIFECYCLE_STAGES.indexOf(normalized as OrderLifecycleStage);
 }
 
-export function buildOrderLifecycleTimeline(currentStatus?: string | null) {
-  const currentIndex = getCurrentOrderLifecycleIndex(currentStatus);
+export function buildOrderLifecycleTimeline(currentStatus?: string | null, fulfillmentType: "pickup" | "delivery" = "delivery") {
+  const stages: OrderTimelineStage[] = fulfillmentType === "pickup"
+    ? ["PENDING", "PROCESSING", "READY_FOR_PICKUP", "DELIVERED"]
+    : [...ORDER_LIFECYCLE_STAGES];
+  const currentIndex = stages.indexOf(currentStatus as OrderTimelineStage);
 
-  return ORDER_LIFECYCLE_STAGES.map((stage, index) => ({
+  return stages.map((stage, index) => ({
     stage,
     label: getOrderStatusLabel(stage),
     complete: currentIndex >= index
