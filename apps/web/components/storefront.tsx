@@ -151,7 +151,6 @@ export function StorefrontShell({
               <Link href="/projects">Projects</Link>
               <Link href="/request-quote">Request Quote</Link>
               <Link href="/about">About</Link>
-              <Link href="/business-center">Dantown Centre</Link>
               <Link href="/contact">Contact</Link>
             </div>
 

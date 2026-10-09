@@ -1,0 +1,60 @@
+{
+  "generatedAt": "2026-10-08T13:30:00Z",
+  "generatedOnPlatform": "win32",
+  "projectType": "webapp",
+  "assertions": [
+    {
+      "name": "web-lint",
+      "kind": "process",
+      "command": "npm",
+      "args": ["run", "lint"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 240
+    },
+    {
+      "name": "tests-pass",
+      "kind": "process",
+      "command": "npm",
+      "args": ["test"],
+      "verificationMethod": "test-results",
+      "expected": "0",
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "production-build",
+      "kind": "process",
+      "command": "npm",
+      "args": ["run", "build"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 600
+    },
+    {
+      "name": "login-route-responds",
+      "kind": "http-probe",
+      "startCommand": "npm",
+      "startArgs": ["run", "start"],
+      "env": {
+        "PORT": "3102"
+      },
+      "url": "http://127.0.0.1:3102/login",
+      "verificationMethod": "http-status",
+      "expected": "200",
+      "timeoutSeconds": 120
+    },
+    {
+      "name": "registration-route-responds",
+      "kind": "http-probe",
+      "startCommand": "npm",
+      "startArgs": ["run", "start"],
+      "env": {
+        "PORT": "3102"
+      },
+      "url": "http://127.0.0.1:3102/register",
+      "verificationMethod": "http-status",
+      "expected": "200",
+      "timeoutSeconds": 120
+    }
+  ]
+}

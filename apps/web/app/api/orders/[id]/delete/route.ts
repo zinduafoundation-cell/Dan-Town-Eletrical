@@ -15,7 +15,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       .eq("id", id)
       .maybeSingle();
 
-    if (lookupError || !order) {
+    if (lookupError) {
+      console.error("ORDER DELETE LOOKUP ERROR", lookupError);
+      return NextResponse.json({ error: "Unable to verify this order before deletion." }, { status: 500 });
+    }
+
+    if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
@@ -28,31 +33,31 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "This order is outside the edit window and cannot be deleted." }, { status: 403 });
     }
 
-    const { error: deleteError } = await supabase.from("orders").delete().eq("id", id);
-    if (deleteError) {
-      throw deleteError;
-    }
-
-    await supabase.from("order_items").delete().eq("order_id", id);
-    await supabase.from("payments").delete().eq("order_id", id);
-
-    const { error: auditError } = await supabase.from("audit_logs").insert({
-      user_id: context.userId === "dev-bypass-user" ? null : context.userId,
-      action: isPrivileged ? "ORDER_DELETED_BY_ADMIN" : "ORDER_DELETED",
-      resource_type: "order",
-      resource_id: id,
-      new_data: {
-        order_number: order.order_number,
-        total: Number(order.total ?? 0),
-        sales_channel: order.sales_channel ?? "ONLINE",
+    const { error: archiveError } = await supabase.rpc("archive_and_delete_order", {
+      p_order_id: id,
+      p_actor_user_id: context.userId === "dev-bypass-user" ? null : context.userId,
+      p_action: isPrivileged ? "ORDER_DELETED_BY_ADMIN" : "ORDER_DELETED",
+      p_metadata: {
         deleted_by: context.userId,
         deleted_by_role: isPrivileged ? "admin" : "customer",
         reason: isPrivileged ? "admin_delete" : "customer_delete",
         deleted_at: new Date().toISOString()
       }
     });
-    if (auditError) {
-      console.error("ORDER DELETE AUDIT ERROR", auditError);
+    if (archiveError) {
+      console.error("ORDER DELETE AND ARCHIVE ERROR", archiveError);
+      if (archiveError.message.includes("Order not found")) {
+        return NextResponse.json({ error: "Order not found." }, { status: 404 });
+      }
+      const hasProtectedReferences = archiveError.code === "23503";
+      return NextResponse.json(
+        {
+          error: hasProtectedReferences
+            ? "This order has linked payment or fulfillment records and cannot be deleted. No data was changed."
+            : "Unable to archive and delete this order. No data was changed."
+        },
+        { status: hasProtectedReferences ? 409 : 500 }
+      );
     }
 
     return NextResponse.json({ success: true, deleted: true });

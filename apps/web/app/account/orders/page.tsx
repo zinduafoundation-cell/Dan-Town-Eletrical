@@ -9,19 +9,26 @@ export const dynamic = "force-dynamic";
 export default async function AccountOrdersPage() {
   const context = await requireAuthenticated();
   const supabase = await createSupabaseServerClient();
-  const { data: customer } = await supabase
+  const { data: customer, error: customerError } = await supabase
     .from("customers")
     .select("id")
     .eq("user_id", context.userId)
     .maybeSingle();
+  if (customerError) {
+    throw new Error(`Unable to load your customer record from Supabase: ${customerError.message}`);
+  }
 
-  const { data: ordersData } = customer
+  const ordersResult = customer
     ? await supabase
         .from("orders")
         .select("id, order_number, total, order_status, payment_status, created_at")
         .eq("customer_id", customer.id)
         .order("created_at", { ascending: false })
-    : { data: [] }; const orders = ordersData ?? [];
+    : { data: [], error: null };
+  if (ordersResult.error) {
+    throw new Error(`Unable to load your orders from Supabase: ${ordersResult.error.message}`);
+  }
+  const orders = ordersResult.data ?? [];
 
   return (
     <PortalShell

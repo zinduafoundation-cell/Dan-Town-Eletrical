@@ -31,6 +31,12 @@ export function POSShell({
   staffRole?: string;
 }) {
   const pathname = usePathname();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const isOnline = useSyncExternalStore(subscribeToNetwork, getNetworkStatus, getServerNetworkStatus);
   const [queueSummary, setQueueSummary] = useState({ PENDING: 0, SYNCING: 0, SYNCED: 0, FAILED: 0, CONFLICT: 0 });
   useEffect(() => {
@@ -137,13 +143,16 @@ export function POSShell({
 
             {/* Date/Time */}
             <div className="pos-datetime">
-              {new Date().toLocaleDateString("en-KE", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-              })}
+              {now
+                ? now.toLocaleDateString("en-KE", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                  })
+                : ""}
             </div>
 
             {/* Notifications */}

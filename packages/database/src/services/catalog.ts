@@ -286,11 +286,28 @@ export async function getCatalogProducts(
   } = {}
 ) {
   try {
+    let categoryId: string | null = null;
+    if (options.category?.trim()) {
+      const { data: category, error: categoryError } = await client
+        .from("categories")
+        .select("id")
+        .eq("slug", options.category.trim())
+        .eq("is_active", true)
+        .maybeSingle();
+      if (categoryError) throw categoryError;
+      if (!category) return [];
+      categoryId = category.id;
+    }
+
     // Keep storefront reads authoritative: demo data must never mask a catalog outage.
     let query = client
       .from("products")
       .select(PRODUCT_LIST_SELECT)
       .eq("is_active", true);
+
+    if (categoryId) {
+      query = query.eq("category_id", categoryId);
+    }
 
     if (options.productIds?.length) {
       query = query.in("id", options.productIds);
@@ -303,9 +320,6 @@ export async function getCatalogProducts(
         .or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`);
     }
 
-    // For now, apply category and brand filters via client-side filtering since foreign key joins
-    // aren't working in Supabase types. We'll fetch categories and brands separately if needed.
-    
     // Apply sorting
     if (options.sort === "low") {
       query = query.order("retail_price", { ascending: true });
@@ -345,6 +359,10 @@ export async function getCatalogProducts(
         .order("sort_order", { ascending: true })
     ]);
 
+    if (categoriesResult.error) throw categoriesResult.error;
+    if (brandsResult.error) throw brandsResult.error;
+    if (imagesResult.error) throw imagesResult.error;
+
     const categoriesData = categoriesResult.data;
     const brandsData = brandsResult.data;
     const imagesData = imagesResult.data;
@@ -358,12 +376,6 @@ export async function getCatalogProducts(
 
     // Map database results to CatalogProduct type
     let products = data.map((product) => mapCatalogProduct(product, categoriesMap, brandsMap, imagesMap));
-
-    // Apply category filter if provided (client-side since DB joins aren't working)
-    if (options.category?.trim()) {
-      const categorySlug = options.category.trim();
-      products = products.filter(p => p.category?.slug === categorySlug);
-    }
 
     // Apply brand filter if provided (client-side since DB joins aren't working)
     if (options.brand?.trim()) {

@@ -11,7 +11,8 @@ import {
   Sparkles
 } from "lucide-react";
 import { getCatalogProducts } from "@dantown/database";
-import { isBskEmailAddress, requireAuthenticated } from "../../lib/auth/server";
+import { requireAuthenticated } from "../../lib/auth/server";
+import { hasBusinessCenterAccess } from "@/lib/auth/business-center-access";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { getDailyQuote } from "../../lib/daily-quote";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
@@ -37,24 +38,35 @@ export default async function AccountPage() {
   const context = await requireAuthenticated();
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const [{ data: profileData }, { data: customerData }, { data: wishlist }] =
-    await Promise.all([
-      supabase
+  const [profileResult, customerResult, wishlistResult] = await Promise.all([
+    supabase
         .from("profiles")
         .select("full_name, phone, status")
         .eq("id", context.userId)
         .maybeSingle(),
-      supabase
+    supabase
         .from("customers")
         .select("id, name, email, phone, customer_type, status")
         .eq("user_id", context.userId)
         .maybeSingle(),
-      supabase
+    supabase
         .from("wishlists")
         .select("id")
         .eq("user_id", context.userId)
         .maybeSingle()
-    ]);
+  ]);
+  if (profileResult.error) {
+    throw new Error(`Unable to load your profile from Supabase: ${profileResult.error.message}`);
+  }
+  if (customerResult.error) {
+    throw new Error(`Unable to load your customer record from Supabase: ${customerResult.error.message}`);
+  }
+  if (wishlistResult.error) {
+    throw new Error(`Unable to load your saved products from Supabase: ${wishlistResult.error.message}`);
+  }
+  const profileData = profileResult.data;
+  const customerData = customerResult.data;
+  const wishlist = wishlistResult.data;
 
   const customer = customerData ?? {
     id: "",
@@ -65,27 +77,45 @@ export default async function AccountPage() {
     status: null
   };
   const profile = profileData ?? { full_name: "", phone: null, status: null };
-  const isBskOwner = isBskEmailAddress(customer.email ?? user?.email ?? null);
+  const canOpenBusinessCenter = await hasBusinessCenterAccess(
+    context.userId,
+    user?.email ?? customer.email
+  );
 
-  const [{ count: orderCount }, { count: quoteCount }, { data: recentOrders }] =
-    customer.id
-      ? await Promise.all([
-          supabase
-            .from("orders")
-            .select("id", { count: "exact", head: true })
-            .eq("customer_id", customer.id),
-          supabase
-            .from("quotations")
-            .select("id", { count: "exact", head: true })
-            .eq("customer_id", customer.id),
-          supabase
-            .from("orders")
-            .select("id, order_number, total, order_status, payment_status, created_at")
-            .eq("customer_id", customer.id)
-            .order("created_at", { ascending: false })
-            .limit(3)
-        ])
-      : [{ count: 0 }, { count: 0 }, { data: [] }];
+  const [orderCountResult, quoteCountResult, recentOrdersResult] = customer.id
+    ? await Promise.all([
+        supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("customer_id", customer.id),
+        supabase
+          .from("quotations")
+          .select("id", { count: "exact", head: true })
+          .eq("customer_id", customer.id),
+        supabase
+          .from("orders")
+          .select("id, order_number, total, order_status, payment_status, created_at")
+          .eq("customer_id", customer.id)
+          .order("created_at", { ascending: false })
+          .limit(3)
+      ])
+    : [
+        { count: 0, error: null },
+        { count: 0, error: null },
+        { data: [], error: null }
+      ];
+  if (orderCountResult.error) {
+    throw new Error(`Unable to load your order count from Supabase: ${orderCountResult.error.message}`);
+  }
+  if (quoteCountResult.error) {
+    throw new Error(`Unable to load your quotation count from Supabase: ${quoteCountResult.error.message}`);
+  }
+  if (recentOrdersResult.error) {
+    throw new Error(`Unable to load your recent orders from Supabase: ${recentOrdersResult.error.message}`);
+  }
+  const orderCount = orderCountResult.count ?? 0;
+  const quoteCount = quoteCountResult.count ?? 0;
+  const recentOrders = recentOrdersResult.data ?? [];
 
   const displayName = profile.full_name || customer.name || "Dantown customer";
   const firstName = displayName.split(" ")[0];
@@ -126,9 +156,9 @@ export default async function AccountPage() {
               <span className="account-avatar">{initials || "D"}</span>
               <strong>{displayName}</strong>
               <small>{customer.email || "Email not added yet"}</small>
-              {isBskOwner && (
+              {canOpenBusinessCenter && (
                 <Link className="button button-primary" href="/business-center" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
-                  Open BSK
+                  Open Dantown Centre
                 </Link>
               )}
               <span className="account-verified"><ShieldCheck size={14} /> {profile.status || "Active customer"}</span>
@@ -140,6 +170,12 @@ export default async function AccountPage() {
                   {link.status && <small className="account-link-status">{link.status}</small>}
                 </Link>
               ))}
+              {canOpenBusinessCenter && (
+                <Link href="/business-center">Dantown Centre</Link>
+              )}
+              {context.permissions.includes("users.manage") && (
+                <Link href="/admin/business-center-access">Manage Centre access</Link>
+              )}
               <Link href="/logout">Sign out</Link>
             </nav>
           </aside>

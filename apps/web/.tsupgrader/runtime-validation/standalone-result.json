@@ -1,0 +1,149 @@
+{
+  "planHash": "b4b4ecd4d90430fa0cd781d566b94fd732ad87d87a3412ab1e20fc20db39a229",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-10-08T13:33:53.1408115Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 0,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "web-lint",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E @dantown/web@0.1.0 lint\r\n\u003E eslint .\r\n\r\n\r\nC:\\Users\\user\\dantownecomers\\apps\\web\\app\\account\\orders\\[id]\\page.tsx\r\n  42:9   warning  \u0027currentIndex\u0027 is assigned a value but never used  @typescript-eslint/no-unused-vars\r\n  61:31  warning  \u0027index\u0027 is defined but never used                  @typescript-eslint/no-unused-vars\r\n\r\n\u2716 2 problems (0 errors, 2 warnings)\r\n\r\n",
+        "durationMs": 116560
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E @dantown/web@0.1.0 test\r\n\u003E vitest run\r\n\r\n\r\n RUN  v4.1.11 C:/Users/user/dantownecomers/apps/web\r\n\r\n\r\n Test Files  29 passed (29)\r\n      Tests  80 passed (80)\r\n   Start at  16:31:04\r\n   Duration  38.76s (transform 38.01s, setup 0ms, import 65.15s, tests 4.41s, environment 20ms)\r\n\r\n",
+        "durationMs": 55523,
+        "testResults": {
+          "testFramework": "vitest",
+          "runnerDetectedFrom": "package_json",
+          "testsTotal": 80,
+          "testsPassed": 80,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": false
+        }
+      },
+      {
+        "name": "production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E @dantown/web@0.1.0 build\r\n\u003E next build\r\n\r\n\u25B2 Next.js 16.3.3 (Turbopack)\r\n- Environments: .env.local\r\n\u2713 Running next.config.ts took 339ms\r\n\r\n  Creating an optimized production build ...\r\n\u2713 Compiled successfully in 32.3s\r\n  Running TypeScript ...\r\n  Finished TypeScript in 18.2s ...\r\n  Collecting page data using 7 workers ...\r\n  Generating static pages using 7 workers (0/102) ...\r\n  Generating static pages using 7 workers (25/102) \r\n  Generating static pages using 7 workers (50/102) \r\n  Generating static pages using 7 workers (76/102) \r\n\u2713 Generating static pages using 7 workers (102/102) in 10.1s\r\n  Finalizing page optimization ...\r\n\r\nRoute (app)\r\n\u250C \u0192 /\r\n\u251C \u25CB /_not-found\r\n\u251C \u25CB /401\r\n\u251C \u25CB /403\r\n\u251C \u25CB /about\r\n\u251C \u0192 /account\r\n\u251C \u0192 /account/addresses\r\n\u251C \u0192 /account/installations\r\n\u251C \u0192 /account/notifications\r\n\u251C \u0192 /account/orders\r\n\u251C \u0192 /account/orders/[id]\r\n\u251C \u0192 /account/payments\r\n\u251C \u0192 /account/profile\r\n\u251C \u0192 /account/projects\r\n\u251C \u25CB /account/quotations\r\n\u251C \u0192 /account/quotes\r\n\u251C \u25CB /account/saved-products\r\n\u251C \u0192 /account/settings\r\n\u251C \u0192 /account/support\r\n\u251C \u0192 /account/warranty\r\n\u251C \u0192 /account/wishlist\r\n\u251C \u0192 /admin\r\n\u251C \u0192 /admin/[slug]\r\n\u251C \u0192 /admin/ai/smart-match\r\n\u251C \u0192 /admin/automation\r\n\u251C \u0192 /admin/automation/errors\r\n\u251C \u0192 /admin/automation/history\r\n\u251C \u0192 /admin/automation/inbox\r\n\u251C \u0192 /admin/automation/pricing\r\n\u251C \u0192 /admin/catalog\r\n\u251C \u0192 /admin/ceo\r\n\u251C \u0192 /admin/ceo/[slug]\r\n\u251C \u0192 /admin/dashboard\r\n\u251C \u0192 /admin/inventory\r\n\u251C \u0192 /admin/knowledge\r\n\u251C \u0192 /admin/orders\r\n\u251C \u0192 /admin/purchases\r\n\u251C \u0192 /admin/settings\r\n\u251C \u0192 /admin/settings/quickbooks\r\n\u251C \u0192 /admin/suppliers/[id]\r\n\u251C \u0192 /admin/team\r\n\u251C \u25CB /ai/smart-match\r\n\u251C \u0192 /api/account/notifications\r\n\u251C \u0192 /api/admin/automation/approve\r\n\u251C \u0192 /api/admin/automation/product-approve\r\n\u251C \u0192 /api/admin/catalog\r\n\u251C \u0192 /api/admin/catalog/[productId]/image\r\n\u251C \u0192 /api/admin/catalog/bulk\r\n\u251C \u0192 /api/admin/catalog/variants\r\n\u251C \u0192 /api/admin/imports\r\n\u251C \u0192 /api/admin/imports/preview\r\n\u251C \u0192 /api/admin/integrations/quickbooks\r\n\u251C \u0192 /api/admin/inventory/adjust\r\n\u251C \u0192 /api/admin/inventory/transfer\r\n\u251C \u0192 /api/admin/inventory/warehouses\r\n\u251C \u0192 /api/admin/knowledge\r\n\u251C \u0192 /api/admin/order-attention\r\n\u251C \u0192 /api/admin/order-bin\r\n\u251C \u0192 /api/admin/purchases\r\n\u251C \u0192 /api/admin/purchases/receive\r\n\u251C \u0192 /api/admin/team/invite\r\n\u251C \u0192 /api/ai/chat\r\n\u251C \u0192 /api/ai/escalate\r\n\u251C \u0192 /api/ai/smart-match\r\n\u251C \u0192 /api/ai/smart-match/quote\r\n\u251C \u0192 /api/auth/login\r\n\u251C \u0192 /api/auth/logout\r\n\u251C \u0192 /api/auth/passkey/devices\r\n\u251C \u0192 /api/auth/passkey/options\r\n\u251C \u0192 /api/auth/passkey/verify\r\n\u251C \u0192 /api/auth/provision\r\n\u251C \u0192 /api/auth/quick-access\r\n\u251C \u0192 /api/auth/register\r\n\u251C \u0192 /api/auth/resend\r\n\u251C \u0192 /api/auth/session\r\n\u251C \u0192 /api/auth/session-preference\r\n\u251C \u0192 /api/automation/ai-assistant\r\n\u251C \u0192 /api/automation/crm\r\n\u251C \u0192 /api/automation/email\r\n\u251C \u0192 /api/automation/ingest\r\n\u251C \u0192 /api/automation/inventory-receiving\r\n\u251C \u0192 /api/automation/landed-cost\r\n\u251C \u0192 /api/automation/pricing\r\n\u251C \u0192 /api/automation/product-match\r\n\u251C \u0192 /api/automation/stock-intake\r\n\u251C \u0192 /api/automation/webhook\r\n\u251C \u0192 /api/automation/whatsapp\r\n\u251C \u0192 /api/cart\r\n\u251C \u0192 /api/catalog/compare\r\n\u251C \u0192 /api/catalog/search\r\n\u251C \u0192 /api/centre/command\r\n\u251C \u0192 /api/checkout/profile\r\n\u251C \u0192 /api/delivery/estimate\r\n\u251C \u0192 /api/internal/events/dispatch\r\n\u251C \u0192 /api/internal/orders/cleanup\r\n\u251C \u0192 /api/orders\r\n\u251C \u0192 /api/orders/[id]/cancel\r\n\u251C \u0192 /api/orders/[id]/delete\r\n\u251C \u0192 /api/orders/[id]/return\r\n\u251C \u0192 /api/orders/pending-reminder\r\n\u251C \u0192 /api/pos/checkout\r\n\u251C \u0192 /api/pos/customers\r\n\u251C \u0192 /api/pos/dashboard\r\n\u251C \u0192 /api/pos/paystack-init\r\n\u251C \u0192 /api/pos/paystack-verify\r\n\u251C \u0192 /api/pos/paystack-webhook\r\n\u251C \u0192 /api/pos/products\r\n\u251C \u0192 /api/product-ingest\r\n\u251C \u0192 /api/settings/notifications\r\n\u251C \u0192 /api/wishlist\r\n\u251C \u0192 /auth/callback\r\n\u251C \u25CB /auth/callback-error\r\n\u251C \u0192 /auth/complete\r\n\u251C \u0192 /auth/confirm\r\n\u251C \u25CB /auth/verify-email\r\n\u251C \u25CB /brands\r\n\u251C \u0192 /brands/[slug]\r\n\u251C \u0192 /business\r\n\u251C \u0192 /business-center\r\n\u251C \u25CB /callback-error\r\n\u251C \u25CB /cart\r\n\u251C \u25CB /categories\r\n\u251C \u0192 /categories/[slug]\r\n\u251C \u25CB /checkout\r\n\u251C \u0192 /compare\r\n\u251C \u25CB /contact\r\n\u251C \u0192 /deals\r\n\u251C \u25CB /delivery\r\n\u251C \u25CB /electrical\r\n\u251C \u25CB /forgot-password\r\n\u251C \u25CB /login\r\n\u251C \u25CB /logout\r\n\u251C \u0192 /order-confirmation\r\n\u251C \u0192 /payment\r\n\u251C \u25CB /payment-security\r\n\u251C \u0192 /pos\r\n\u251C \u0192 /pos/[section]\r\n\u251C \u0192 /pos/new-sale\r\n\u251C \u0192 /pos/paystack-callback\r\n\u251C \u0192 /products/[slug]\r\n\u251C \u25CB /projects\r\n\u251C   /\n\u2026[truncated]",
+        "durationMs": 115022
+      },
+      {
+        "name": "login-route-responds",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\u003Chtml lang=\u0022en\u0022 data-scroll-behavior=\u0022smooth\u0022\u003E\u003Chead\u003E\u003Cmeta charSet=\u0022utf-8\u0022/\u003E\u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022/\u003E\u003Clink rel=\u0022stylesheet\u0022 href=\u0022/_next/static/chunks/2kybe7e-bv5ol.css\u0022 data-precedence=\u0022next\u0022/\u003E\u003Clink rel=\u0022stylesheet\u0022 href=\u0022/_next/static/chunks/358-fik9aa43n.css\u0022 data-precedence=\u0022next\u0022/\u003E\u003Clink rel=\u0022preload\u0022 as=\u0022script\u0022 fetchPriority=\u0022low\u0022 href=\u0022/_next/static/chunks/3s6nzrbk-8mnv.js\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/33g_4yfdp1_l_.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/1mkbuudhndal5.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/3i-7owc-2ausn.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/turbopack-3_t87dp8n222-.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/3-962b4dthdle.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/0h9m-bmy-hl0e.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/0ig5rofma47ly.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/0toyewwpslfl2.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Ctitle\u003EDantown Electrical | Powering Kitale, one home at a time.\u003C/title\u003E\u003Cmeta name=\u0022description\u0022 content=\u0022Electrical, solar and lighting products and services from Kitale, Kenya.\u0022/\u003E\u003Clink rel=\u0022manifest\u0022 href=\u0022/manifest.json\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/0cz1d0mv5g_q7.js\u0022 noModule=\u0022\u0022\u003E\u003C/script\u003E\u003C/head\u003E\u003Cbody\u003E\u003Cdiv hidden=\u0022\u0022\u003E\u003C!--$--\u003E\u003C!--/$--\u003E\u003C/div\u003E\u003C!--$--\u003E\u003Cmain class=\u0022auth-page\u0022\u003E\u003Csection class=\u0022auth-panel\u0022\u003E\u003Ca class=\u0022brand\u0022 href=\u0022/\u0022\u003E\u003Cspan class=\u0022brand-mark\u0022\u003ED\u003C/span\u003E\u003Cspan\u003EDANTOWN \u003Cb\u003EELECTRICAL\u003C/b\u003E\u003C/span\u003E\u003C/a\u003E\u003Ch1\u003EWelcome back.\u003C/h1\u003E\u003Cp class=\u0022auth-lead\u0022\u003EChecking for a saved sign-in...\u003C/p\u003E\u003Cbutton type=\u0022button\u0022 class=\u0022google-sign-in\u0022 disabled=\u0022\u0022\u003E\u003Cspan class=\u0022google-mark\u0022\u003EG\u003C/span\u003EContinue with Google\u003C/button\u003E\u003Cdiv class=\u0022auth-divider\u0022\u003E\u003Cspan\u003Eor use email\u003C/span\u003E\u003C/div\u003E\u003Cform class=\u0022auth-form\u0022\u003E\u003Clabel\u003EEmail\u003Cinput type=\u0022email\u0022 autoComplete=\u0022email\u0022 required=\u0022\u0022 disabled=\u0022\u0022 name=\u0022email\u0022/\u003E\u003C/label\u003E\u003Clabel\u003EPassword\u003Cinput type=\u0022password\u0022 autoComplete=\u0022current-password\u0022 required=\u0022\u0022 disabled=\u0022\u0022 name=\u0022password\u0022/\u003E\u003C/label\u003E\u003Clabel class=\u0022auth-remember\u0022\u003E\u003Cinput type=\u0022checkbox\u0022 disabled=\u0022\u0022 name=\u0022rememberMe\u0022/\u003E\u003Cspan\u003ERemember me on this device for 30 days\u003C/span\u003E\u003C/label\u003E\u003Cp class=\u0022auth-remember-note\u0022\u003ESigning out still ends your session. We never save your password.\u003C/p\u003E\u003Ca class=\u0022text-link\u0022 href=\u0022/forgot-password\u0022\u003EForgot password\u003C/a\u003E\u003Cbutton class=\u0022button button-primary\u0022 disabled=\u0022\u0022\u003EChecking session...\u003C/button\u003E\u003C/form\u003E\u003Cp class=\u0022auth-switch\u0022\u003ENew to Dantown \u003Ca href=\u0022/register\u0022\u003ECreate an account\u003C/a\u003E\u003C/p\u003E\u003C/section\u003E\u003C/main\u003E\u003C!--$--\u003E\u003C!--/$--\u003E\u003C!--/$--\u003E\u003Cnav class=\u0022history-navigation\u0022 aria-label=\u0022Page navigation\u0022\u003E\u003Cbutton type=\u0022button\u0022 disabled=\u0022\u0022 aria-label=\u0022Go back\u0022 title=\u0022Go back\u0022\u003E\u003Csvg xmlns=\u0022http://www.w3.org/2000/svg\u0022 width=\u002217\u0022 height=\u002217\u0022 viewBox=\u00220 0 24 24\u0022 fill=\u0022none\u0022 stroke=\u0022currentColor\u0022 stroke-width=\u00222\u0022 stroke-linecap=\u0022round\u0022 stroke-linejoin=\u0022round\u0022 class=\u0022lucide lucide-arrow-left\u0022 aria-hidden=\u0022true\u0022\u003E\u003Cpath d=\u0022m12 19-7-7 7-7\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M19 12H5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan\u003EBack\u003C/span\u003E\u003C/button\u003E\u003Cbutton type=\u0022button\u0022 disabled=\u0022\u0022 aria-label=\u0022Go forward\u0022 title=\u0022Go forward\u0022\u003E\u003Cspan\u003ENext\u003C/span\u003E\u003Csvg xmlns=\u0022http://www.w3.org/2000/svg\u0022 width=\u002217\u0022 height=\u002217\u0022 viewBox=\u00220 0 24 24\u0022 fill=\u0022none\u0022 stroke=\u0022currentColor\u0022 stroke-width=\u00222\u0022 stroke-linecap=\u0022round\u0022 stroke-linejoin=\u0022round\u0022 class=\u0022lucide lucide-arrow-right\u0022 aria-hidden=\u0022true\u0022\u003E\u003Cpath d=\u0022M5 12h14\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022m12 5 7 7-7 7\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003C/button\u003E\u003C/nav\u003E\u003Cscript src=\u0022/_next/static/chunks/3s6nzrbk-8mnv.js\u0022 id=\u0022_R_\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript\u003E(self.__next_f=self.__next_f||[]).push([0])\u003C/script\u003E\u003Cscript\u003Eself.__next_f.push([1,\u00221:I[39756,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022LoadingBoundaryProvider\\\u0022]\\n2:\\\u0022$Sreact.fragment\\\u0022\\n3:I[55329,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022PWARegister\\\u0022]\\n4:I[88160,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022Providers\\\u0022]\\n5:I[39756,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022default\\\u0022]\\n6:I[836,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022,\\\u0022/_next/static/chunks/0h9m-bmy-hl0e.js\\\u0022],\\\u0022default\\\u0022]\\n7:I[37457,[\\\u0022/_next/static/chunks/\n\u2026[truncated]",
+        "durationMs": 12620
+      },
+      {
+        "name": "registration-route-responds",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\u003Chtml lang=\u0022en\u0022 data-scroll-behavior=\u0022smooth\u0022\u003E\u003Chead\u003E\u003Cmeta charSet=\u0022utf-8\u0022/\u003E\u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022/\u003E\u003Clink rel=\u0022stylesheet\u0022 href=\u0022/_next/static/chunks/2kybe7e-bv5ol.css\u0022 data-precedence=\u0022next\u0022/\u003E\u003Clink rel=\u0022stylesheet\u0022 href=\u0022/_next/static/chunks/358-fik9aa43n.css\u0022 data-precedence=\u0022next\u0022/\u003E\u003Clink rel=\u0022preload\u0022 as=\u0022script\u0022 fetchPriority=\u0022low\u0022 href=\u0022/_next/static/chunks/3s6nzrbk-8mnv.js\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/33g_4yfdp1_l_.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/1mkbuudhndal5.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/3i-7owc-2ausn.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/turbopack-3_t87dp8n222-.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/3-962b4dthdle.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/0h9m-bmy-hl0e.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/2ph_k_p6en4ec.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/0toyewwpslfl2.js\u0022 async=\u0022\u0022 crossorigin=\u0022\u0022\u003E\u003C/script\u003E\u003Ctitle\u003EDantown Electrical | Powering Kitale, one home at a time.\u003C/title\u003E\u003Cmeta name=\u0022description\u0022 content=\u0022Electrical, solar and lighting products and services from Kitale, Kenya.\u0022/\u003E\u003Clink rel=\u0022manifest\u0022 href=\u0022/manifest.json\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/0cz1d0mv5g_q7.js\u0022 noModule=\u0022\u0022\u003E\u003C/script\u003E\u003C/head\u003E\u003Cbody\u003E\u003Cdiv hidden=\u0022\u0022\u003E\u003C!--$--\u003E\u003C!--/$--\u003E\u003C/div\u003E\u003C!--$--\u003E\u003Cmain class=\u0022auth-page\u0022\u003E\u003Csection class=\u0022auth-panel\u0022\u003E\u003Ca class=\u0022brand\u0022 href=\u0022/\u0022\u003E\u003Cspan class=\u0022brand-mark\u0022\u003ED\u003C/span\u003E\u003Cspan\u003EDANTOWN \u003Cb\u003EELECTRICAL\u003C/b\u003E\u003C/span\u003E\u003C/a\u003E\u003Ch1\u003ECreate your account.\u003C/h1\u003E\u003Cp class=\u0022auth-lead\u0022\u003EJoin Dantown for easier ordering, quotes and order tracking.\u003C/p\u003E\u003Cbutton type=\u0022button\u0022 class=\u0022google-sign-in\u0022\u003E\u003Cspan class=\u0022google-mark\u0022\u003EG\u003C/span\u003EJoin with Google\u003C/button\u003E\u003Cdiv class=\u0022auth-divider\u0022\u003E\u003Cspan\u003Eor use email\u003C/span\u003E\u003C/div\u003E\u003Cform class=\u0022auth-form\u0022\u003E\u003Clabel\u003EFull name \u003Cinput autoComplete=\u0022name\u0022 required=\u0022\u0022 name=\u0022fullName\u0022/\u003E\u003C/label\u003E\u003Clabel\u003EEmail \u003Cinput type=\u0022email\u0022 autoComplete=\u0022email\u0022 required=\u0022\u0022 name=\u0022email\u0022/\u003E\u003C/label\u003E\u003Clabel\u003EPhone \u003Cinput type=\u0022tel\u0022 autoComplete=\u0022tel\u0022 required=\u0022\u0022 name=\u0022phone\u0022/\u003E\u003C/label\u003E\u003Clabel\u003EPassword \u003Cinput type=\u0022password\u0022 autoComplete=\u0022new-password\u0022 minLength=\u00228\u0022 required=\u0022\u0022 name=\u0022password\u0022/\u003E\u003C/label\u003E\u003Clabel\u003EConfirm password \u003Cinput type=\u0022password\u0022 autoComplete=\u0022new-password\u0022 minLength=\u00228\u0022 required=\u0022\u0022 name=\u0022confirmPassword\u0022/\u003E\u003C/label\u003E\u003Clabel\u003E\u003Cspan\u003E\u003Cinput type=\u0022checkbox\u0022 required=\u0022\u0022 name=\u0022terms\u0022/\u003E I accept the account terms.\u003C/span\u003E\u003C/label\u003E\u003Cbutton class=\u0022button button-primary\u0022\u003ECreate account\u003C/button\u003E\u003C/form\u003E\u003Cp class=\u0022auth-switch\u0022\u003EAlready have an account \u003Ca href=\u0022/login\u0022\u003ESign in\u003C/a\u003E\u003C/p\u003E\u003C/section\u003E\u003C/main\u003E\u003C!--$--\u003E\u003C!--/$--\u003E\u003C!--/$--\u003E\u003Cnav class=\u0022history-navigation\u0022 aria-label=\u0022Page navigation\u0022\u003E\u003Cbutton type=\u0022button\u0022 disabled=\u0022\u0022 aria-label=\u0022Go back\u0022 title=\u0022Go back\u0022\u003E\u003Csvg xmlns=\u0022http://www.w3.org/2000/svg\u0022 width=\u002217\u0022 height=\u002217\u0022 viewBox=\u00220 0 24 24\u0022 fill=\u0022none\u0022 stroke=\u0022currentColor\u0022 stroke-width=\u00222\u0022 stroke-linecap=\u0022round\u0022 stroke-linejoin=\u0022round\u0022 class=\u0022lucide lucide-arrow-left\u0022 aria-hidden=\u0022true\u0022\u003E\u003Cpath d=\u0022m12 19-7-7 7-7\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022M19 12H5\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003Cspan\u003EBack\u003C/span\u003E\u003C/button\u003E\u003Cbutton type=\u0022button\u0022 disabled=\u0022\u0022 aria-label=\u0022Go forward\u0022 title=\u0022Go forward\u0022\u003E\u003Cspan\u003ENext\u003C/span\u003E\u003Csvg xmlns=\u0022http://www.w3.org/2000/svg\u0022 width=\u002217\u0022 height=\u002217\u0022 viewBox=\u00220 0 24 24\u0022 fill=\u0022none\u0022 stroke=\u0022currentColor\u0022 stroke-width=\u00222\u0022 stroke-linecap=\u0022round\u0022 stroke-linejoin=\u0022round\u0022 class=\u0022lucide lucide-arrow-right\u0022 aria-hidden=\u0022true\u0022\u003E\u003Cpath d=\u0022M5 12h14\u0022\u003E\u003C/path\u003E\u003Cpath d=\u0022m12 5 7 7-7 7\u0022\u003E\u003C/path\u003E\u003C/svg\u003E\u003C/button\u003E\u003C/nav\u003E\u003Cscript src=\u0022/_next/static/chunks/3s6nzrbk-8mnv.js\u0022 id=\u0022_R_\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript\u003E(self.__next_f=self.__next_f||[]).push([0])\u003C/script\u003E\u003Cscript\u003Eself.__next_f.push([1,\u00221:I[39756,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022LoadingBoundaryProvider\\\u0022]\\n2:\\\u0022$Sreact.fragment\\\u0022\\n3:I[55329,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022PWARegister\\\u0022]\\n4:I[88160,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022Providers\\\u0022]\\n5:I[39756,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022],\\\u0022default\\\u0022]\\n6:I[836,[\\\u0022/_next/static/chunks/3-962b4dthdle.js\\\u0022,\\\u0022/_ne\n\u2026[truncated]",
+        "durationMs": 302
+      }
+    ],
+    "executions": [
+      {
+        "source": "web-lint",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "lint"
+        ],
+        "cwd": "C:\\Users\\user\\dantownecomers\\apps\\web",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "test"
+        ],
+        "cwd": "C:\\Users\\user\\dantownecomers\\apps\\web",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "production-build",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "C:\\Users\\user\\dantownecomers\\apps\\web",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "login-route-responds",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "start"
+        ],
+        "cwd": "C:\\Users\\user\\dantownecomers\\apps\\web",
+        "env": {
+          "PORT": "3102"
+        },
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "registration-route-responds",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "start"
+        ],
+        "cwd": "C:\\Users\\user\\dantownecomers\\apps\\web",
+        "env": {
+          "PORT": "3102"
+        },
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}

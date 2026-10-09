@@ -2,7 +2,8 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, Boxes, CircleDollarSign, ClipboardList, CreditCard, Gauge, PackageX, Users, WalletCards } from "lucide-react";
 import { hasPermission } from "@dantown/auth";
 import type { Permission } from "@dantown/shared";
-import { getAuthorizationContext, isBskAccount } from "@/lib/auth/server";
+import { getAuthorizationContext } from "@/lib/auth/server";
+import { hasBusinessCenterAccess } from "@/lib/auth/business-center-access";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/app/portal-shell";
 import { redirect } from "next/navigation";
@@ -25,24 +26,31 @@ const centreLinks = [
   { label: "Payments", href: "/admin/payments", permission: "payments.read" as Permission },
   { label: "Customers", href: "/admin/customers", permission: "customers.read" as Permission },
   { label: "Team", href: "/admin/team", permission: "users.read" as Permission },
-  { label: "Automation", href: "/admin/automation", permission: "automation.read" as Permission }
-  ,{ label: "AI Knowledge", href: "/admin/knowledge", permission: "settings.manage" as Permission }
+  { label: "Automation", href: "/admin/automation", permission: "automation.read" as const },
+  { label: "AI Knowledge", href: "/admin/knowledge", permission: "settings.manage" as const }
 ];
 
 export default async function BusinessCenterPage() {
   const context = await getAuthorizationContext();
-  const bskAccount = await isBskAccount();
-  const authorized = context && (bskAccount || context.userId === "dev-bypass-user" || ["orders.read", "inventory.read", "users.read", "reports.read"].some((permission) => hasPermission(context, permission as Permission)));
+  const authorized = context && await hasBusinessCenterAccess(context.userId);
   if (!authorized) redirect("/403");
 
   const supabase = createSupabaseServiceClient();
-  const [{ data: orders }, { data: deletedOrders }, centreMetrics] = await Promise.all([
+  const [ordersResult, deletedOrdersResult, centreMetrics] = await Promise.all([
     hasPermission(context, "orders.read")
       ? supabase.from("orders").select("id, order_number, total, payment_status, order_status, sales_channel, created_at").order("created_at", { ascending: false }).limit(8)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     supabase.from("audit_logs").select("id, action, resource_id, created_at, new_data").in("action", ["ORDER_DELETED", "ORDER_DELETED_BY_ADMIN", "ORDER_AUTO_DELETED"]).order("created_at", { ascending: false }).limit(6),
     getCentreMetrics(context.permissions),
   ]);
+  if (ordersResult.error) {
+    throw new Error(`Unable to load recent orders from Supabase: ${ordersResult.error.message}`);
+  }
+  if (deletedOrdersResult.error) {
+    throw new Error(`Unable to load the deleted-order archive from Supabase: ${deletedOrdersResult.error.message}`);
+  }
+  const orders = ordersResult.data;
+  const deletedOrders = deletedOrdersResult.data;
   const { metrics, syncTrackingAvailable, source } = centreMetrics;
   const [staffActivity, reorderLines] = await Promise.all([
     hasPermission(context, "users.read") ? getStaffActivityToday().catch(() => []) : Promise.resolve(null),

@@ -46,37 +46,22 @@ async function cleanupCancelledOrders(request: Request) {
   let failed = 0;
 
   for (const order of readyToDelete) {
-    try {
-      await supabase.from("order_items").delete().eq("order_id", order.id);
-      await supabase.from("payments").delete().eq("order_id", order.id);
-
-      const { error: deleteError } = await supabase.from("orders").delete().eq("id", order.id);
-      if (deleteError) {
-        failed += 1;
-        console.error(`Failed to delete cancelled order ${order.id}`, deleteError);
-        continue;
+    const { error: archiveError } = await supabase.rpc("archive_and_delete_order", {
+      p_order_id: order.id,
+      p_actor_user_id: null,
+      p_action: "ORDER_AUTO_DELETED",
+      p_metadata: {
+        reason: "cancelled_order_cleanup_after_6_hours",
+        deleted_by_role: "system",
+        deleted_at: new Date().toISOString(),
+        cancelled_at: order.updated_at ?? order.created_at
       }
-
-      const { error: auditError } = await supabase.from("audit_logs").insert({
-        user_id: null,
-        action: "ORDER_AUTO_DELETED",
-        resource_type: "order",
-        resource_id: order.id,
-        new_data: {
-          order_number: order.order_number,
-          reason: "cancelled_order_cleanup_after_6_hours",
-          deleted_at: new Date().toISOString(),
-          cancelled_at: order.updated_at ?? order.created_at
-        }
-      });
-      if (auditError) {
-        console.error(`Cancelled order cleanup audit failed for ${order.id}`, auditError);
-      }
-
-      deleted += 1;
-    } catch (cleanupError) {
+    });
+    if (archiveError) {
       failed += 1;
-      console.error(`Cancelled order cleanup failed for ${order.id}`, cleanupError);
+      console.error(`Cancelled order archive and deletion failed for ${order.id}`, archiveError);
+    } else {
+      deleted += 1;
     }
   }
 

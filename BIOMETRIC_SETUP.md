@@ -1,7 +1,7 @@
 # Biometric (fingerprint / face) for Dantown staff
 
 ## Turn it on
-1. Run the new migration `supabase/migrations/20261008120000_staff_passkeys.sql` (npm run migrate).
+1. Run the new migration `/migratsupabaseions/20261008120000_staff_passkeys.sql` (npm run migrate).
 2. Use https (Vercel is fine) or `localhost`. Phones refuse biometrics on plain http.
 3. Make sure `NEXT_PUBLIC_APP_URL` is your real site address (passkeys are tied to that domain).
 4. Optional: `DANTOWN_BIOMETRIC_GATE=on` makes fingerprint/face the Dantown Centre lock even with no PIN.

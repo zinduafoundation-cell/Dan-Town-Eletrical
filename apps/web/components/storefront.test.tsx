@@ -7,8 +7,8 @@ describe("storefront account navigation", () => {
     expect(defaultAccountLinks.some((link) => link.href === "/account")).toBe(true);
   });
 
-  it("adds a direct Dantown Centre link to the storefront navigation", () => {
-    expect(storefrontPrimaryLinks.some((link) => link.href === "/business-center" && link.label === "Dantown Centre")).toBe(true);
+  it("keeps the private Dantown Centre out of storefront navigation", () => {
+    expect(storefrontPrimaryLinks.some((link) => link.href === "/business-center")).toBe(false);
     expect(storefrontPrimaryLinks.some((link) => link.href === "/shop")).toBe(true);
   });
 });

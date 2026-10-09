@@ -8,8 +8,7 @@ export const defaultAccountLinks: AccountNavLink[] = [
   { label: "My purchases", href: "/account/orders" },
   { label: "Quotes", href: "/account/quotes" },
   { label: "Wishlist", href: "/account/wishlist" },
-  { label: "Support", href: "/account/support" },
-  { label: "Dantown Centre", href: "/business-center" }
+  { label: "Support", href: "/account/support" }
 ];
 
 export const storefrontPrimaryLinks: AccountNavLink[] = [
@@ -18,7 +17,6 @@ export const storefrontPrimaryLinks: AccountNavLink[] = [
   { label: "Solar", href: "/solar" },
   { label: "Services", href: "/services" },
   { label: "Projects", href: "/projects" },
-  { label: "Dantown Centre", href: "/business-center" },
   { label: "Contact", href: "/contact" }
 ];
 
