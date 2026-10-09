@@ -41,16 +41,31 @@ type ServerOptions = {
   allowCredentials?: Array<{ type: "public-key"; id: string; transports?: AuthenticatorTransport[] }>;
 };
 
+export async function readPasskeyResponse<T>(response: Response): Promise<T> {
+  if (!response.headers.get("content-type")?.includes("application/json")) {
+    if (response.status === 404) {
+      throw new Error("This app version does not have the biometric sign-in service. Refresh the page or ask an administrator to update the deployment.");
+    }
+    throw new Error("The biometric sign-in service returned an invalid response. Please try again later.");
+  }
+
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new Error("The biometric sign-in service returned invalid data. Please try again.");
+  }
+}
+
 async function fetchOptions(mode: Mode) {
   const response = await fetch("/api/auth/passkey/options", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode }) });
-  const result = (await response.json()) as { publicKey?: ServerOptions; error?: string; code?: string };
+  const result = await readPasskeyResponse<{ publicKey?: ServerOptions; error?: string; code?: string }>(response);
   if (!response.ok || !result.publicKey) throw Object.assign(new Error(result.error || "Biometrics are unavailable right now."), { code: result.code });
   return result.publicKey;
 }
 
 async function submit(mode: Mode, credential: unknown, deviceLabel?: string) {
   const response = await fetch("/api/auth/passkey/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode, credential, deviceLabel }) });
-  const result = (await response.json()) as { ok?: boolean; error?: string };
+  const result = await readPasskeyResponse<{ ok?: boolean; error?: string }>(response);
   if (!response.ok || !result.ok) throw new Error(result.error || "Biometric check failed.");
 }
 

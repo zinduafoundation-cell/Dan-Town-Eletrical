@@ -43,13 +43,15 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const preferenceResponse = await fetch("/api/auth/session-preference", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rememberMe }),
-      });
-      if (!preferenceResponse.ok) {
-        throw new Error("Could not save the sign-in preference.");
+      if (rememberMe) {
+        const preferenceResponse = await fetch("/api/auth/session-preference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rememberMe: true }),
+        });
+        if (!preferenceResponse.ok) {
+          throw new Error("Could not save the 30-day sign-in preference. Please try again.");
+        }
       }
 
       const { error: authError } = await createAuthClient().auth.signInWithOAuth({
