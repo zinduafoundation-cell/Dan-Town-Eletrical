@@ -14,9 +14,7 @@ export default async function PaymentPage({
 }) {
   const params = await searchParams;
   const secretKey = process.env.PAYSTACK_SECRET_KEY?.trim();
-  const paystackEnabled =
-    secretKey?.startsWith("sk_test_") &&
-    process.env.PAYSTACK_ONLINE_TEST_ENABLED === "true";
+  const paystackEnabled = secretKey?.startsWith("sk_test_") ?? false;
 
   return (
     <StorefrontShell>

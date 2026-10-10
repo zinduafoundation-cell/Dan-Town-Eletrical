@@ -13,9 +13,15 @@ const initSchema = z.object({
 
 export async function POST(request: Request) {
   const secretKey = process.env.PAYSTACK_SECRET_KEY?.trim();
-  if (!secretKey?.startsWith("sk_test_") || process.env.PAYSTACK_ONLINE_TEST_ENABLED !== "true") {
+  if (!secretKey) {
     return NextResponse.json(
-      { error: "Paystack sandbox checkout is not enabled." },
+      { error: "PAYSTACK_SECRET_KEY is not configured for this deployment." },
+      { status: 503 }
+    );
+  }
+  if (!secretKey.startsWith("sk_test_")) {
+    return NextResponse.json(
+      { error: "Website checkout requires a Paystack sandbox secret key beginning with sk_test_." },
       { status: 503 }
     );
   }
