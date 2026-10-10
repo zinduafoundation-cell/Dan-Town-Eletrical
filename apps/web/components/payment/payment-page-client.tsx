@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
-  ArrowRight,
   Check,
   CreditCard,
   LockKeyhole,
@@ -13,7 +11,6 @@ import {
   Smartphone,
   WalletCards,
   ShieldCheck,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
 import { clearPendingPaymentReminder } from "@/lib/pending-payment";
@@ -32,11 +29,7 @@ export function PaymentPageClient({
   orderNumber,
   total,
 }: Props) {
-  const router = useRouter();
   const [method, setMethod] = useState<PaymentMethod>("mpesa");
-  const [phone, setPhone] = useState("");
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     clearPendingPaymentReminder();
@@ -68,60 +61,6 @@ export function PaymentPageClient({
 
   const selectMethod = (value: PaymentMethod) => {
     setMethod(value);
-    setError("");
-  };
-
-  const handlePayment = async () => {
-    setError("");
-
-    if (method === "mpesa" && !phone.trim()) {
-      setError("Enter the M-Pesa phone number you want to use.");
-      return;
-    }
-
-    setProcessing(true);
-
-    try {
-      /*
-       * REAL PAYMENT ENGINE GOES HERE.
-       *
-       * Do NOT invent an API route if your project already has one.
-       *
-       * Connect this button to your existing payment/order service:
-       *
-       * 1. Create/confirm payment intent
-       * 2. Send M-Pesa STK Push OR initialize card payment
-       * 3. Wait for authenticated callback/webhook
-       * 4. Update payment status
-       * 5. Mark order as paid
-       * 6. Finalize inventory
-       * 7. Generate receipt/invoice
-       * 8. Redirect to order confirmation
-       */
-
-      console.log({
-        orderId,
-        orderNumber,
-        amount: total,
-        method,
-        phone,
-      });
-
-      /*
-       * Temporary navigation until your real payment service
-       * is connected.
-       */
-      router.push(
-        `/order-confirmation?orderId=${encodeURIComponent(
-          orderId
-        )}&payment=${method}`
-      );
-    } catch {
-      setError(
-        "We could not start the payment. Please try again."
-      );
-      setProcessing(false);
-    }
   };
 
   return (
@@ -182,8 +121,8 @@ export function PaymentPageClient({
             <h1>Complete your payment</h1>
 
             <p>
-              Choose your preferred payment method to complete
-              your Dantown order securely.
+              Your order is saved. Payment options are not connected yet, so no charge
+              or payment request will be made here.
             </p>
           </div>
 
@@ -226,7 +165,7 @@ export function PaymentPageClient({
                   </div>
 
                   <p>
-                    Receive an STK Push on your phone.
+                    M-Pesa payments are not available yet.
                   </p>
                 </div>
 
@@ -257,7 +196,7 @@ export function PaymentPageClient({
                   <strong>Debit / Credit Card</strong>
 
                   <p>
-                    Pay securely using your bank card.
+                    Card payments are not available yet.
                   </p>
                 </div>
 
@@ -312,40 +251,17 @@ export function PaymentPageClient({
                     <h2>M-Pesa number</h2>
 
                     <p>
-                      We&apos;ll send a payment request to this
-                      number.
+                      M-Pesa checkout is not connected. No phone number or payment request is needed.
                     </p>
                   </div>
                 </div>
-              </div>
-
-              <label className="payment-label">
-                M-Pesa phone number
-              </label>
-
-              <div className="phone-input">
-                <Smartphone size={19} />
-
-                <span>+254</span>
-
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="712 345 678"
-                  value={phone}
-                  onChange={(event) =>
-                    setPhone(event.target.value)
-                  }
-                  aria-label="M-Pesa phone number"
-                />
               </div>
 
               <div className="payment-help">
                 <ShieldCheck size={16} />
 
                 <span>
-                  Keep your phone nearby. You&apos;ll receive
-                  an M-Pesa payment prompt.
+                  No M-Pesa prompt will be sent until payment processing is enabled.
                 </span>
               </div>
             </div>
@@ -361,8 +277,7 @@ export function PaymentPageClient({
                   <strong>Secure card payment</strong>
 
                   <p>
-                    You&apos;ll be securely redirected to the
-                    supported card payment gateway.
+                    The card payment gateway is not connected yet.
                   </p>
                 </div>
               </div>
@@ -379,21 +294,10 @@ export function PaymentPageClient({
                   <strong>Cash payment</strong>
 
                   <p>
-                    Pay when you collect your order or when
-                    it is delivered, subject to your
-                    fulfilment option.
+                    Cash payment instructions are not recorded online yet. Contact Dantown to arrange payment.
                   </p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* ERROR */}
-          {error && (
-            <div className="payment-error">
-              <AlertCircle size={18} />
-
-              <span>{error}</span>
             </div>
           )}
 
@@ -402,32 +306,17 @@ export function PaymentPageClient({
             <button
               type="button"
               className="button button-primary payment-button"
-              onClick={handlePayment}
-              disabled={processing}
+              disabled
             >
-              {processing ? (
-                <>
-                  <Loader2
-                    size={19}
-                    className="spin"
-                  />
-
-                  <span>
-                    Starting payment...
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span>
-                    {method === "cash"
-                      ? "Confirm order"
-                      : `Pay ${formatCurrency(total)}`}
-                  </span>
-
-                  <ArrowRight size={19} />
-                </>
-              )}
+              <span>Payment unavailable</span>
             </button>
+
+            <Link
+              className="button button-secondary payment-button"
+              href={`/order-confirmation?orderId=${encodeURIComponent(orderId)}`}
+            >
+              View order status
+            </Link>
 
             <p className="payment-protection">
               <LockKeyhole size={15} />

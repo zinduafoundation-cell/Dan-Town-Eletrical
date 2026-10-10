@@ -245,6 +245,7 @@ export function CheckoutPageClient() {
         <div className="summary-row"><span>{cart.getTotalCount()} items</span><strong>{formatCurrency(cart.getSubtotal())}</strong></div>
         <div className="summary-row"><span>Delivery</span><strong>{formatCurrency(deliveryFee)}</strong></div>
         <div className="summary-row total"><span>Total</span><strong>{formatCurrency(total)}</strong></div>
+        <p className="summary-note">Applicable VAT is calculated using each product&apos;s tax settings when your order is created. The final total appears on the next screen.</p>
         <button className="button button-primary" type="submit" disabled={saving}>{saving ? <><Loader2 className="animate-spin" size={16} /> Saving and continuing…</> : <>Continue to payment <ArrowRight size={16} /></>}</button>
         <p className="summary-note">Your payment method can be changed on the next step.</p>
       </aside>
