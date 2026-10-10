@@ -20,7 +20,7 @@ async function getUser() {
 
 export async function GET() {
   const user = await getUser();
-  if (!user) return NextResponse.json({ user: null }, { status: 401 });
+  if (!user) return NextResponse.json({ authenticated: false });
 
   const supabase = createSupabaseServiceClient();
   const [{ data: profile }, { data: customer }] = await Promise.all([
@@ -38,6 +38,7 @@ export async function GET() {
     : { data: null };
 
   return NextResponse.json({
+    authenticated: true,
     fullName: profile?.full_name || customer?.name || user.user_metadata?.full_name || "",
     phone: profile?.phone || customer?.phone || user.phone || "",
     email: customer?.email || user.email || "",

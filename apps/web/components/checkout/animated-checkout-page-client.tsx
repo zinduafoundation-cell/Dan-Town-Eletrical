@@ -42,6 +42,7 @@ export function CheckoutPageClient() {
   const cart = useCart();
   const [form, setForm] = useState<FormState>(initialForm);
   const [fulfilment, setFulfilment] = useState<Fulfilment>("pickup");
+  const [authenticated, setAuthenticated] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [estimating, setEstimating] = useState(false);
@@ -55,10 +56,21 @@ export function CheckoutPageClient() {
     fetch("/api/checkout/profile", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return null;
-        return response.json() as Promise<Partial<FormState>>;
+        return response.json() as Promise<Partial<FormState> & { authenticated?: boolean }>;
       })
       .then((profile) => {
-        if (!cancelled && profile) setForm((current) => ({ ...current, ...profile }));
+        if (!cancelled && profile) {
+          setAuthenticated(profile.authenticated === true);
+          const savedDetails: Partial<FormState> = {
+            fullName: profile.fullName,
+            phone: profile.phone,
+            email: profile.email,
+            county: profile.county,
+            town: profile.town,
+            address: profile.address
+          };
+          setForm((current) => ({ ...current, ...savedDetails }));
+        }
       })
       .catch(() => undefined)
       .finally(() => {
@@ -108,14 +120,16 @@ export function CheckoutPageClient() {
     setSaving(true);
     setError("");
     try {
-      const profileResponse = await fetch("/api/checkout/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-      });
-      if (!profileResponse.ok) {
-        const payload = await profileResponse.json().catch(() => null);
-        throw new Error(payload?.error || "Unable to save your details.");
+      if (authenticated) {
+        const profileResponse = await fetch("/api/checkout/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form)
+        });
+        if (!profileResponse.ok && profileResponse.status !== 401) {
+          const payload = await profileResponse.json().catch(() => null);
+          throw new Error(payload?.error || "Unable to save your details.");
+        }
       }
 
       const orderResponse = await fetch("/api/orders", {
