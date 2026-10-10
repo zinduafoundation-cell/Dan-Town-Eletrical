@@ -165,7 +165,7 @@ export function CheckoutPageClient() {
   }
 
   if (!cart.isHydrated || loadingProfile) {
-    return <div className="empty-state"><Loader2 className="animate-spin" /> Loading your saved details…</div>;
+    return <div className="empty-state"><Loader2 className="animate-spin" /> Loading checkout…</div>;
   }
 
   if (!cart.items.length) {
@@ -187,10 +187,14 @@ export function CheckoutPageClient() {
 
       <section className="content-panel">
         <div className="section-heading">
-          <div><p className="eyebrow">Saved for your next order</p><h2>Your details</h2></div>
+          <div><p className="eyebrow">{authenticated ? "Saved for your next order" : "Guest checkout"}</p><h2>Your details</h2></div>
           <ShieldCheck size={22} />
         </div>
-        <p className="account-muted">These details were loaded from your account. You can change them for this purchase.</p>
+        <p className="account-muted">
+          {authenticated
+            ? "These details were loaded from your account. You can change them for this purchase."
+            : "Enter your contact details to place an order without signing in."}
+        </p>
         <div className="form-grid">
           {(["fullName", "phone", "email", "county", "town", "address"] as const).map((field) => (
             <label key={field} className={field === "address" ? "form-field full-width" : "form-field"}>
