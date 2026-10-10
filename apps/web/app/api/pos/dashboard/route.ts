@@ -19,7 +19,7 @@ export async function GET() {
     // Get all orders from today
     const { data: ordersToday, error: ordersError } = await supabase
       .from("orders")
-      .select("id, order_number, total, payment_status, created_at")
+      .select("id, order_number, total, payment_status, sales_channel, created_at")
       .gte("created_at", `${today}T00:00:00Z`)
       .lt("created_at", `${tomorrow}T00:00:00Z`);
 
@@ -48,6 +48,9 @@ export async function GET() {
     const mPesaSales = successfulPayments
       .filter((payment) => payment.method === "MPESA")
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const cardSales = successfulPayments
+      .filter((payment) => payment.method === "CARD")
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     const transactions = (ordersToday ?? []).filter((o) => o.payment_status === "SUCCESS").length;
     const averageSale = transactions > 0 ? Math.round(todaysSales / transactions) : 0;
     const pendingSync = 0; // Offline queue count (future)
@@ -59,7 +62,8 @@ export async function GET() {
         id: order.id,
         orderNumber: order.order_number,
         total: Math.round(Number(order.total || 0)),
-        createdAt: order.created_at
+        createdAt: order.created_at,
+        salesChannel: order.sales_channel
       }));
     const lowStockCount = (inventoryRows ?? []).filter(
       (row) => Number(row.quantity || 0) - Number(row.reserved_quantity || 0) <= Number(row.reorder_level || 0)
@@ -70,6 +74,7 @@ export async function GET() {
       transactions,
       cashSales: Math.round(cashSales),
       mPesaSales: Math.round(mPesaSales),
+      cardSales: Math.round(cardSales),
       averageSale,
       pendingSync,
       lowStockCount,

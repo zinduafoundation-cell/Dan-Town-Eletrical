@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createPaystackClient, PaystackApiError } from "@/lib/payments/paystack";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { getPaystackMode } from "@/lib/payments/paystack-mode";
 
 const verifySchema = z.object({
   reference: z.string().trim().min(1).max(255)
@@ -9,15 +10,10 @@ const verifySchema = z.object({
 
 export async function POST(request: Request) {
   const secretKey = process.env.PAYSTACK_SECRET_KEY?.trim();
-  if (!secretKey) {
+  const paystackMode = getPaystackMode(secretKey);
+  if (!secretKey || !paystackMode) {
     return NextResponse.json(
-      { error: "PAYSTACK_SECRET_KEY is not configured for this deployment." },
-      { status: 503 }
-    );
-  }
-  if (!secretKey.startsWith("sk_test_")) {
-    return NextResponse.json(
-      { error: "Website checkout requires a Paystack sandbox secret key beginning with sk_test_." },
+      { error: "Configure a valid Paystack test or live secret key for this deployment." },
       { status: 503 }
     );
   }
@@ -31,12 +27,25 @@ export async function POST(request: Request) {
     const supabase = createSupabaseServiceClient();
     const { data: transaction, error: transactionError } = await supabase
       .from("payment_transactions")
-      .select("payment_id")
+      .select("payment_id,response_payload")
       .eq("provider_reference", input.data.reference)
       .maybeSingle();
     if (transactionError) throw transactionError;
     if (!transaction?.payment_id) {
       return NextResponse.json({ error: "Paystack reference is not linked to an order." }, { status: 404 });
+    }
+    const transactionMode =
+      transaction.response_payload &&
+      typeof transaction.response_payload === "object" &&
+      !Array.isArray(transaction.response_payload) &&
+      (transaction.response_payload.mode === "test" || transaction.response_payload.mode === "live")
+        ? transaction.response_payload.mode
+        : paystackMode;
+    if (transactionMode !== paystackMode) {
+      return NextResponse.json(
+        { error: "This payment was started in a different Paystack mode. Use the matching server configuration to verify it." },
+        { status: 409 }
+      );
     }
 
     const { data: paymentRecord, error: paymentRecordError } = await supabase
@@ -63,20 +72,35 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: order, error } = await supabase.rpc("finish_online_paystack_sandbox_test", {
+    const completionArgs = {
       target_order_id: paymentRecord.order_id,
       target_provider_reference: input.data.reference,
       provider_amount: payment.amount,
       provider_payload: payment
-    });
-    if (
-      error ||
-      !order ||
-      order.payment_status !== "CANCELLED" ||
-      order.order_status !== "CANCELLED"
-    ) {
+    };
+    const completionResult = paystackMode === "test"
+      ? await supabase.rpc("finish_online_paystack_sandbox_test", completionArgs)
+      : await supabase.rpc("complete_online_paystack_payment", completionArgs);
+    const { data: order, error } = completionResult;
+    const expectedPaymentStatus = paystackMode === "test" ? "CANCELLED" : "SUCCESS";
+    const expectedOrderStatus = paystackMode === "test" ? "CANCELLED" : "PROCESSING";
+    if (error || !order || order.payment_status !== expectedPaymentStatus || order.order_status !== expectedOrderStatus) {
       console.error("Paystack online payment completion failed:", error);
-      return NextResponse.json({ error: "Unable to safely finish the Paystack sandbox test." }, { status: 409 });
+      return NextResponse.json({
+        error: paystackMode === "test"
+          ? "Unable to safely finish the Paystack sandbox test."
+          : "Unable to record the verified Paystack payment."
+      }, { status: 409 });
+    }
+
+    if (paystackMode === "live") {
+      return NextResponse.json({
+        success: true,
+        sandboxTest: false,
+        orderId: order.id,
+        orderNumber: order.order_number,
+        message: `Paystack payment verified and order ${order.order_number} recorded for POS processing.`
+      });
     }
 
     return NextResponse.json({

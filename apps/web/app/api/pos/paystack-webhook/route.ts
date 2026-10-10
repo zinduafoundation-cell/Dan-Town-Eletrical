@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { Json } from "@dantown/database";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { getPaystackMode } from "@/lib/payments/paystack-mode";
 
 const PAYSTACK_SIGNATURE_HEADER = "x-paystack-signature";
 
@@ -43,9 +44,10 @@ async function resolveOrderIdFromReference(
 }
 
 export async function POST(request: Request) {
-  const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+  const paystackSecret = process.env.PAYSTACK_SECRET_KEY?.trim();
 
-  if (!paystackSecret) {
+  const paystackMode = getPaystackMode(paystackSecret);
+  if (!paystackSecret || !paystackMode) {
     return NextResponse.json(
       { ok: false, error: "Paystack configuration missing" },
       { status: 500 }
@@ -158,23 +160,26 @@ export async function POST(request: Request) {
     }
 
     if (targetOrder.sales_channel === "ONLINE") {
-      return NextResponse.json({
-        ok: true,
-        received: true,
-        event: eventName,
-        verification: "online sandbox payments are finalized by the verified checkout callback"
-      });
+      if (paystackMode === "test") {
+        return NextResponse.json({
+          ok: true,
+          received: true,
+          event: eventName,
+          verification: "online sandbox payments are finalized by the verified checkout callback"
+        });
+      }
     }
 
-    const { data: orderResult, error: completionError } = await supabase.rpc(
-      "complete_pos_paystack_payment",
-      {
-        target_order_id: resolvedOrderId,
-        target_provider_reference: providerReference,
-        provider_amount: providerAmount,
-        provider_payload: data
-      }
-    );
+    const completionArgs = {
+      target_order_id: resolvedOrderId,
+      target_provider_reference: providerReference,
+      provider_amount: providerAmount,
+      provider_payload: data
+    };
+    const completionResult = targetOrder.sales_channel === "ONLINE"
+      ? await supabase.rpc("complete_online_paystack_payment", completionArgs)
+      : await supabase.rpc("complete_pos_paystack_payment", completionArgs);
+    const { data: orderResult, error: completionError } = completionResult;
 
     if (completionError && !orderResult) {
       const { data: existingOrder, error: lookupError } = await supabase

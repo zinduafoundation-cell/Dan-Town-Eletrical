@@ -64,10 +64,10 @@ export default function OnlinePaystackCallbackPage() {
   return (
     <main className="auth-page">
       <section className="auth-panel">
-        <p className="eyebrow">Paystack sandbox</p>
+        <p className="eyebrow">Paystack payment</p>
         <h1>{message}</h1>
         <p>
-          This test flow will not take real payment. If verification fails, your order remains unpaid.
+          Your order status will update after Paystack verification. If verification fails, the order remains unpaid.
         </p>
         {orderId && (
           <Link

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { clearPendingPaymentReminder } from "@/lib/pending-payment";
 import { formatCurrency } from "@/lib/store-data";
+import type { PaystackMode } from "@/lib/payments/paystack-mode";
 
 type PaymentMethod = "paystack" | "mpesa" | "card" | "cash";
 
@@ -23,14 +24,14 @@ type Props = {
   orderId: string;
   orderNumber: string;
   total: number;
-  paystackEnabled: boolean;
+  paystackMode: PaystackMode | null;
 };
 
 export function PaymentPageClient({
   orderId,
   orderNumber,
   total,
-  paystackEnabled,
+  paystackMode,
 }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("paystack");
   const [paymentToken, setPaymentToken] = useState("");
@@ -197,7 +198,9 @@ export function PaymentPageClient({
             <h1>Complete your payment</h1>
 
             <p>
-              Your order is saved. Paystack sandbox testing does not collect real money.
+              {paystackMode === "test"
+                ? "Your order is saved. Paystack sandbox testing does not collect real money."
+                : "Your order is saved. Complete payment securely with Paystack to send it to Dantown for processing."}
             </p>
           </div>
 
@@ -224,10 +227,14 @@ export function PaymentPageClient({
                 </div>
                 <div className="method-content">
                   <div className="method-title">
-                    <strong>Paystack sandbox</strong>
-                    <span className="recommended">Test only</span>
+                    <strong>{paystackMode === "test" ? "Paystack sandbox" : "Paystack"}</strong>
+                    {paystackMode === "test" ? <span className="recommended">Test only</span> : null}
                   </div>
-                  <p>Use Paystack test credentials to simulate a payment. No real charge.</p>
+                  <p>
+                    {paystackMode === "test"
+                      ? "Use Paystack test credentials to simulate a payment. No real charge."
+                      : "Pay securely with Paystack. Confirmed payments are sent to Dantown for processing."}
+                  </p>
                 </div>
                 <div className="method-radio">
                   {method === "paystack" && <Check size={15} />}
@@ -356,10 +363,10 @@ export function PaymentPageClient({
                   required
                 />
               </label>
-              {!paystackEnabled && (
+              {!paystackMode && (
                 <div className="payment-help">
                   <AlertCircle size={16} />
-                  <span>Paystack sandbox is not enabled on this deployment.</span>
+                  <span>Paystack is not enabled on this deployment.</span>
                 </div>
               )}
             </div>
@@ -432,10 +439,14 @@ export function PaymentPageClient({
               type="button"
               className="button button-primary payment-button"
               onClick={startPaystackCheckout}
-              disabled={!paystackEnabled || method !== "paystack" || startingPayment || !paymentToken}
+              disabled={!paystackMode || method !== "paystack" || startingPayment || !paymentToken}
             >
               {startingPayment ? <Loader2 className="animate-spin" size={18} /> : null}
-              <span>{paystackEnabled ? "Continue to Paystack sandbox" : "Paystack sandbox unavailable"}</span>
+              <span>
+                {paystackMode
+                  ? `Continue to Paystack${paystackMode === "test" ? " sandbox" : ""}`
+                  : "Paystack unavailable"}
+              </span>
             </button>
             {paymentError && <p className="payment-error" role="alert">{paymentError}</p>}
 

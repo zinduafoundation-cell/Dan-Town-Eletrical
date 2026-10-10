@@ -192,7 +192,7 @@ export default async function POSSectionPage({ params }: { params: Promise<{ sec
     );
   }
 
-  const { data: orders } = await supabase.from("orders").select("id, order_number, total, payment_status, order_status, created_at").order("created_at", { ascending: false }).limit(100);
+  const { data: orders } = await supabase.from("orders").select("id, order_number, total, payment_status, order_status, sales_channel, created_at").order("created_at", { ascending: false }).limit(100);
   const list = orders ?? [];
   const canRefund = section === "sales-history" && context.permissions.includes("refunds.request");
   const salesTotal = list.reduce((sum, order) => sum + Number(order.total || 0), 0);
@@ -215,6 +215,7 @@ export default async function POSSectionPage({ params }: { params: Promise<{ sec
                 <div className="pos-sale-main">
                   <strong>{order.order_number}</strong>
                   <small>{formatWhen(order.created_at)}</small>
+                  <Badge tone="info">{order.sales_channel === "ONLINE" ? "ONLINE ORDER" : "POS SALE"}</Badge>
                 </div>
                 <div className="pos-sale-amount">{money(Number(order.total))}</div>
                 <div className="pos-sale-status">

@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   Clock3,
+  CreditCard,
   DollarSign,
   Package,
   Plus,
@@ -31,6 +32,7 @@ type DashboardMetrics = {
   transactions: number;
   cashSales: number;
   mPesaSales: number;
+  cardSales: number;
   averageSale: number;
   pendingSync: number;
   lowStockCount: number;
@@ -39,6 +41,7 @@ type DashboardMetrics = {
     orderNumber: string;
     total: number;
     createdAt: string;
+    salesChannel: string;
   }>;
 };
 
@@ -47,6 +50,7 @@ const EMPTY_METRICS: DashboardMetrics = {
   transactions: 0,
   cashSales: 0,
   mPesaSales: 0,
+  cardSales: 0,
   averageSale: 0,
   pendingSync: 0,
   lowStockCount: 0,
@@ -242,6 +246,13 @@ export function POSDashboard() {
       value: money(metrics.mPesaSales),
       detail: "Recorded M-Pesa sales",
       accent: "violet",
+    },
+    {
+      icon: CreditCard,
+      label: "Card / Paystack sales",
+      value: money(metrics.cardSales),
+      detail: "Paid through card or Paystack",
+      accent: "blue",
     },
     {
       icon: Activity,
@@ -567,6 +578,7 @@ export function POSDashboard() {
                     <div className="pm-sale-info">
                       <strong>{sale.orderNumber}</strong>
                       <span>
+                        {sale.salesChannel === "ONLINE" ? "Online order · " : "POS sale · "}
                         {new Date(sale.createdAt).toLocaleString("en-KE", {
                           day: "2-digit",
                           month: "short",

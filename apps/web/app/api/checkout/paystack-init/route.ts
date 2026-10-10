@@ -4,6 +4,7 @@ import { createPaystackClient, PaystackApiError } from "@/lib/payments/paystack"
 import { verifyOrderPaymentAccessToken } from "@/lib/payments/order-payment-access";
 import { getAppUrl } from "@/lib/env";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { getPaystackMode } from "@/lib/payments/paystack-mode";
 
 const initSchema = z.object({
   orderId: z.string().uuid(),
@@ -13,15 +14,10 @@ const initSchema = z.object({
 
 export async function POST(request: Request) {
   const secretKey = process.env.PAYSTACK_SECRET_KEY?.trim();
-  if (!secretKey) {
+  const paystackMode = getPaystackMode(secretKey);
+  if (!secretKey || !paystackMode) {
     return NextResponse.json(
-      { error: "PAYSTACK_SECRET_KEY is not configured for this deployment." },
-      { status: 503 }
-    );
-  }
-  if (!secretKey.startsWith("sk_test_")) {
-    return NextResponse.json(
-      { error: "Website checkout requires a Paystack sandbox secret key beginning with sk_test_." },
+      { error: "Configure a valid Paystack test or live secret key for this deployment." },
       { status: 503 }
     );
   }
@@ -78,7 +74,7 @@ export async function POST(request: Request) {
       .insert({
         payment_id: payment.id,
         provider_reference: initialized.reference,
-        response_payload: { provider: "PAYSTACK", status: "INITIALIZED" },
+        response_payload: { provider: "PAYSTACK", status: "INITIALIZED", mode: paystackMode },
         status: "PENDING",
         checkout_request_id: null,
         merchant_request_id: null,
@@ -99,7 +95,7 @@ export async function POST(request: Request) {
     console.error("Paystack online initialization failed:", error);
     if (error instanceof PaystackApiError) {
       return NextResponse.json(
-        { error: "Unable to start Paystack sandbox checkout. Please try again." },
+        { error: `Unable to start Paystack ${paystackMode === "test" ? "sandbox " : ""}checkout. Please try again.` },
         { status: error.status && error.status >= 500 ? 502 : 400 }
       );
     }

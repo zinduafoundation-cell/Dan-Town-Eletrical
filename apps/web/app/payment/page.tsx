@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { StorefrontShell } from "@/components/storefront";
 import { PaymentPageClient } from "@/components/payment/payment-page-client";
+import { getPaystackMode } from "@/lib/payments/paystack-mode";
 
 export const metadata: Metadata = {
   title: "Payment",
@@ -13,8 +14,7 @@ export default async function PaymentPage({
   searchParams: Promise<{ orderId?: string; orderNumber?: string; total?: string }>;
 }) {
   const params = await searchParams;
-  const secretKey = process.env.PAYSTACK_SECRET_KEY?.trim();
-  const paystackEnabled = secretKey?.startsWith("sk_test_") ?? false;
+  const paystackMode = getPaystackMode();
 
   return (
     <StorefrontShell>
@@ -22,7 +22,7 @@ export default async function PaymentPage({
         orderId={params.orderId ?? ""}
         orderNumber={params.orderNumber ?? ""}
         total={Number(params.total ?? 0)}
-        paystackEnabled={paystackEnabled}
+        paystackMode={paystackMode}
       />
     </StorefrontShell>
   );
