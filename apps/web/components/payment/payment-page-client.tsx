@@ -12,28 +12,46 @@ import {
   WalletCards,
   ShieldCheck,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { clearPendingPaymentReminder } from "@/lib/pending-payment";
 import { formatCurrency } from "@/lib/store-data";
 
-type PaymentMethod = "mpesa" | "card" | "cash";
+type PaymentMethod = "paystack" | "mpesa" | "card" | "cash";
 
 type Props = {
   orderId: string;
   orderNumber: string;
   total: number;
+  paystackEnabled: boolean;
 };
 
 export function PaymentPageClient({
   orderId,
   orderNumber,
   total,
+  paystackEnabled,
 }: Props) {
-  const [method, setMethod] = useState<PaymentMethod>("mpesa");
+  const [method, setMethod] = useState<PaymentMethod>("paystack");
+  const [paymentToken, setPaymentToken] = useState("");
+  const [paymentTokenReady, setPaymentTokenReady] = useState(false);
+  const [email, setEmail] = useState("");
+  const [paymentError, setPaymentError] = useState("");
+  const [startingPayment, setStartingPayment] = useState(false);
 
   useEffect(() => {
     clearPendingPaymentReminder();
   }, []);
+
+  useEffect(() => {
+    if (!orderId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const token = new URLSearchParams(window.location.hash.slice(1)).get("paymentToken") ?? "";
+      setPaymentToken(token);
+      setPaymentTokenReady(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [orderId]);
 
   if (!orderId) {
     return (
@@ -59,8 +77,66 @@ export function PaymentPageClient({
     );
   }
 
+  if (!paymentTokenReady) {
+    return (
+      <main className="page-shell payment-page">
+        <div className="payment-empty">
+          <Loader2 className="animate-spin" size={32} />
+          <h1>Preparing secure payment</h1>
+        </div>
+      </main>
+    );
+  }
+
+  if (!paymentToken) {
+    return (
+      <main className="page-shell payment-page">
+        <div className="payment-empty">
+          <AlertCircle size={42} />
+          <h1>Payment session not found</h1>
+          <p>Return to your cart and start checkout again.</p>
+          <Link href="/cart" className="button button-primary">Return to cart</Link>
+        </div>
+      </main>
+    );
+  }
+
   const selectMethod = (value: PaymentMethod) => {
     setMethod(value);
+    setPaymentError("");
+  };
+
+  const startPaystackCheckout = async () => {
+    setStartingPayment(true);
+    setPaymentError("");
+    try {
+      const response = await fetch("/api/checkout/paystack-init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, email, paymentToken })
+      });
+      const result: unknown = await response.json();
+      if (
+        !response.ok ||
+        typeof result !== "object" ||
+        result === null ||
+        !("authorizationUrl" in result) ||
+        typeof result.authorizationUrl !== "string"
+      ) {
+        const message =
+          typeof result === "object" &&
+          result !== null &&
+          "error" in result &&
+          typeof result.error === "string"
+            ? result.error
+            : "Unable to start Paystack checkout.";
+        throw new Error(message);
+      }
+      window.location.assign(result.authorizationUrl);
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : "Unable to start Paystack checkout.");
+      setStartingPayment(false);
+    }
   };
 
   return (
@@ -121,8 +197,7 @@ export function PaymentPageClient({
             <h1>Complete your payment</h1>
 
             <p>
-              Your order is saved. Payment options are not connected yet, so no charge
-              or payment request will be made here.
+              Your order is saved. Paystack sandbox testing does not collect real money.
             </p>
           </div>
 
@@ -139,6 +214,26 @@ export function PaymentPageClient({
             </div>
 
             <div className="payment-methods">
+              <button
+                type="button"
+                className={`payment-method ${method === "paystack" ? "selected" : ""}`}
+                onClick={() => selectMethod("paystack")}
+              >
+                <div className="method-icon">
+                  <CreditCard size={22} />
+                </div>
+                <div className="method-content">
+                  <div className="method-title">
+                    <strong>Paystack sandbox</strong>
+                    <span className="recommended">Test only</span>
+                  </div>
+                  <p>Use Paystack test credentials to simulate a payment. No real charge.</p>
+                </div>
+                <div className="method-radio">
+                  {method === "paystack" && <Check size={15} />}
+                </div>
+              </button>
+
               {/* MPESA */}
               <button
                 type="button"
@@ -240,6 +335,36 @@ export function PaymentPageClient({
             </div>
           </div>
 
+          {method === "paystack" && (
+            <div className="payment-section payment-input-section">
+              <div className="section-heading">
+                <div>
+                  <span className="section-number">02</span>
+                  <div>
+                    <h2>Email for Paystack</h2>
+                    <p>Paystack requires an email address to open its secure checkout.</p>
+                  </div>
+                </div>
+              </div>
+              <label className="form-field">
+                <span>Email address</span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+              {!paystackEnabled && (
+                <div className="payment-help">
+                  <AlertCircle size={16} />
+                  <span>Paystack sandbox is not enabled on this deployment.</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* MPESA */}
           {method === "mpesa" && (
             <div className="payment-section payment-input-section">
@@ -306,10 +431,13 @@ export function PaymentPageClient({
             <button
               type="button"
               className="button button-primary payment-button"
-              disabled
+              onClick={startPaystackCheckout}
+              disabled={!paystackEnabled || method !== "paystack" || startingPayment || !paymentToken}
             >
-              <span>Payment unavailable</span>
+              {startingPayment ? <Loader2 className="animate-spin" size={18} /> : null}
+              <span>{paystackEnabled ? "Continue to Paystack sandbox" : "Paystack sandbox unavailable"}</span>
             </button>
+            {paymentError && <p className="payment-error" role="alert">{paymentError}</p>}
 
             <Link
               className="button button-secondary payment-button"

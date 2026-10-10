@@ -53,7 +53,25 @@ export type Database = {
       business_center_access: { Row: BusinessCenterAccess; Insert: BusinessCenterAccessInsert; Update: Partial<BusinessCenterAccessInsert>; Relationships: [] };
     };
     Views: { inventory_health: { Row: InventoryHealth; Relationships: [] } };
-    Functions: { archive_and_delete_order: { Args: { p_order_id: string; p_actor_user_id: string | null; p_action: string; p_metadata?: Json }; Returns: undefined }; adjust_inventory: { Args: { target_product_id: string; target_warehouse_id: string; delta: number; target_movement_type: InventoryMovementType; target_reference_type?: string; target_reference_id?: string }; Returns: Inventory }; receive_purchase_order_item: { Args: { target_purchase_order_id: string; target_item_id: string; target_received_quantity: number; target_reference_id: string }; Returns: Json }; transfer_inventory: { Args: { target_product_id: string; target_source_warehouse_id: string; target_destination_warehouse_id: string; target_quantity: number; target_reference_id: string }; Returns: Json }; complete_pos_sale: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order }; complete_pos_sale_split: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json; sale_split_payments: Json }; Returns: Order }; create_pos_paystack_order: { Args: { sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order }; complete_pos_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order }; create_online_order: { Args: { order_number: string; buyer_user_id: string | null; customer_name: string; customer_phone: string; customer_email: string | null; fulfillment_type: string; shipping_details: Json; delivery_fee: number; requested_items: Json }; Returns: Order }; release_online_order: { Args: { order_id: string; release_reason?: string }; Returns: Order }; process_return: { Args: { order_id: string; refund_reason: string; refund_amount: number; staff_user_id: string | null }; Returns: Json }; get_business_centre_metrics: { Args: Record<string, never>; Returns: BusinessCentreMetrics[] }; claim_domain_events: { Args: { worker_id: string; batch_size?: number; lease_seconds?: number }; Returns: DomainEvent[] }; ack_domain_event: { Args: { event_id: string; worker_id: string }; Returns: boolean }; retry_domain_event: { Args: { event_id: string; worker_id: string; failure_reason: string }; Returns: string | null } };
+    Functions: {
+      archive_and_delete_order: { Args: { p_order_id: string; p_actor_user_id: string | null; p_action: string; p_metadata?: Json }; Returns: undefined };
+      adjust_inventory: { Args: { target_product_id: string; target_warehouse_id: string; delta: number; target_movement_type: InventoryMovementType; target_reference_type?: string; target_reference_id?: string }; Returns: Inventory };
+      receive_purchase_order_item: { Args: { target_purchase_order_id: string; target_item_id: string; target_received_quantity: number; target_reference_id: string }; Returns: Json };
+      transfer_inventory: { Args: { target_product_id: string; target_source_warehouse_id: string; target_destination_warehouse_id: string; target_quantity: number; target_reference_id: string }; Returns: Json };
+      complete_pos_sale: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
+      complete_pos_sale_split: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json; sale_split_payments: Json }; Returns: Order };
+      create_pos_paystack_order: { Args: { sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
+      complete_pos_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
+      prepare_online_paystack_payment: { Args: { target_order_id: string }; Returns: Payment };
+      finish_online_paystack_sandbox_test: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
+      create_online_order: { Args: { order_number: string; buyer_user_id: string | null; customer_name: string; customer_phone: string; customer_email: string | null; fulfillment_type: string; shipping_details: Json; delivery_fee: number; requested_items: Json }; Returns: Order };
+      release_online_order: { Args: { order_id: string; release_reason?: string }; Returns: Order };
+      process_return: { Args: { order_id: string; refund_reason: string; refund_amount: number; staff_user_id: string | null }; Returns: Json };
+      get_business_centre_metrics: { Args: Record<string, never>; Returns: BusinessCentreMetrics[] };
+      claim_domain_events: { Args: { worker_id: string; batch_size?: number; lease_seconds?: number }; Returns: DomainEvent[] };
+      ack_domain_event: { Args: { event_id: string; worker_id: string }; Returns: boolean };
+      retry_domain_event: { Args: { event_id: string; worker_id: string; failure_reason: string }; Returns: string | null };
+    };
     Enums: { order_status: OrderStatus; payment_status: PaymentStatus; inventory_movement_type: InventoryMovementType };
     CompositeTypes: {};
   };
@@ -268,6 +286,7 @@ export type Order = {
   delivery_proof_path: string | null;
   delivery_confirmed_at: string | null;
   delivery_confirmed_by: string | null;
+  payment_access_token_hash: string | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -303,6 +322,7 @@ export type OrderInsert = {
   delivery_proof_path?: string | null;
   delivery_confirmed_at?: string | null;
   delivery_confirmed_by?: string | null;
+  payment_access_token_hash?: string | null;
   notes?: string | null;
 };
 export type OrderItem = { 

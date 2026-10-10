@@ -137,6 +137,35 @@ export async function POST(request: Request) {
     }
 
     const providerAmount = Number(data.amount ?? 0);
+    if (data.currency !== "KES" || !Number.isSafeInteger(providerAmount) || providerAmount <= 0) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid Paystack currency or amount" },
+        { status: 400 }
+      );
+    }
+
+    const { data: targetOrder, error: orderLookupError } = await supabase
+      .from("orders")
+      .select("id,sales_channel")
+      .eq("id", resolvedOrderId)
+      .maybeSingle();
+    if (orderLookupError || !targetOrder) {
+      console.error("Paystack webhook order lookup failed:", orderLookupError);
+      return NextResponse.json(
+        { ok: false, error: "Unable to find Paystack order" },
+        { status: 500 }
+      );
+    }
+
+    if (targetOrder.sales_channel === "ONLINE") {
+      return NextResponse.json({
+        ok: true,
+        received: true,
+        event: eventName,
+        verification: "online sandbox payments are finalized by the verified checkout callback"
+      });
+    }
+
     const { data: orderResult, error: completionError } = await supabase.rpc(
       "complete_pos_paystack_payment",
       {
@@ -150,7 +179,7 @@ export async function POST(request: Request) {
     if (completionError && !orderResult) {
       const { data: existingOrder, error: lookupError } = await supabase
         .from("orders")
-        .select("id, payment_status")
+        .select("id,payment_status")
         .eq("id", resolvedOrderId)
         .maybeSingle();
 

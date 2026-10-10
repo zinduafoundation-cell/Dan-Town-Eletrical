@@ -157,7 +157,7 @@ export function CheckoutPageClient() {
         orderNumber: order.orderNumber,
         total: order.total,
       });
-      router.push(`/payment?orderId=${encodeURIComponent(order.orderId)}&orderNumber=${encodeURIComponent(order.orderNumber)}&total=${encodeURIComponent(order.total)}`);
+      router.push(`/payment?orderId=${encodeURIComponent(order.orderId)}&orderNumber=${encodeURIComponent(order.orderNumber)}&total=${encodeURIComponent(order.total)}#paymentToken=${encodeURIComponent(order.paymentToken)}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to continue to payment.");
       setSaving(false);

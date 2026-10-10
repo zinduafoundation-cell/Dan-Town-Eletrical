@@ -39,6 +39,7 @@ export default async function OrderConfirmationPage({
     order = data;
   }
   const paymentReceived = order?.payment_status === "SUCCESS";
+  const orderCancelled = order?.order_status === "CANCELLED";
   const paymentStatusLabel = order?.payment_status === "SUCCESS"
     ? "Paid"
     : order?.payment_status === "FAILED"
@@ -54,7 +55,13 @@ export default async function OrderConfirmationPage({
           <div>
             <p className="eyebrow">Order status</p>
             <h1>
-              {!order ? "Order status unavailable" : paymentReceived ? "Payment received" : "Order received"}
+              {!order
+                ? "Order status unavailable"
+                : orderCancelled
+                  ? "Order cancelled"
+                  : paymentReceived
+                    ? "Payment received"
+                    : "Order received"}
             </h1>
           </div>
         </div>
@@ -67,9 +74,11 @@ export default async function OrderConfirmationPage({
             <h2>{order ? getOrderStatusLabel(order.order_status) : "Order status unavailable"}</h2>
             <p>
               {order
-                ? paymentReceived
-                  ? "Your payment has been confirmed. You can follow the order status as it is prepared."
-                  : "Your order has been received, but payment is still pending. No payment has been taken, and the order will not be processed until payment is confirmed."
+                ? orderCancelled
+                  ? "This order was cancelled. If you have questions about a payment, contact Dantown before placing another order."
+                  : paymentReceived
+                    ? "Your payment has been confirmed. You can follow the order status as it is prepared."
+                    : "Your order has been received, but payment is still pending. No payment has been taken, and the order will not be processed until payment is confirmed."
                 : "We could not find an order for this link. Check the order number or contact Dantown for help."}
             </p>
 
@@ -100,7 +109,7 @@ export default async function OrderConfirmationPage({
               </div>
             </div>}
 
-            {order && <div className="confirmation-next-steps">
+            {order && !orderCancelled && <div className="confirmation-next-steps">
               <h3>What&apos;s next</h3>
               <ul>
                 <li>Save the order number above for reference.</li>

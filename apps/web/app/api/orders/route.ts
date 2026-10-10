@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
+import { createOrderPaymentAccessToken } from "@/lib/payments/order-payment-access";
 
 const OrderRequestSchema = z.object({
   customerName: z.string().min(1, "Customer name is required"),
@@ -48,6 +49,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: orderError?.message || "Unable to reserve stock and create order." }, { status: 400 });
     }
 
+    const { token: paymentToken, hash: paymentTokenHash } = createOrderPaymentAccessToken();
+    const { error: tokenError } = await supabase
+      .from("orders")
+      .update({ payment_access_token_hash: paymentTokenHash })
+      .eq("id", order.id)
+      .eq("sales_channel", "ONLINE");
+    if (tokenError) {
+      const { error: releaseError } = await supabase.rpc("release_online_order", {
+        order_id: order.id,
+        release_reason: "Unable to prepare secure payment access."
+      });
+      if (releaseError) {
+        console.error("Failed to release order after payment access setup failed:", releaseError);
+      }
+      console.error("Online order payment access setup failed:", tokenError);
+      return NextResponse.json({ error: "Unable to securely prepare this order for checkout." }, { status: 500 });
+    }
+
     if (user?.id) {
       const { error: notificationError } = await supabase.from("notifications").insert({
         user_id: user.id,
@@ -72,7 +91,8 @@ export async function POST(request: NextRequest) {
       orderNumber: order.order_number,
       total: order.total,
       paymentStatus: order.payment_status,
-      orderStatus: order.order_status
+      orderStatus: order.order_status,
+      paymentToken
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
