@@ -53,7 +53,9 @@ export default async function OrderConfirmationPage({
         <div className="page-hero compact">
           <div>
             <p className="eyebrow">Order status</p>
-            <h1>{paymentReceived ? "Payment received" : "Order received"}</h1>
+            <h1>
+              {!order ? "Order status unavailable" : paymentReceived ? "Payment received" : "Order received"}
+            </h1>
           </div>
         </div>
 
@@ -98,14 +100,14 @@ export default async function OrderConfirmationPage({
               </div>
             </div>}
 
-            <div className="confirmation-next-steps">
+            {order && <div className="confirmation-next-steps">
               <h3>What&apos;s next</h3>
               <ul>
                 <li>Save the order number above for reference.</li>
                 {!paymentReceived && <li>Contact Dantown to arrange payment; do not place the same order again.</li>}
                 <li>Your order can be prepared after payment is confirmed.</li>
               </ul>
-            </div>
+            </div>}
 
             <div className="confirmation-actions">
               <Link href="/shop" className="button button-primary">
