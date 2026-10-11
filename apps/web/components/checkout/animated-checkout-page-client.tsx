@@ -156,6 +156,7 @@ export function CheckoutPageClient() {
         orderId: order.orderId,
         orderNumber: order.orderNumber,
         total: order.total,
+        paymentToken: order.paymentToken,
       });
       router.push(`/payment?orderId=${encodeURIComponent(order.orderId)}&orderNumber=${encodeURIComponent(order.orderNumber)}&total=${encodeURIComponent(order.total)}#paymentToken=${encodeURIComponent(order.paymentToken)}`);
     } catch (submitError) {

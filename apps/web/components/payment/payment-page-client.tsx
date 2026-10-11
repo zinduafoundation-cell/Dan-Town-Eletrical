@@ -14,7 +14,11 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { clearPendingPaymentReminder } from "@/lib/pending-payment";
+import {
+  clearPendingPaymentReminder,
+  getPaymentAccessTokenFromLocation,
+  readPendingPaymentReminder
+} from "@/lib/pending-payment";
 import { formatCurrency } from "@/lib/store-data";
 import type { PaystackMode } from "@/lib/payments/paystack-mode";
 
@@ -41,18 +45,20 @@ export function PaymentPageClient({
   const [startingPayment, setStartingPayment] = useState(false);
 
   useEffect(() => {
-    clearPendingPaymentReminder();
-  }, []);
-
-  useEffect(() => {
     if (!orderId) return;
+    const pending = readPendingPaymentReminder();
+    const fallbackToken = pending?.orderId === orderId ? pending.paymentToken : undefined;
     const frame = window.requestAnimationFrame(() => {
-      const token = new URLSearchParams(window.location.hash.slice(1)).get("paymentToken") ?? "";
+      const token = getPaymentAccessTokenFromLocation(window.location.hash, fallbackToken);
       setPaymentToken(token);
       setPaymentTokenReady(true);
     });
     return () => window.cancelAnimationFrame(frame);
   }, [orderId]);
+
+  useEffect(() => {
+    clearPendingPaymentReminder();
+  }, []);
 
   if (!orderId) {
     return (

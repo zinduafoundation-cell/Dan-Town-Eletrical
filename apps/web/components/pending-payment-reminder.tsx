@@ -87,7 +87,7 @@ export function PendingPaymentReminder() {
         Order {pending.orderNumber} is waiting for payment.
       </p>
       <Link
-        href={`/payment?orderId=${encodeURIComponent(pending.orderId)}&orderNumber=${encodeURIComponent(pending.orderNumber)}&total=${encodeURIComponent(pending.total)}`}
+        href={`/payment?orderId=${encodeURIComponent(pending.orderId)}&orderNumber=${encodeURIComponent(pending.orderNumber)}&total=${encodeURIComponent(pending.total)}${pending.paymentToken ? `#paymentToken=${encodeURIComponent(pending.paymentToken)}` : ""}`}
         className="button button-primary"
       >
         Continue to payment

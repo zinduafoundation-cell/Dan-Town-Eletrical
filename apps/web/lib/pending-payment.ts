@@ -5,6 +5,7 @@ export type PendingPaymentReminderData = {
   orderId: string;
   orderNumber: string;
   total: number;
+  paymentToken?: string;
   createdAt?: string;
   /** The signed-in account that created the order. Reminders are never shown to anyone else. */
   userId?: string | null;
@@ -74,6 +75,12 @@ export function readPendingPaymentReminder(): PendingPaymentReminderData | null 
       orderId: parsed.orderId,
       orderNumber: parsed.orderNumber,
       total: Number(parsed.total ?? 0),
+      paymentToken:
+        typeof parsed.paymentToken === "string" &&
+        parsed.paymentToken.length >= 40 &&
+        parsed.paymentToken.length <= 100
+          ? parsed.paymentToken
+          : undefined,
       createdAt: parsed.createdAt ?? new Date().toISOString(),
       userId: parsed.userId ?? null,
     };
@@ -81,4 +88,11 @@ export function readPendingPaymentReminder(): PendingPaymentReminderData | null 
     clearPendingPaymentReminder();
     return null;
   }
+}
+
+export function getPaymentAccessTokenFromLocation(hash: string, fallbackToken?: string) {
+  const token = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash).get("paymentToken");
+  if (token && token.length >= 40 && token.length <= 100) return token;
+  if (fallbackToken && fallbackToken.length >= 40 && fallbackToken.length <= 100) return fallbackToken;
+  return "";
 }
