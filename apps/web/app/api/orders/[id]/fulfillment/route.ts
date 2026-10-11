@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { OrderStatus } from "@dantown/database";
 import { requireAuthorizedPermission } from "@/lib/auth/server";
 import { getOrderStatusLabel } from "@/lib/order-lifecycle";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 const fulfillmentSchema = z.object({
@@ -41,7 +40,6 @@ export async function POST(
     }
 
     const { id } = await params;
-    const supabase = await createSupabaseServerClient();
     const serviceClient = createSupabaseServiceClient();
     const { data: existing, error: lookupError } = await serviceClient
       .from("orders")
@@ -95,17 +93,18 @@ export async function POST(
     if (trackingReference !== null) update.delivery_tracking_reference = trackingReference;
     if (parsed.data.status === "DELIVERED") update.delivered_at = new Date().toISOString();
 
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await serviceClient
       .from("orders")
       .update(update)
       .eq("id", id)
+      .eq("order_status", existing.order_status)
       .select("id,order_number,order_status,delivery_method,delivery_carrier,delivery_tracking_reference,delivered_at")
       .maybeSingle();
     if (updateError) throw updateError;
     if (!updated) {
       return NextResponse.json(
-        { error: "Order was not updated. Check that you have order update access." },
-        { status: 403 }
+        { error: "The order changed before this update. Refresh the order and try again." },
+        { status: 409 }
       );
     }
 
