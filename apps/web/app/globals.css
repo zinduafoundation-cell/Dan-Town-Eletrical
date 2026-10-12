@@ -4956,6 +4956,8 @@ body {
 .guidance-welcome h2 { color: #071526; font-size: 28px; line-height: 1.08; margin: 10px 0; }
 .guidance-welcome > p:not(.eyebrow) { color: #526174; line-height: 1.6; }
 .guidance-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.guidance-step-link { align-items: center; color: #0251B0; display: inline-flex; font-size: 13px; font-weight: 700; gap: 6px; margin-top: 8px; text-decoration: none; }
+.guidance-step-link:hover { text-decoration: underline; }
 @media (max-width: 900px) {
   .store-shell .category-links > a:nth-child(n+6) { display: none; }
   .store-shell .nav-quote-link { display: inline-flex !important; }

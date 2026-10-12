@@ -23,6 +23,16 @@ export function safeNextPath(value: string | null | undefined) {
   return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
 }
 
+export function isStaffDestination(value: string | null | undefined) {
+  const path = safeNextPath(value);
+  return Boolean(
+    path &&
+      ["/business-center", "/business", "/centre", "/staff", "/admin", "/pos"].some(
+        (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+      ),
+  );
+}
+
 /**
  * Direct each authenticated person to the Dantown area that their server-side
  * role permits. An explicit same-site destination always takes precedence.

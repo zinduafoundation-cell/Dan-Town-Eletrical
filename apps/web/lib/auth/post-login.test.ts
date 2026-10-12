@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolvePostLoginPath, safeNextPath } from "./post-login";
+import { isStaffDestination, resolvePostLoginPath, safeNextPath } from "./post-login";
 
 describe("post-login routing", () => {
   it("keeps only same-site return paths", () => {
@@ -16,5 +16,13 @@ describe("post-login routing", () => {
 
   it("preserves a safe requested destination", () => {
     expect(resolvePostLoginPath({ userId: "customer", roles: ["CUSTOMER"], permissions: [] }, "/account/wishlist")).toBe("/account/wishlist");
+  });
+
+  it("only offers biometric sign-in when returning to staff workspaces", () => {
+    expect(isStaffDestination("/pos")).toBe(true);
+    expect(isStaffDestination("/business-center/orders")).toBe(true);
+    expect(isStaffDestination("/account/orders")).toBe(false);
+    expect(isStaffDestination(null)).toBe(false);
+    expect(isStaffDestination("//example.com/pos")).toBe(false);
   });
 });

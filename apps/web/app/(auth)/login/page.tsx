@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { createAuthClient } from "@dantown/auth";
 import { buttonClassName } from "@dantown/ui";
 import { BiometricSignIn } from "@/components/auth/biometric-sign-in";
+import { isStaffDestination } from "@/lib/auth/post-login";
 
 function requestedNextPath() {
   const next = new URLSearchParams(window.location.search).get("next");
@@ -21,6 +22,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [staffSignIn, setStaffSignIn] = useState(false);
+
+  useEffect(() => {
+    setStaffSignIn(isStaffDestination(requestedNextPath()));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -115,7 +121,7 @@ export default function LoginPage() {
           <span className="google-mark">G</span>
           {loading ? "Connecting..." : "Continue with Google"}
         </button>
-        <BiometricSignIn next={typeof window === "undefined" ? null : requestedNextPath()} />
+        {staffSignIn ? <BiometricSignIn next={requestedNextPath()} /> : null}
         <div className="auth-divider"><span>or use email</span></div>
         <form className="auth-form" onSubmit={submit}>
           <label>Email<input name="email" type="email" autoComplete="email" required disabled={checkingSession} /></label>
