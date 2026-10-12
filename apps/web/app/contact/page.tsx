@@ -101,6 +101,14 @@ export default function ContactPage() {
               >
                 ✉️ Send an Email
               </a>
+              <a
+                href="https://share.google/A1c3uABqV5xKzVtly"
+                className="button button-secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                📍 Get Directions
+              </a>
             </div>
 
             <div className="contact-hero-trust">
@@ -149,14 +157,20 @@ export default function ContactPage() {
                 <span className="quick-contact-arrow">→</span>
               </a>
 
-              <div className="quick-contact-item">
+              <a
+                href="https://share.google/A1c3uABqV5xKzVtly"
+                className="quick-contact-item"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <span className="quick-contact-icon">📍</span>
 
                 <span>
                   <strong>Visit Our Store</strong>
-                  <small>Kitale, Kenya</small>
+                  <small>Open Dantown on Google Maps</small>
                 </span>
-              </div>
+                <span className="quick-contact-arrow">→</span>
+              </a>
             </div>
           </div>
         </section>

@@ -209,6 +209,9 @@ export function StorefrontShell({
           <h3>Company</h3>
           <Link href="/about">About Dantown</Link>
           <Link href="/contact">Contact</Link>
+          <a href="https://share.google/A1c3uABqV5xKzVtly" target="_blank" rel="noopener noreferrer">
+            Find us on Google Maps
+          </a>
         </div>
       </footer>
 
