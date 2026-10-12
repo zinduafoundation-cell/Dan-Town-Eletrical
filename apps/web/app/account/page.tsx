@@ -157,7 +157,7 @@ export default async function AccountPage() {
               <strong>{displayName}</strong>
               <small>{customer.email || "Email not added yet"}</small>
               {canOpenBusinessCenter && (
-                <Link className="button button-primary" href="/business-center" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
+                <Link className="button button-primary" href="/centre" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
                   Open Dantown Centre
                 </Link>
               )}

@@ -143,6 +143,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="auth-switch">New to Dantown <Link href="/register">Create an account</Link></p>
+        <p className="auth-switch">Dantown staff? <Link href="/centre/login">Sign in to Centre</Link></p>
       </section>
     </main>
   );

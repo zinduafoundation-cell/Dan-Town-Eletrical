@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import type { Permission, UserRole } from "@dantown/shared";
 import { OrderAttentionAlerts } from "@/components/admin/order-attention-alerts";
 import { WorkspaceQuickActions } from "@/components/admin/workspace-quick-actions";
+import { InstallCentreApp } from "@/components/centre/install-app-button";
 
 type PortalShellProps = {
   title: string;
@@ -30,7 +31,6 @@ export function PortalShell({
   permissions,
   links,
   children,
-  showBsk = false,
   wide = false
 }: PortalShellProps) {
   const pathname = usePathname();
@@ -98,7 +98,7 @@ export function PortalShell({
     <main className="portal">
       <OrderAttentionAlerts />
       <header className="portal-header">
-        <Link className="brand" href="/">
+        <Link className="brand" href="/centre">
           <span className="brand-mark">D</span>
           <span>
             DANTOWN <b>ELECTRICAL</b>
@@ -108,11 +108,10 @@ export function PortalShell({
           <span className="portal-live">
             <i /> Supabase connected
           </span>
-          {showBsk && (
-            <Link className="portal-header-gateway" href="/business-center">
-              Open BSK
-            </Link>
-          )}
+          <InstallCentreApp />
+          <Link className="portal-header-gateway centre-shop-link" href="/">
+            View shop
+          </Link>
           <Link className="button button-secondary" href="/logout">
             Sign out
           </Link>
@@ -139,17 +138,7 @@ export function PortalShell({
               {renderLinks(administration)}
             </>
           )}
-          {showBsk && (
-            <Link
-              className="portal-gateway"
-              href="/business-center"
-              title="Open Dantown Centre (BS/K)"
-            >
-              <span>Dantown Centre</span>
-              <b>BS/K</b>
-            </Link>
-          )}
-        </aside>
+          </aside>
         <section className="portal-main">
           <div className="portal-heading">
             <div>

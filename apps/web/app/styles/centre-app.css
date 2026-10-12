@@ -1,0 +1,157 @@
+/* Dantown Centre app: install button + shop link behaviour */
+.centre-install-wrap { position: relative; display: inline-flex; }
+.centre-install-button {
+  background: linear-gradient(135deg, #f26a1b, #ff8a3d);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(242, 106, 27, 0.35);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  padding: 9px 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.centre-install-button:hover { box-shadow: 0 12px 26px rgba(242, 106, 27, 0.5); transform: translateY(-1px); }
+.centre-install-help {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(7, 26, 51, 0.3);
+  color: #0b1b2e;
+  font-size: 12.5px;
+  padding: 10px 14px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 220px;
+  z-index: 80;
+}
+.centre-login-page {
+  align-items: center;
+  background:
+    radial-gradient(ellipse at 12% 14%, rgba(242, 106, 27, .2), transparent 38%),
+    linear-gradient(145deg, #071a33 0%, #0d3566 58%, #071a33 100%);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px 18px;
+}
+.centre-login-card {
+  background: #fff;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 24px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .28);
+  max-width: 480px;
+  padding: clamp(24px, 6vw, 42px);
+  width: 100%;
+}
+.centre-login-brand {
+  align-items: center;
+  color: #071a33;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 900;
+  gap: 10px;
+  letter-spacing: .04em;
+  text-decoration: none;
+}
+.centre-login-brand b { color: #5a6879; font-size: 10px; letter-spacing: .12em; }
+.centre-login-brand-mark {
+  align-items: center;
+  background: linear-gradient(135deg, #f26a1b, #ff9a4d);
+  border-radius: 11px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 18px;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+.centre-login-eyebrow {
+  color: #e16016;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  margin: 30px 0 8px;
+}
+.centre-login-card h1 { color: #071a33; font-size: clamp(25px, 5vw, 32px); line-height: 1.15; margin: 0; }
+.centre-login-copy { color: #59697b; font-size: 14px; line-height: 1.6; margin: 11px 0 20px; }
+.centre-login-security {
+  align-items: center;
+  background: #f3f7fb;
+  border: 1px solid #e2eaf2;
+  border-radius: 12px;
+  color: #324861;
+  display: flex;
+  font-size: 12px;
+  gap: 9px;
+  line-height: 1.45;
+  margin-bottom: 18px;
+  padding: 11px 12px;
+}
+.centre-login-security svg { color: #18794e; flex: 0 0 auto; }
+.centre-login-google {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d9e0e8;
+  border-radius: 11px;
+  color: #18283a;
+  cursor: pointer;
+  display: flex;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 11px;
+  justify-content: center;
+  min-height: 46px;
+  width: 100%;
+}
+.centre-login-google:disabled,.centre-login-submit:disabled { cursor: wait; opacity: .65; }
+.centre-login-divider { align-items: center; color: #778597; display: flex; font-size: 11px; gap: 12px; margin: 18px 0; }
+.centre-login-divider::before,.centre-login-divider::after { background: #e5eaf0; content: ""; flex: 1; height: 1px; }
+.centre-login-form { display: grid; gap: 14px; }
+.centre-login-form > label:not(.centre-login-remember) { color: #26384d; display: grid; font-size: 12px; font-weight: 700; gap: 7px; }
+.centre-login-form > label:not(.centre-login-remember) input {
+  background: #fbfcfe;
+  border: 1px solid #d9e0e8;
+  border-radius: 10px;
+  color: #122236;
+  font: inherit;
+  min-height: 45px;
+  padding: 10px 12px;
+  width: 100%;
+}
+.centre-login-form input:focus-visible,.centre-login-google:focus-visible,.centre-login-submit:focus-visible,.centre-login-footer a:focus-visible {
+  outline: 3px solid rgba(242,106,27,.35);
+  outline-offset: 2px;
+}
+.centre-login-remember { align-items: center; color: #536276; display: flex; font-size: 12px; gap: 9px; }
+.centre-login-remember input { accent-color: #e16016; height: 16px; width: 16px; }
+.centre-login-submit {
+  align-items: center;
+  background: linear-gradient(135deg, #f26a1b, #e85c10);
+  border: 0;
+  border-radius: 11px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  font-size: 14px;
+  font-weight: 800;
+  gap: 9px;
+  justify-content: center;
+  min-height: 47px;
+  width: 100%;
+}
+.centre-login-no-access { color: #617186; font-size: 11px; line-height: 1.5; margin: 16px 0 0; text-align: center; }
+.centre-login-footer { border-top: 1px solid #e8edf2; display: flex; font-size: 12px; justify-content: space-between; margin-top: 18px; padding-top: 15px; }
+.centre-login-footer a,.centre-login-shop-link { color: #0757a8; font-weight: 700; text-decoration: none; }
+.centre-login-footer a:hover,.centre-login-shop-link:hover { text-decoration: underline; }
+.centre-login-role-note { align-items: center; color: #7a8796; display: flex; font-size: 10px; gap: 7px; justify-content: center; line-height: 1.4; margin-top: 17px; text-align: center; }
+.centre-login-role-note svg { flex: 0 0 auto; }
+.centre-login-shop-link { display: block; font-size: 13px; margin: 22px auto 0; text-align: center; }
+/* inside the installed app the Centre is the whole world: hide the shop link */
+@media (display-mode: standalone) {
+  .centre-shop-link { display: none !important; }
+}

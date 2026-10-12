@@ -46,7 +46,7 @@ export function resolvePostLoginPath(context: AuthorizationContext | null, reque
     context.roles.some((role) => CENTRE_ROLES.includes(role)) ||
     CENTRE_PERMISSIONS.some((permission) => context.permissions.includes(permission))
   ) {
-    return "/business-center";
+    return "/centre";
   }
 
   if (context.roles.includes("CASHIER") || context.permissions.includes("orders.create")) {

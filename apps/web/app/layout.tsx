@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Providers } from "@/components/providers";
 import { PWARegister } from "@/components/pwa-register";
+import { CentreAppGuard } from "@/components/centre/centre-app-guard";
 import { HistoryNavigation } from "@/components/history-navigation";
 import "./globals.css";
+import "./styles/centre-app.css";
 import "./auth.css";
 import "./styles/tokens.css";
 import "./styles/themes.css";
@@ -24,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 		<html lang="en" data-scroll-behavior="smooth">
 			<body>
 				<PWARegister />
+				<CentreAppGuard />
 				<Providers>
 					{children}
 					<HistoryNavigation />

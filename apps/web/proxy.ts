@@ -32,14 +32,15 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const isProtected = protectedPrefixes.some(
+  const isCentreLogin = request.nextUrl.pathname === "/centre/login";
+  const isProtected = !isCentreLogin && protectedPrefixes.some(
     (prefix) => request.nextUrl.pathname === prefix || request.nextUrl.pathname.startsWith(`${prefix}/`),
   );
   if (!isProtected) return response;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL(isCentreLogin ? "/centre/login" : "/login", request.url);
     loginUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }

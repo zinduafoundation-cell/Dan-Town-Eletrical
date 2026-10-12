@@ -11,7 +11,7 @@ describe("post-login routing", () => {
   it("sends customers, cashiers, and operational staff to the right workspace", () => {
     expect(resolvePostLoginPath({ userId: "customer", roles: ["CUSTOMER"], permissions: [] })).toBe("/account");
     expect(resolvePostLoginPath({ userId: "cashier", roles: ["CASHIER"], permissions: ["orders.create"] })).toBe("/pos");
-    expect(resolvePostLoginPath({ userId: "manager", roles: ["STORE_MANAGER"], permissions: ["orders.read"] })).toBe("/business-center");
+    expect(resolvePostLoginPath({ userId: "manager", roles: ["STORE_MANAGER"], permissions: ["orders.read"] })).toBe("/centre");
   });
 
   it("preserves a safe requested destination", () => {
@@ -20,6 +20,7 @@ describe("post-login routing", () => {
 
   it("only offers biometric sign-in when returning to staff workspaces", () => {
     expect(isStaffDestination("/pos")).toBe(true);
+    expect(isStaffDestination("/centre")).toBe(true);
     expect(isStaffDestination("/business-center/orders")).toBe(true);
     expect(isStaffDestination("/account/orders")).toBe(false);
     expect(isStaffDestination(null)).toBe(false);

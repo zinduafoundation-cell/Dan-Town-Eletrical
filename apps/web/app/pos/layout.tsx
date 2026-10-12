@@ -1,3 +1,4 @@
+import { centreAppMetadata } from "@/lib/centre/pwa";
 import type { ReactNode } from "react";
 import { requireAuthorizedPermission, getStaffIdentity } from "@/lib/auth/server";
 import { POSShell } from "@/components/pos/pos-shell";
@@ -15,3 +16,5 @@ export default async function POSLayout({ children }: { children: ReactNode }) {
     </POSShell>
   );
 }
+
+export const metadata = centreAppMetadata;
