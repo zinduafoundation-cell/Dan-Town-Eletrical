@@ -18,6 +18,7 @@
     "@dantown/ui": "*",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
+    "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "latest",
     "lucide-react": "latest",
     "next": "latest",

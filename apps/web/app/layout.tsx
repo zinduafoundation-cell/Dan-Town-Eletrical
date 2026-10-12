@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "@/components/providers";
 import { PWARegister } from "@/components/pwa-register";
 import { CentreAppGuard } from "@/components/centre/centre-app-guard";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 					{children}
 					<HistoryNavigation />
 				</Providers>
+				<SpeedInsights />
 			</body>
 		</html>
 	);
