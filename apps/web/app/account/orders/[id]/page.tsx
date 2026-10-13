@@ -10,6 +10,7 @@ import { buildDeliveryStatusSummary } from "@/lib/delivery-status";
 import { OrderManagementActions } from "@/components/order-management-actions";
 import { DeliveryProofSubmission } from "@/components/account/delivery-proof-submission";
 import { getOrderEditExpiryLabel, isOrderModifiable } from "@/lib/order-edit-window";
+import { CustomerOrderReceipt } from "@/components/documents/customer-order-receipt";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,7 @@ export default async function AccountOrderDetailPage({ params }: { params: Promi
           {canModifyOrder ? `This order can still be adjusted until ${expiryLabel}.` : "This order is past the editing window and can no longer be modified."}
         </div>
         <OrderManagementActions orderId={order.id} orderStatus={order.order_status} createdAt={order.created_at} />
+        <CustomerOrderReceipt orderId={order.id} enabled={order.payment_status === "SUCCESS"} />
         <section className="order-timeline">
           {stages.map((stage) => {
             const complete = stage.complete;

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const authClient = await createSupabaseServerClient();
     const { data: { user } } = await authClient.auth.getUser();
     const supabase = createSupabaseServiceClient();
-    const orderNumber = `DT-${Date.now().toString().slice(-8)}`;
+    const orderNumber = `DT-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
     const { data: order, error: orderError } = await supabase.rpc("create_online_order", {
       order_number: orderNumber,
       buyer_user_id: user?.id ?? null,

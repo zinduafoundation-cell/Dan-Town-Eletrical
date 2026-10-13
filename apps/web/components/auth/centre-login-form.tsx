@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BriefcaseBusiness, LockKeyhole, ShieldCheck } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { createAuthClient } from "@dantown/auth";
@@ -9,9 +10,10 @@ import { BiometricSignIn } from "@/components/auth/biometric-sign-in";
 const CENTRE_PATH = "/centre";
 
 export function CentreLoginForm() {
+  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   async function signInWithGoogle() {
     setLoading(true);
@@ -65,7 +67,7 @@ export function CentreLoginForm() {
         return;
       }
 
-      window.location.assign(`/auth/complete?next=${encodeURIComponent(CENTRE_PATH)}`);
+      router.replace(`/auth/complete?next=${encodeURIComponent(CENTRE_PATH)}`);
     } catch (signInError) {
       console.error("CENTRE EMAIL SIGN-IN ERROR", signInError);
       setError("We could not complete sign-in. Check your connection and try again.");

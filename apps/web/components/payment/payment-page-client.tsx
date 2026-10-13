@@ -143,6 +143,7 @@ export function PaymentPageClient({
             : "Unable to start Paystack checkout.";
         throw new Error(message);
       }
+      window.sessionStorage.setItem(`dantown-payment-token:${orderId}`, paymentToken);
       window.location.assign(result.authorizationUrl);
     } catch (error) {
       setPaymentError(error instanceof Error ? error.message : "Unable to start Paystack checkout.");
@@ -182,7 +183,9 @@ export function PaymentPageClient({
               : "Unable to verify the M-Pesa payment.",
           );
         }
-        window.location.replace(`/order-confirmation?orderId=${encodeURIComponent(result.orderId)}`);
+        window.location.replace(
+          `/order-confirmation?orderId=${encodeURIComponent(result.orderId)}#paymentToken=${encodeURIComponent(paymentToken)}`,
+        );
         return;
       }
       setPaymentError("The M-Pesa request is still pending. Check your phone, then select “Check payment status” again.");

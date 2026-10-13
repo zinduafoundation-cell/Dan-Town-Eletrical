@@ -51,6 +51,7 @@ export type Database = {
       pricing_approvals: { Row: PricingApproval; Insert: PricingApprovalInsert; Update: Partial<PricingApprovalInsert>; Relationships: [] };
       price_history: { Row: PriceHistory; Insert: PriceHistoryInsert; Update: Partial<PriceHistoryInsert>; Relationships: [] };
       business_center_access: { Row: BusinessCenterAccess; Insert: BusinessCenterAccessInsert; Update: Partial<BusinessCenterAccessInsert>; Relationships: [] };
+      business_document_settings: { Row: BusinessDocumentSettings; Insert: BusinessDocumentSettingsInsert; Update: Partial<BusinessDocumentSettingsInsert>; Relationships: [] };
     };
     Views: { inventory_health: { Row: InventoryHealth; Relationships: [] } };
     Functions: {
@@ -621,3 +622,5 @@ export type PricingApproval = { id: string; recommendation_id: string; status: P
 export type PricingApprovalInsert = Omit<PricingApproval, "id" | "created_at" | "reviewed_at"> & { id?: string; reviewed_at?: string | null; created_at?: string };
 export type PriceHistory = { id: string; product_id: string; price_type: string; old_price: number | null; new_price: number; reason: string; source: "MANUAL" | "AI" | "SUPPLIER_UPDATE" | "PROMOTION" | "MARKET_UPDATE"; recommendation_id: string | null; approved_by: string | null };
 export type PriceHistoryInsert = Omit<PriceHistory, "id"> & { id?: string };
+export type BusinessDocumentSettings = { id: "dantown"; template: Json; updated_at: string; updated_by: string | null };
+export type BusinessDocumentSettingsInsert = { id?: "dantown"; template: Json; updated_at?: string; updated_by?: string | null };

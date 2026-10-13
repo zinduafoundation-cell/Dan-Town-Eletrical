@@ -20,12 +20,13 @@ function completePath() {
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [checkingSession, setCheckingSession] = useState(true);
   const [staffSignIn, setStaffSignIn] = useState(false);
 
   useEffect(() => {
-    setStaffSignIn(isStaffDestination(requestedNextPath()));
+    const frame = window.requestAnimationFrame(() => setStaffSignIn(isStaffDestination(requestedNextPath())));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -136,7 +137,7 @@ export default function LoginPage() {
             />
             <span>Remember me on this device for 30 days</span>
           </label>
-          <p className="auth-remember-note">Signing out still ends your session. We never save your password.</p>
+          <p className="auth-remember-note">This device stays signed in for up to 30 days. Signing out ends the session. Your password is never saved.</p>
           <Link className="text-link" href="/forgot-password">Forgot password</Link>
           <button className={buttonClassName()} disabled={loading || checkingSession}>
             {checkingSession ? "Checking session..." : loading ? "Signing in..." : "Sign in"}

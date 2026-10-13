@@ -3,8 +3,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { APP_CURRENCY } from "@dantown/shared";
-import { AlertCircle, Banknote, Building2, CreditCard, Minus, Pause, Play, Plus, Receipt, Search, ShoppingCart, Smartphone, Sparkles, Trash2, type LucideIcon } from "lucide-react";
+import { AlertCircle, Banknote, Building2, CreditCard, Minus, Pause, Play, Plus, Search, ShoppingCart, Smartphone, Sparkles, Trash2, type LucideIcon } from "lucide-react";
 import { CameraBarcodeScanner } from "@/components/pos/camera-barcode-scanner";
+import { BusinessReceipt } from "@/components/documents/business-receipt";
 import { CashSessionPanel } from "@/components/pos/cash-session";
 import { canQueueOfflineSale, enqueueSale, getQueuedProductQuantities } from "@/lib/pos/offline-queue";
 import { matchesPOSProduct } from "@/lib/pos/product-search";
@@ -13,12 +14,13 @@ import { readCashSession, recordCashSale, saveCashSession, type CashSession } fr
 import { createHeldSale, getHeldSales, removeHeldSale, upsertHeldSale, type HeldSale } from "@/lib/pos/held-sales";
 import { boughtTogether, money, parseSmartLine, quickCash, recordSale, topPicks, whatsappUrl } from "@/lib/pos/smart";
 import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
+import { defaultBusinessDocumentSettings, type BusinessDocumentSettings } from "@/lib/documents/business-document-settings";
 
 type Product = OfflinePOSProduct;
 type CartItem = Product & { cartQty: number };
 type Customer = { id: string; name: string; phone: string | null; email: string | null };
 type Tender = "cash" | "card" | "mpesa" | "bank";
-type ReceiptData = { date: string; customer: string; phone: string | null; amount: number; items: number; lines: Array<{ name: string; qty: number; total: number }>; receiptNumber: string; servedBy: string | null; staffRole: string | null; paymentMethod: string; tendered: number | null; change: number | null; offlinePending?: boolean };
+type ReceiptData = { date: string; customer: string; phone: string | null; amount: number; items: number; lines: Array<{ name: string; sku: string; qty: number; total: number }>; receiptNumber: string; servedBy: string | null; staffRole: string | null; paymentMethod: string; tendered: number | null; change: number | null; offlinePending?: boolean };
 
 const tenders: Array<{ id: Tender; label: string; icon: LucideIcon }> = [
   { id: "cash", label: "Cash", icon: Banknote }, { id: "mpesa", label: "M-Pesa", icon: Smartphone },
@@ -67,6 +69,7 @@ export default function NewSalePage() {
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [documentSettings, setDocumentSettings] = useState<BusinessDocumentSettings>(defaultBusinessDocumentSettings);
   const [cashSession, setCashSession] = useState<CashSession>(() => readCashSession());
   const [held, setHeld] = useState<HeldSale[]>(() => getHeldSales());
   const [picks, setPicks] = useState<string[]>([]);
@@ -74,6 +77,21 @@ export default function NewSalePage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { saveCashSession(cashSession); }, [cashSession]);
+  useEffect(() => {
+    if (!navigator.onLine) return;
+    let active = true;
+    void fetch("/api/documents/settings")
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Unable to load receipt settings.");
+        if (active) setDocumentSettings(result.settings as BusinessDocumentSettings);
+      })
+      .catch((error: unknown) => {
+        console.error("Unable to load the shared receipt layout.", error);
+        if (active) setMessage("Could not load the saved receipt layout; using the standard Dantown design.");
+      });
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     const refreshConnection = () => {
       const online = navigator.onLine;
@@ -258,7 +276,7 @@ export default function NewSalePage() {
       splitPayments: splitPayment ? [{ method: paymentMethod, amount: total - splitAmount }, { method: splitTender, amount: splitAmount }] : undefined,
       items: cart.map((item) => ({ productId: item.id, quantity: item.cartQty })),
     };
-    const lines = cart.map((item) => ({ name: item.name, qty: item.cartQty, total: item.price * item.cartQty }));
+    const lines = cart.map((item) => ({ name: item.name, sku: item.sku, qty: item.cartQty, total: item.price * item.cartQty }));
     let serverResponded = false;
     try {
       setProcessing(true); setMessage(null);
@@ -351,9 +369,9 @@ export default function NewSalePage() {
     {message && <div className="px-toast" role="status"><AlertCircle size={18} /><span>{message}</span><button type="button" onClick={() => setMessage(null)} aria-label="Dismiss">×</button></div>}
     {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: catalogue prices and stock are saved copies; only cash sales can be queued.</span></div>}
     {receipt && <div className="px-modal"><div className="px-receipt px-receipt-print">
-      <Receipt size={34} className="px-receipt-icon" /><h2>{receipt.offlinePending ? "Saved offline · pending sync" : "Sale complete"}</h2>{receipt.offlinePending && <p role="alert">Provisional record only. This sale is not confirmed until the server syncs it.</p>}<p className="px-receipt-no">{receipt.receiptNumber}</p><p className="px-receipt-amount">{money(receipt.amount)}</p>
-      <div className="px-receipt-lines">{receipt.lines.map((line, index) => <p key={index}><span>{line.qty} × {line.name}</span><b>{money(line.total)}</b></p>)}</div>
-      <div className="px-receipt-meta"><p>Customer <b>{receipt.customer}</b></p><p>Payment <b>{receipt.paymentMethod}</b></p>{receipt.change !== null && <p>Cash {money(receipt.tendered ?? 0)} · Change <b>{money(receipt.change)}</b></p>}{receipt.servedBy && <p>Served by <b>{receipt.servedBy}{receipt.staffRole ? ` · ${receipt.staffRole}` : ""}</b></p>}<p>{receipt.date}</p></div>
+      <h2>{receipt.offlinePending ? "Saved offline · pending sync" : "Sale complete"}</h2>{receipt.offlinePending && <p role="alert">Provisional record only. This sale is not confirmed until the server syncs it.</p>}
+      <BusinessReceipt settings={documentSettings} reference={receipt.receiptNumber} date={receipt.date} customer={receipt.customer} paymentMethod={receipt.paymentMethod} lines={receipt.lines.map((line) => ({ name: line.name, sku: line.sku, quantity: line.qty, total: line.total }))} total={receipt.amount} />
+      <div className="px-receipt-meta">{receipt.change !== null && <p>Cash {money(receipt.tendered ?? 0)} · Change <b>{money(receipt.change)}</b></p>}{receipt.servedBy && <p>Served by <b>{receipt.servedBy}{receipt.staffRole ? ` · ${receipt.staffRole}` : ""}</b></p>}</div>
       <div className="px-receipt-actions"><button type="button" className="px-btn primary" onClick={() => window.print()}>Print</button>{whatsapp && <a className="px-btn" href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}<button type="button" className="px-btn" onClick={() => setReceipt(null)}>New sale</button></div>
     </div></div>}
 

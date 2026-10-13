@@ -5,6 +5,7 @@ import { StorefrontShell } from "@/components/storefront";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/store-data";
 import { getOrderStatusLabel } from "@/lib/order-lifecycle";
+import { CustomerOrderReceipt } from "@/components/documents/customer-order-receipt";
 
 export const metadata: Metadata = {
   title: "Order Status",
@@ -108,6 +109,7 @@ export default async function OrderConfirmationPage({
                 <strong>{formatCurrency(Number(order.total))}</strong>
               </div>
             </div>}
+            {order && <CustomerOrderReceipt orderId={rawId} enabled={paymentReceived} />}
 
             {order && !orderCancelled && <div className="confirmation-next-steps">
               <h3>What&apos;s next</h3>

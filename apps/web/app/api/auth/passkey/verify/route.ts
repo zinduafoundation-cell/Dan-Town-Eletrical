@@ -101,10 +101,10 @@ export async function POST(request: Request) {
       const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: "magiclink", email: user.email });
       const tokenHash = link?.properties?.hashed_token;
       if (linkError || !tokenHash) return fail("Could not start your session. Use your password instead.", 500);
-      const supabase = await createSupabaseServerClient({ sessionPersistence: "session" });
+      const supabase = await createSupabaseServerClient({ sessionPersistence: "30-days" });
       const { error: otpError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
       if (otpError) return fail("Could not start your session. Use your password instead.", 500);
-      (await cookies()).set(AUTH_SESSION_PERSISTENCE_COOKIE, "session", persistenceMarkerCookieOptions("session", origin.startsWith("https:")));
+      (await cookies()).set(AUTH_SESSION_PERSISTENCE_COOKIE, "30-days", persistenceMarkerCookieOptions("30-days", origin.startsWith("https:")));
       await recordSecurityEvent(user.id, "BIOMETRIC_LOGIN", { device_label: row.device_label });
     } else {
       await recordSecurityEvent(user.id, "BIOMETRIC_CONFIRMED", { device_label: row.device_label });
