@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, Boxes, CircleDollarSign, ClipboardList, CreditCard, Gauge, PackageX, Users, WalletCards } from "lucide-react";
 import { hasPermission } from "@dantown/auth";
 import type { Permission } from "@dantown/shared";
-import { getAuthorizationContext } from "@/lib/auth/server";
+import { getAuthorizationContext, getStaffIdentity } from "@/lib/auth/server";
 import { hasBusinessCenterAccess } from "@/lib/auth/business-center-access";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/app/portal-shell";
@@ -13,6 +13,7 @@ import { getCentreMetrics } from "@/lib/centre/metrics";
 import { getReorderList, getStaffActivityToday } from "@/lib/centre/insights";
 import { ReorderPanel, StaffActivityPanel } from "@/components/centre/insight-panels";
 import { BiometricSettings } from "@/components/auth/biometric-settings";
+import { CentreOfflineSetup } from "@/components/centre/offline-setup";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,8 @@ const centreLinks = [
 
 export default async function CentrePage() {
   const context = await getAuthorizationContext();
-  const authorized = context && await hasBusinessCenterAccess(context.userId);
-  if (!authorized) redirect("/403");
+  if (!context || !(await hasBusinessCenterAccess(context.userId))) redirect("/403");
+  const staffIdentity = await getStaffIdentity(context);
 
   const supabase = createSupabaseServiceClient();
   const [ordersResult, deletedOrdersResult, centreMetrics] = await Promise.all([
@@ -67,10 +68,31 @@ export default async function CentrePage() {
       deletedByRole: String(payload.deleted_by_role ?? "system"),
     };
   });
+  const offlineMetrics = Object.fromEntries(
+    Object.entries(metrics).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
+  );
 
   return <PortalShell title="Dantown Centre" description="One live view of orders, revenue, inventory, customers, and operations." roles={context!.roles} permissions={context!.permissions} links={centreLinks}>
     <div className="centre-dashboard">
       <CommandCentreBar />
+      {staffIdentity.userId && <CentreOfflineSetup
+        userId={staffIdentity.userId}
+        staffName={staffIdentity.name}
+        staffRole={staffIdentity.role}
+        permissions={context.permissions}
+        centreAuthorized
+        snapshot={{
+          metrics: offlineMetrics,
+          orders: (orders ?? []).map((order) => ({
+            orderNumber: order.order_number,
+            total: Number(order.total),
+            paymentStatus: order.payment_status,
+            orderStatus: order.order_status,
+            salesChannel: order.sales_channel,
+            createdAt: order.created_at,
+          })),
+        }}
+      />}
       <div className="centre-metrics">
         <Metric icon={CircleDollarSign} label="Revenue today" value={`KSh ${Math.round(metrics.revenueToday).toLocaleString()}`} />
         <Metric icon={WalletCards} label="POS sales today" value={`KSh ${Math.round(metrics.posSalesToday).toLocaleString()}`} />

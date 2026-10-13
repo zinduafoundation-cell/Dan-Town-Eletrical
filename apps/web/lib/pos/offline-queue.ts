@@ -1,13 +1,16 @@
 import { emit } from "../core/events";
+import { getCentreOfflineAccess } from "../centre/offline-storage";
 
-export type OfflineSalePayload = { customerId: string | null; customerName: string; subtotal: number; vat: number; total: number; paymentMethod: "cash" | "card" | "mpesa" | "bank"; items: Array<{ productId: string; quantity: number }> };
+export type OfflineSalePayload = { customerId: string | null; customerName: string; subtotal: number; vat: number; total: number; paymentMethod: "cash"; items: Array<{ productId: string; quantity: number }> };
 export type OfflineSyncStatus = "PENDING" | "SYNCING" | "SYNCED" | "FAILED" | "CONFLICT";
-type QueuedSale = { id: string; deviceId: string; createdAt: string; status: OfflineSyncStatus; retryCount: number; lastError: string | null; nextAttemptAt: string | null; payload: OfflineSalePayload };
+type QueuedSale = { id: string; deviceId: string; staffUserId: string | null; createdAt: string; status: OfflineSyncStatus; retryCount: number; lastError: string | null; nextAttemptAt: string | null; payload: OfflineSalePayload };
 const databaseName = "dantown-pos";
 const storeName = "offline-sales";
 
 export const getRetryDelayMs = (retryCount: number) => Math.min(300_000, 2 ** Math.max(1, retryCount) * 1_000);
 export const getSyncFailureStatus = (status: number, retryCount: number): OfflineSyncStatus => status === 400 || status === 401 || status === 403 || status === 409 || retryCount >= 5 ? "CONFLICT" : "FAILED";
+export const canQueueOfflineSale = (paymentMethod: string, splitPayment: boolean) => paymentMethod === "cash" && !splitPayment;
+export const belongsToStaff = (saleStaffId: string | null | undefined, currentStaffId: string | null | undefined) => Boolean(saleStaffId && currentStaffId && saleStaffId === currentStaffId);
 
 function deviceId() {
   const key = "dantown-pos-device-id";
@@ -57,8 +60,10 @@ async function removeSale(id: string) {
   finally { database.close(); }
 }
 
-export async function enqueueSale(payload: OfflineSalePayload) {
-  const sale: QueuedSale = { id: crypto.randomUUID(), deviceId: deviceId(), createdAt: new Date().toISOString(), status: "PENDING", retryCount: 0, lastError: null, nextAttemptAt: null, payload };
+export async function enqueueSale(payload: OfflineSalePayload, staffUserId: string) {
+  if (!staffUserId) throw new Error("Sign in online before creating an offline sale.");
+  if (!canQueueOfflineSale(payload.paymentMethod, false)) throw new Error("Only cash sales can be queued offline.");
+  const sale: QueuedSale = { id: crypto.randomUUID(), deviceId: deviceId(), staffUserId, createdAt: new Date().toISOString(), status: "PENDING", retryCount: 0, lastError: null, nextAttemptAt: null, payload };
   const database = await openQueue();
   try { await new Promise<void>((resolve, reject) => { const request = database.transaction(storeName, "readwrite").objectStore(storeName).add(sale); request.onsuccess = () => resolve(); request.onerror = () => reject(request.error); }); }
   finally { database.close(); }
@@ -71,14 +76,36 @@ export async function getOfflineQueueSummary() {
   return (await readSales()).reduce<Record<OfflineSyncStatus, number>>((summary, sale) => { summary[sale.status] += 1; return summary; }, { PENDING: 0, SYNCING: 0, SYNCED: 0, FAILED: 0, CONFLICT: 0 });
 }
 
+export async function getQueuedProductQuantities() {
+  const sales = await readSales();
+  return sales.reduce<Record<string, number>>((quantities, sale) => {
+    if (sale.status === "SYNCED") return quantities;
+    for (const item of sale.payload.items) {
+      quantities[item.productId] = (quantities[item.productId] ?? 0) + item.quantity;
+    }
+    return quantities;
+  }, {});
+}
+
 export async function flushQueuedSales() {
   if (!navigator.onLine) return 0;
+  const access = await getCentreOfflineAccess();
+  if (!access?.userId) return 0;
+  const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" });
+  if (!sessionResponse.ok) throw new Error("Unable to verify the signed-in staff account before syncing offline sales.");
+  const session = await sessionResponse.json() as { userId?: string | null };
+  if (session.userId !== access.userId) return 0;
   let synced = 0;
   for (const sale of await readSales()) {
     if (sale.status === "SYNCED" || sale.status === "CONFLICT" || (sale.nextAttemptAt && new Date(sale.nextAttemptAt).getTime() > Date.now())) continue;
+    if (!sale.staffUserId) {
+      await updateSale(sale.id, { status: "CONFLICT", lastError: "This queued sale has no recorded staff owner and needs review." });
+      continue;
+    }
+    if (!belongsToStaff(sale.staffUserId, access.userId)) continue;
     await updateSale(sale.id, { status: "SYNCING", lastError: null, nextAttemptAt: null });
     try {
-      const response = await fetch("/api/pos/checkout", { method: "POST", headers: { "Content-Type": "application/json", "X-Offline-Transaction-Id": sale.id, "X-Offline-Device-Id": sale.deviceId }, body: JSON.stringify(sale.payload) });
+      const response = await fetch("/api/pos/checkout", { method: "POST", headers: { "Content-Type": "application/json", "X-Offline-Transaction-Id": sale.id, "X-Offline-Device-Id": sale.deviceId, "X-Offline-Staff-Id": sale.staffUserId }, body: JSON.stringify(sale.payload) });
       const result = await response.json().catch(() => null) as { error?: string; receipt?: { orderId: string } } | null;
       if (!response.ok || !result?.receipt?.orderId) {
         const retryCount = sale.retryCount + 1;

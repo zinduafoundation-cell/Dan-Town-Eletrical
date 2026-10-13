@@ -1,11 +1,13 @@
 "use client";
 
-import { ReactNode, useEffect, useState, useSyncExternalStore } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, LogOut, Wifi, WifiOff, Home, Plus, History, Users, Package, DollarSign, FileText, Settings, Zap, type LucideIcon } from "lucide-react";
 import type { Permission } from "@dantown/shared";
 import { getOfflineQueueSummary } from "@/lib/pos/offline-queue";
+import { getOfflinePOSProducts, saveCentreOfflineAccess } from "@/lib/centre/offline-storage";
+import { downloadOfflinePOSCatalogue, isWifiConnection } from "@/lib/centre/offline-catalogue";
 
 const subscribeToNetwork = (onChange: () => void) => {
   window.addEventListener("online", onChange);
@@ -22,25 +24,79 @@ const getServerNetworkStatus = () => true;
 export function POSShell({
   children,
   permissions,
+  staffUserId,
+  centreAuthorized,
   staffName = "Staff Member",
   staffRole = "Cashier"
 }: {
   children: ReactNode;
   permissions: Permission[];
+  staffUserId: string | null;
+  centreAuthorized: boolean;
   staffName?: string;
   staffRole?: string;
 }) {
   const pathname = usePathname();
   const [now, setNow] = useState<Date | null>(null);
+  const [offlineCatalogueStatus, setOfflineCatalogueStatus] = useState<string | null>(null);
+  const [catalogueDownloading, setCatalogueDownloading] = useState(false);
+  const catalogueDownloadLock = useRef(false);
+  const downloadCatalogue = useCallback(async () => {
+    if (catalogueDownloadLock.current || !staffUserId) return;
+    catalogueDownloadLock.current = true;
+    setCatalogueDownloading(true);
+    setOfflineCatalogueStatus("Preparing offline product catalogue…");
+    try {
+      const count = await downloadOfflinePOSCatalogue(setOfflineCatalogueStatus);
+      setOfflineCatalogueStatus(`${count} products ready offline`);
+    } catch (error) {
+      console.error("Unable to prepare the offline POS catalogue.", error);
+      setOfflineCatalogueStatus(error instanceof Error ? error.message : "Offline catalogue download failed.");
+    } finally {
+      catalogueDownloadLock.current = false;
+      setCatalogueDownloading(false);
+    }
+  }, [staffUserId]);
   useEffect(() => {
-    setNow(new Date());
+    if (!staffUserId) return;
+    let active = true;
+    void (async () => {
+      try {
+        await saveCentreOfflineAccess({ userId: staffUserId, staffName, staffRole, permissions, centreAuthorized });
+        if (!permissions.includes("orders.create")) return;
+        const catalogue = await getOfflinePOSProducts();
+        const isFresh = catalogue?.complete &&
+          Date.now() - new Date(catalogue.savedAt).getTime() < 24 * 60 * 60 * 1000;
+        if (isFresh) {
+          if (active) setOfflineCatalogueStatus(`${catalogue.products.length} products ready offline`);
+          return;
+        }
+        if (!isWifiConnection()) {
+          if (active) setOfflineCatalogueStatus("Connect to Wi-Fi to prepare the offline product catalogue");
+          return;
+        }
+        if (active) await downloadCatalogue();
+      } catch (error) {
+        console.error("Unable to prepare the offline POS catalogue.", error);
+        if (active) setOfflineCatalogueStatus(error instanceof Error ? error.message : "Offline catalogue download failed.");
+      }
+    })();
+    return () => { active = false; };
+  }, [centreAuthorized, downloadCatalogue, permissions, staffName, staffRole, staffUserId]);
+  useEffect(() => {
+    const initialTimer = setTimeout(() => setNow(new Date()), 0);
     const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(timer);
+    };
   }, []);
   const isOnline = useSyncExternalStore(subscribeToNetwork, getNetworkStatus, getServerNetworkStatus);
   const [queueSummary, setQueueSummary] = useState({ PENDING: 0, SYNCING: 0, SYNCED: 0, FAILED: 0, CONFLICT: 0 });
   useEffect(() => {
-    const refreshQueue = () => getOfflineQueueSummary().then(setQueueSummary).catch(() => undefined);
+    const refreshQueue = () => getOfflineQueueSummary().then(setQueueSummary).catch((error) => {
+      console.error("Unable to read offline POS queue status.", error);
+    });
     refreshQueue();
     window.addEventListener("online", refreshQueue);
     window.addEventListener("dantown-pos-sync", refreshQueue);
@@ -139,6 +195,11 @@ export function POSShell({
             {/* Sync Status */}
             <div className="pos-sync-status">
               <span className="pos-sync-text">{queueSummary.PENDING + queueSummary.SYNCING + queueSummary.FAILED + queueSummary.CONFLICT ? `${queueSummary.PENDING + queueSummary.SYNCING} pending · ${queueSummary.FAILED + queueSummary.CONFLICT} need review` : "All changes synced"}</span>
+              {offlineCatalogueStatus && <span className="pos-sync-text">{offlineCatalogueStatus}</span>}
+              {permissions.includes("orders.create") && !offlineCatalogueStatus?.includes("ready offline") &&
+                <button type="button" className="pos-topbar-button" onClick={() => void downloadCatalogue()} disabled={catalogueDownloading}>
+                  {catalogueDownloading ? "Downloading…" : "Download offline catalogue"}
+                </button>}
             </div>
 
             {/* Date/Time */}

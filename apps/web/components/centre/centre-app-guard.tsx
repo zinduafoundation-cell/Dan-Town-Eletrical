@@ -35,6 +35,27 @@ export function CentreAppGuard() {
   const router = useRouter();
 
   useEffect(() => {
+    const onOfflineNavigation = (event: MouseEvent) => {
+      if (navigator.onLine || !(event.target instanceof Element)) return;
+      const anchor = event.target.closest("a");
+      if (!anchor || anchor.target === "_blank") return;
+      const destination = new URL(anchor.href, window.location.origin);
+      if (destination.origin !== window.location.origin || destination.pathname === "/centre/offline") return;
+      const privateRoute = ["/centre", "/admin", "/pos", "/staff", "/business", "/business-center", "/login", "/logout",
+        "/register", "/forgot-password", "/reset-password", "/verify-email", "/callback-error", "/auth", "/api",
+        "/401", "/403"].some((prefix) => destination.pathname === prefix || destination.pathname.startsWith(`${prefix}/`));
+      if (!privateRoute) return;
+      event.preventDefault();
+      const offlineUrl = new URL("/centre/offline", window.location.origin);
+      if (destination.pathname === "/logout") offlineUrl.searchParams.set("from", "/logout");
+      else offlineUrl.searchParams.set("from", destination.pathname);
+      window.location.assign(offlineUrl.href);
+    };
+    window.addEventListener("click", onOfflineNavigation, true);
+    return () => window.removeEventListener("click", onOfflineNavigation, true);
+  }, []);
+
+  useEffect(() => {
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true;

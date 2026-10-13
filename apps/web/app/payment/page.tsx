@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { StorefrontShell } from "@/components/storefront";
 import { PaymentPageClient } from "@/components/payment/payment-page-client";
 import { getPaystackMode } from "@/lib/payments/paystack-mode";
+import { isPaywaveConfigured } from "@/lib/payments/paywave";
 
 export const metadata: Metadata = {
   title: "Payment",
@@ -15,6 +16,7 @@ export default async function PaymentPage({
 }) {
   const params = await searchParams;
   const paystackMode = getPaystackMode();
+  const paywaveEnabled = isPaywaveConfigured();
 
   return (
     <StorefrontShell>
@@ -23,6 +25,7 @@ export default async function PaymentPage({
         orderNumber={params.orderNumber ?? ""}
         total={Number(params.total ?? 0)}
         paystackMode={paystackMode}
+        paywaveEnabled={paywaveEnabled}
       />
     </StorefrontShell>
   );

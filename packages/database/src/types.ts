@@ -63,8 +63,10 @@ export type Database = {
       create_pos_paystack_order: { Args: { sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
       complete_pos_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
       prepare_online_paystack_payment: { Args: { target_order_id: string }; Returns: Payment };
+      prepare_online_paywave_payment: { Args: { target_order_id: string }; Returns: Payment };
       finish_online_paystack_sandbox_test: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
       complete_online_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
+      complete_online_paywave_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
       create_online_order: { Args: { order_number: string; buyer_user_id: string | null; customer_name: string; customer_phone: string; customer_email: string | null; fulfillment_type: string; shipping_details: Json; delivery_fee: number; requested_items: Json }; Returns: Order };
       release_online_order: { Args: { order_id: string; release_reason?: string }; Returns: Order };
       process_return: { Args: { order_id: string; refund_reason: string; refund_amount: number; staff_user_id: string | null }; Returns: Json };

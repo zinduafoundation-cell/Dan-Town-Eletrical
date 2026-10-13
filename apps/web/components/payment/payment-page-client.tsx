@@ -29,6 +29,7 @@ type Props = {
   orderNumber: string;
   total: number;
   paystackMode: PaystackMode | null;
+  paywaveEnabled: boolean;
 };
 
 export function PaymentPageClient({
@@ -36,11 +37,14 @@ export function PaymentPageClient({
   orderNumber,
   total,
   paystackMode,
+  paywaveEnabled,
 }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("paystack");
   const [paymentToken, setPaymentToken] = useState("");
   const [paymentTokenReady, setPaymentTokenReady] = useState(false);
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [paywaveTransactionRequestId, setPaywaveTransactionRequestId] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [startingPayment, setStartingPayment] = useState(false);
 
@@ -146,6 +150,75 @@ export function PaymentPageClient({
     }
   };
 
+  const checkPaywaveStatus = async (transactionRequestId: string) => {
+    setStartingPayment(true);
+    setPaymentError("");
+    try {
+      for (let attempt = 0; attempt < 18; attempt += 1) {
+        if (attempt > 0) await new Promise((resolve) => window.setTimeout(resolve, 5_000));
+        const response = await fetch("/api/checkout/paywave-verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactionRequestId, paymentToken }),
+        });
+        const result: unknown = await response.json();
+        if (response.status === 202 && typeof result === "object" && result !== null && "status" in result && result.status === "pending") {
+          continue;
+        }
+        if (response.status === 402) {
+          setPaywaveTransactionRequestId("");
+          throw new Error(
+            typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
+              ? result.error
+              : "M-Pesa payment was not completed. You can try again.",
+          );
+        }
+        if (!response.ok || typeof result !== "object" || result === null ||
+          !("success" in result) || result.success !== true ||
+          !("orderId" in result) || typeof result.orderId !== "string") {
+          throw new Error(
+            typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
+              ? result.error
+              : "Unable to verify the M-Pesa payment.",
+          );
+        }
+        window.location.replace(`/order-confirmation?orderId=${encodeURIComponent(result.orderId)}`);
+        return;
+      }
+      setPaymentError("The M-Pesa request is still pending. Check your phone, then select “Check payment status” again.");
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : "Unable to verify the M-Pesa payment.");
+    } finally {
+      setStartingPayment(false);
+    }
+  };
+
+  const startPaywaveCheckout = async () => {
+    setStartingPayment(true);
+    setPaymentError("");
+    try {
+      const response = await fetch("/api/checkout/paywave-init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, phone, paymentToken }),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok || typeof result !== "object" || result === null ||
+        !("transactionRequestId" in result) || typeof result.transactionRequestId !== "string") {
+        throw new Error(
+          typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
+            ? result.error
+            : "Unable to send the M-Pesa payment request.",
+        );
+      }
+      setPaywaveTransactionRequestId(result.transactionRequestId);
+      await checkPaywaveStatus(result.transactionRequestId);
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : "Unable to start M-Pesa payment.");
+      setStartingPayment(false);
+    }
+  };
+
   return (
     <main className="page-shell payment-page">
       {/* TOP BAR */}
@@ -204,9 +277,11 @@ export function PaymentPageClient({
             <h1>Complete your payment</h1>
 
             <p>
-              {paystackMode === "test"
-                ? "Your order is saved. Paystack sandbox testing does not collect real money."
-                : "Your order is saved. Complete payment securely with Paystack to send it to Dantown for processing."}
+              {method === "mpesa"
+                ? "Approve the M-Pesa prompt on your phone. Your order is confirmed only after Paywave Express verifies the payment."
+                : paystackMode === "test"
+                  ? "Your order is saved. Paystack sandbox testing does not collect real money."
+                  : "Your order is saved. Complete payment securely with Paystack to send it to Dantown for processing."}
             </p>
           </div>
 
@@ -265,7 +340,7 @@ export function PaymentPageClient({
 
                 <div className="method-content">
                   <div className="method-title">
-                    <strong>M-Pesa</strong>
+                    <strong>M-Pesa via Paywave Express</strong>
 
                     <span className="recommended">
                       Recommended
@@ -273,7 +348,9 @@ export function PaymentPageClient({
                   </div>
 
                   <p>
-                    M-Pesa payments are not available yet.
+                    {paywaveEnabled
+                      ? "Get a secure STK Push on your phone and approve with your M-Pesa PIN."
+                      : "Paywave Express is not configured for this deployment yet."}
                   </p>
                 </div>
 
@@ -388,19 +465,27 @@ export function PaymentPageClient({
                   <div>
                     <h2>M-Pesa number</h2>
 
-                    <p>
-                      M-Pesa checkout is not connected. No phone number or payment request is needed.
-                    </p>
+                    <p>Paywave Express will send an M-Pesa STK Push to this Kenyan phone number.</p>
                   </div>
                 </div>
               </div>
 
+              <label className="form-field">
+                <span>M-Pesa phone number</span>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="0712 345 678"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  disabled={!paywaveEnabled || startingPayment}
+                  required
+                />
+              </label>
               <div className="payment-help">
                 <ShieldCheck size={16} />
-
-                <span>
-                  No M-Pesa prompt will be sent until payment processing is enabled.
-                </span>
+                <span>Never share your M-Pesa PIN. Dantown will confirm the order only after Paywave Express verifies the transaction.</span>
               </div>
             </div>
           )}
@@ -444,14 +529,26 @@ export function PaymentPageClient({
             <button
               type="button"
               className="button button-primary payment-button"
-              onClick={startPaystackCheckout}
-              disabled={!paystackMode || method !== "paystack" || startingPayment || !paymentToken}
+              onClick={method === "mpesa" ? () => {
+                if (paywaveTransactionRequestId) void checkPaywaveStatus(paywaveTransactionRequestId);
+                else void startPaywaveCheckout();
+              } : startPaystackCheckout}
+              disabled={
+                (method === "paystack" && !paystackMode) ||
+                (method === "mpesa" && (!paywaveEnabled || phone.trim().length < 9)) ||
+                (method !== "paystack" && method !== "mpesa") ||
+                startingPayment || !paymentToken
+              }
             >
               {startingPayment ? <Loader2 className="animate-spin" size={18} /> : null}
               <span>
-                {paystackMode
-                  ? `Continue to Paystack${paystackMode === "test" ? " sandbox" : ""}`
-                  : "Paystack unavailable"}
+                {method === "mpesa"
+                  ? paywaveTransactionRequestId
+                    ? "Check payment status"
+                    : "Send M-Pesa prompt"
+                  : paystackMode
+                    ? `Continue to Paystack${paystackMode === "test" ? " sandbox" : ""}`
+                    : "Paystack unavailable"}
               </span>
             </button>
             {paymentError && <p className="payment-error" role="alert">{paymentError}</p>}
@@ -495,7 +592,7 @@ export function PaymentPageClient({
 
             <strong>
               {method === "mpesa"
-                ? "M-Pesa"
+                ? "M-Pesa · Paywave Express"
                 : method === "card"
                 ? "Card"
                 : "Cash"}

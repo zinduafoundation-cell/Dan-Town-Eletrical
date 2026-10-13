@@ -241,6 +241,20 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
+
+      const offlineStaffId = request.headers.get("X-Offline-Staff-Id");
+      if (!offlineStaffId || offlineStaffId !== context.userId) {
+        return NextResponse.json(
+          { success: false, error: "This offline sale belongs to a different staff account." },
+          { status: 403 },
+        );
+      }
+      if (sale.paymentMethod !== "cash" || sale.splitPayments?.length) {
+        return NextResponse.json(
+          { success: false, error: "Only cash sales can be synchronized from offline mode." },
+          { status: 400 },
+        );
+      }
     }
 
     /*

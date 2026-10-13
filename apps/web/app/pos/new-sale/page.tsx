@@ -6,18 +6,19 @@ import { APP_CURRENCY } from "@dantown/shared";
 import { AlertCircle, Banknote, Building2, CreditCard, Minus, Pause, Play, Plus, Receipt, Search, ShoppingCart, Smartphone, Sparkles, Trash2, type LucideIcon } from "lucide-react";
 import { CameraBarcodeScanner } from "@/components/pos/camera-barcode-scanner";
 import { CashSessionPanel } from "@/components/pos/cash-session";
-import { enqueueSale } from "@/lib/pos/offline-queue";
+import { canQueueOfflineSale, enqueueSale, getQueuedProductQuantities } from "@/lib/pos/offline-queue";
 import { matchesPOSProduct } from "@/lib/pos/product-search";
+import { getCentreOfflineAccess, getOfflinePOSProducts, type OfflinePOSProduct } from "@/lib/centre/offline-storage";
 import { readCashSession, recordCashSale, saveCashSession, type CashSession } from "@/lib/pos/cash-session";
 import { createHeldSale, getHeldSales, removeHeldSale, upsertHeldSale, type HeldSale } from "@/lib/pos/held-sales";
 import { boughtTogether, money, parseSmartLine, quickCash, recordSale, topPicks, whatsappUrl } from "@/lib/pos/smart";
 import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 
-type Product = { id: string; name: string; sku: string; barcode: string | null; price: number; vatRate: number; category: string; qty: number; imageUrl: string | null };
+type Product = OfflinePOSProduct;
 type CartItem = Product & { cartQty: number };
 type Customer = { id: string; name: string; phone: string | null; email: string | null };
 type Tender = "cash" | "card" | "mpesa" | "bank";
-type ReceiptData = { date: string; customer: string; phone: string | null; amount: number; items: number; lines: Array<{ name: string; qty: number; total: number }>; receiptNumber: string; servedBy: string | null; staffRole: string | null; paymentMethod: string; tendered: number | null; change: number | null };
+type ReceiptData = { date: string; customer: string; phone: string | null; amount: number; items: number; lines: Array<{ name: string; qty: number; total: number }>; receiptNumber: string; servedBy: string | null; staffRole: string | null; paymentMethod: string; tendered: number | null; change: number | null; offlinePending?: boolean };
 
 const tenders: Array<{ id: Tender; label: string; icon: LucideIcon }> = [
   { id: "cash", label: "Cash", icon: Banknote }, { id: "mpesa", label: "M-Pesa", icon: Smartphone },
@@ -25,16 +26,33 @@ const tenders: Array<{ id: Tender; label: string; icon: LucideIcon }> = [
 ];
 
 async function fetchProducts(search: string, limit = 100): Promise<Product[]> {
-  const response = await fetch(`/api/pos/products?limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`);
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error ?? "Failed to load products.");
-  return result.data as Product[];
+  const getCachedProducts = async () => {
+    const catalogue = await getOfflinePOSProducts();
+    if (!catalogue?.complete) throw new Error("No complete product catalogue is saved for offline POS. Connect and download it first.");
+    const queuedQuantities = await getQueuedProductQuantities();
+    return catalogue.products
+      .map((product) => ({ ...product, qty: Math.max(0, product.qty - (queuedQuantities[product.id] ?? 0)) }))
+      .filter((product) => matchesPOSProduct(product, search))
+      .slice(0, search ? limit : catalogue.products.length);
+  };
+
+  if (!navigator.onLine) return getCachedProducts();
+  try {
+    const response = await fetch(`/api/pos/products?limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error ?? "Failed to load products.");
+    return result.data as Product[];
+  } catch (error) {
+    if (navigator.onLine) throw error;
+    return getCachedProducts();
+  }
 }
 
 export default function NewSalePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [customerName, setCustomerName] = useState("Walk-in Customer");
@@ -56,6 +74,28 @@ export default function NewSalePage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { saveCashSession(cashSession); }, [cashSession]);
+  useEffect(() => {
+    const refreshConnection = () => {
+      const online = navigator.onLine;
+      setIsOnline(online);
+      if (!online) {
+        setPaymentMethod("cash");
+        setSplitPayment(false);
+        setSplitAmount(0);
+        setCustomerName("Walk-in Customer");
+        setCustomerSearch("");
+        setSelectedCustomer(null);
+        setCustomers([]);
+      }
+    };
+    refreshConnection();
+    window.addEventListener("online", refreshConnection);
+    window.addEventListener("offline", refreshConnection);
+    return () => {
+      window.removeEventListener("online", refreshConnection);
+      window.removeEventListener("offline", refreshConnection);
+    };
+  }, []);
   useEffect(() => {
     const timer = window.setTimeout(() => setHeld(getHeldSales()), 0);
     return () => window.clearTimeout(timer);
@@ -86,9 +126,14 @@ export default function NewSalePage() {
   }, []);
   useEffect(() => {
     if (customerSearch.trim().length < 2) { const timer = window.setTimeout(() => setCustomers([]), 0); return () => window.clearTimeout(timer); }
+    if (!navigator.onLine) return;
     const timer = window.setTimeout(async () => {
-      const response = await fetch(`/api/pos/customers?q=${encodeURIComponent(customerSearch)}`);
-      if (response.ok) setCustomers((await response.json()).customers ?? []);
+      try {
+        const response = await fetch(`/api/pos/customers?q=${encodeURIComponent(customerSearch)}`);
+        if (response.ok) setCustomers((await response.json()).customers ?? []);
+      } catch (error) {
+        console.error("Unable to search POS customers.", error);
+      }
     }, 250);
     return () => window.clearTimeout(timer);
   }, [customerSearch]);
@@ -205,6 +250,7 @@ export default function NewSalePage() {
 
   const completeSale = async () => {
     if (!cart.length) return setMessage("Cart is empty.");
+    if (!navigator.onLine && (paymentMethod !== "cash" || splitPayment)) return setMessage("Offline POS accepts cash only. Card, M-Pesa, bank and split payments require internet.");
     if (splitPayment && (splitTender === paymentMethod || splitAmount <= 0 || splitAmount >= total)) return setMessage("Choose a different second payment method and a valid amount.");
     if (change !== null && change < 0) return setMessage(`Cash received is Ksh ${Math.abs(change).toLocaleString()} short.`);
     const payload = {
@@ -213,9 +259,11 @@ export default function NewSalePage() {
       items: cart.map((item) => ({ productId: item.id, quantity: item.cartQty })),
     };
     const lines = cart.map((item) => ({ name: item.name, qty: item.cartQty, total: item.price * item.cartQty }));
+    let serverResponded = false;
     try {
       setProcessing(true); setMessage(null);
       const response = await fetch("/api/pos/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      serverResponded = true;
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error ?? "Unable to complete sale.");
       setReceipt({ date: new Date(result.receipt.createdAt).toLocaleString(), customer: result.receipt.customer, phone: selectedCustomer?.phone ?? null, amount: Number(result.receipt.total), items: itemCount, lines, receiptNumber: result.receipt.receiptNumber, servedBy: result.receipt.servedBy, staffRole: result.receipt.staffRole, paymentMethod: result.receipt.paymentMethod, tendered: change !== null ? tendered : null, change });
@@ -235,9 +283,50 @@ export default function NewSalePage() {
       setProducts((current) => current.map((product) => { const sold = cart.find((item) => item.id === product.id); return sold ? { ...product, qty: product.qty - sold.cartQty } : product; }));
       clearSale();
     } catch (error) {
-      if (!splitPayment && (!navigator.onLine || error instanceof TypeError)) {
-        const id = await enqueueSale(payload); recordSale(cartIds); clearSale();
-        setMessage(`Sale queued offline (${id.slice(0, 8)}). It will sync when connection returns.`);
+      if (canQueueOfflineSale(paymentMethod, splitPayment) && !serverResponded && !navigator.onLine) {
+        try {
+          const access = await getCentreOfflineAccess();
+          if (!access?.userId) throw new Error("Sign in online on this device before creating an offline sale.");
+          const offlinePayload = {
+            customerId: null,
+            customerName: "Walk-in Customer",
+            subtotal,
+            vat,
+            total,
+            paymentMethod: "cash" as const,
+            items: cart.map((item) => ({ productId: item.id, quantity: item.cartQty })),
+          };
+          const id = await enqueueSale(offlinePayload, access.userId);
+          recordSale(cartIds);
+          if (cashSession.status === "open") {
+            setCashSession((current) => recordCashSale(current, total));
+          }
+          setProducts((current) => current.map((product) => {
+            const sold = cart.find((item) => item.id === product.id);
+            return sold ? { ...product, qty: Math.max(0, product.qty - sold.cartQty) } : product;
+          }));
+          setReceipt({
+            date: new Date().toLocaleString(),
+            customer: "Walk-in Customer",
+            phone: null,
+            amount: total,
+            items: itemCount,
+            lines,
+            receiptNumber: `PENDING-${id.slice(0, 8).toUpperCase()}`,
+            servedBy: access.staffName,
+            staffRole: access.staffRole,
+            paymentMethod: "Cash · pending sync",
+            tendered: change !== null ? tendered : null,
+            change,
+            offlinePending: true,
+          });
+          clearSale();
+          setMessage("Cash sale saved on this device. It is not confirmed until it syncs.");
+        } catch (queueError) {
+          setMessage(queueError instanceof Error ? queueError.message : "Unable to save this sale offline.");
+        }
+      } else if (error instanceof TypeError && !serverResponded) {
+        setMessage("The connection failed before this sale could be confirmed. Check sales history before retrying.");
       } else setMessage(error instanceof Error ? error.message : "Unable to complete sale.");
     } finally { setProcessing(false); }
   };
@@ -248,7 +337,7 @@ export default function NewSalePage() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const whatsapp = receipt ? whatsappUrl(receipt.phone, `Dantown Electrical receipt ${receipt.receiptNumber}\n${receipt.lines.map((l) => `${l.qty} x ${l.name} - ${money(l.total)}`).join("\n")}\nTotal: ${money(receipt.amount)} (${receipt.paymentMethod})\nThank you!`) : null;
+  const whatsapp = receipt && !receipt.offlinePending ? whatsappUrl(receipt.phone, `Dantown Electrical receipt ${receipt.receiptNumber}\n${receipt.lines.map((l) => `${l.qty} x ${l.name} - ${money(l.total)}`).join("\n")}\nTotal: ${money(receipt.amount)} (${receipt.paymentMethod})\nThank you!`) : null;
   const ProductTile = ({ product, compact = false }: { product: Product; compact?: boolean }) => (
     <button type="button" className={`px-tile ${compact ? "compact" : ""} ${product.qty === 0 ? "out" : ""}`} onClick={() => addToCart(product)} disabled={!product.qty}>
       {!compact && <span className="px-tile-img">{product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" /> : <b>{product.name.charAt(0)}</b>}</span>}
@@ -260,8 +349,9 @@ export default function NewSalePage() {
 
   return <div className="px-register">
     {message && <div className="px-toast" role="status"><AlertCircle size={18} /><span>{message}</span><button type="button" onClick={() => setMessage(null)} aria-label="Dismiss">×</button></div>}
+    {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: catalogue prices and stock are saved copies; only cash sales can be queued.</span></div>}
     {receipt && <div className="px-modal"><div className="px-receipt px-receipt-print">
-      <Receipt size={34} className="px-receipt-icon" /><h2>Sale complete</h2><p className="px-receipt-no">{receipt.receiptNumber}</p><p className="px-receipt-amount">{money(receipt.amount)}</p>
+      <Receipt size={34} className="px-receipt-icon" /><h2>{receipt.offlinePending ? "Saved offline · pending sync" : "Sale complete"}</h2>{receipt.offlinePending && <p role="alert">Provisional record only. This sale is not confirmed until the server syncs it.</p>}<p className="px-receipt-no">{receipt.receiptNumber}</p><p className="px-receipt-amount">{money(receipt.amount)}</p>
       <div className="px-receipt-lines">{receipt.lines.map((line, index) => <p key={index}><span>{line.qty} × {line.name}</span><b>{money(line.total)}</b></p>)}</div>
       <div className="px-receipt-meta"><p>Customer <b>{receipt.customer}</b></p><p>Payment <b>{receipt.paymentMethod}</b></p>{receipt.change !== null && <p>Cash {money(receipt.tendered ?? 0)} · Change <b>{money(receipt.change)}</b></p>}{receipt.servedBy && <p>Served by <b>{receipt.servedBy}{receipt.staffRole ? ` · ${receipt.staffRole}` : ""}</b></p>}<p>{receipt.date}</p></div>
       <div className="px-receipt-actions"><button type="button" className="px-btn primary" onClick={() => window.print()}>Print</button>{whatsapp && <a className="px-btn" href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}<button type="button" className="px-btn" onClick={() => setReceipt(null)}>New sale</button></div>
@@ -295,13 +385,13 @@ export default function NewSalePage() {
 
       {cart.length > 0 && <div className="px-checkout">
         <CashSessionPanel value={cashSession} onChange={setCashSession} />
-        <div className="px-field"><input value={customerSearch || customerName} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value || "Walk-in Customer"); setSelectedCustomer(null); }} placeholder="Customer (optional)" aria-label="Customer" />
+        <div className="px-field"><input value={customerSearch || customerName} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value || "Walk-in Customer"); setSelectedCustomer(null); }} placeholder={isOnline ? "Customer (optional)" : "Walk-in only while offline"} aria-label="Customer" disabled={!isOnline} />
           {customers.length > 0 && <div className="px-dropdown">{customers.map((customer) => <button type="button" key={customer.id} onClick={() => { setSelectedCustomer(customer); setCustomerName(customer.name); setCustomerSearch(customer.name); setCustomers([]); }}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</button>)}</div>}</div>
-        <div className="px-tenders">{tenders.map(({ id, label, icon: Icon }) => <button type="button" key={id} className={paymentMethod === id ? "active" : ""} onClick={() => { setPaymentMethod(id); if (splitTender === id) setSplitTender(tenders.find((t) => t.id !== id)!.id); }}><Icon size={18} />{label}</button>)}</div>
+        <div className="px-tenders">{tenders.map(({ id, label, icon: Icon }) => <button type="button" key={id} className={paymentMethod === id ? "active" : ""} onClick={() => { setPaymentMethod(id); if (splitTender === id) setSplitTender(tenders.find((t) => t.id !== id)!.id); }} disabled={!isOnline && id !== "cash"}><Icon size={18} />{label}</button>)}</div>
         {paymentMethod === "cash" && !splitPayment && <div className="px-cash"><div className="px-quickcash">{quickCash(total).map((amount) => <button type="button" key={amount} className={tendered === amount ? "active" : ""} onClick={() => setTendered(amount)}>{amount === Math.ceil(total) ? "Exact" : amount.toLocaleString()}</button>)}</div>
           <input type="number" min={0} value={tendered || ""} onChange={(event) => setTendered(Number(event.target.value))} placeholder="Cash received" aria-label="Cash received" />
           {change !== null && <p className={`px-change ${change < 0 ? "short" : ""}`}>{change < 0 ? "Short" : "Change"} <b>{money(Math.abs(change))}</b></p>}</div>}
-        <label className="px-split"><input type="checkbox" checked={splitPayment} onChange={(event) => setSplitPayment(event.target.checked)} /> Split payment</label>
+        <label className="px-split"><input type="checkbox" checked={splitPayment} onChange={(event) => setSplitPayment(event.target.checked)} disabled={!isOnline} /> Split payment {!isOnline && <small>requires internet</small>}</label>
         {splitPayment && <div className="px-splitrow"><select value={splitTender} onChange={(event) => setSplitTender(event.target.value as Tender)} aria-label="Second tender">{tenders.filter((t) => t.id !== paymentMethod).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select><input type="number" min={0.01} step={0.01} value={splitAmount || ""} onChange={(event) => setSplitAmount(Number(event.target.value))} placeholder="Second amount" aria-label="Second amount" /></div>}
         <div className="px-totals"><p><span>Subtotal</span><b>{money(subtotal)}</b></p><p><span>VAT</span><b>{money(vat)}</b></p></div>
         <button type="button" className="px-pay" onClick={completeSale} disabled={processing}><span>{processing ? "Processing…" : "Charge"}</span><strong>{money(total)}</strong></button>

@@ -1,46 +1,83 @@
-const CACHE_NAME = "dantown-pos-v3";
-const APP_SHELL = ["/manifest.json", "/icon.svg", "/403", "/pos"];
+const CACHE_NAME = "dantown-centre-pwa-v1";
+const OFFLINE_PAGE = "/centre/offline";
 
-function isProductRequest(request) {
-  return new URL(request.url).pathname === "/api/pos/products";
+function isPrivateNavigation(url) {
+  return ["/centre", "/admin", "/pos", "/staff", "/business", "/business-center", "/login", "/logout",
+    "/register", "/forgot-password", "/reset-password", "/verify-email", "/callback-error", "/auth", "/api",
+    "/401", "/403"].some((prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`));
 }
 
-function isAppShellRequest(request) {
-  const url = new URL(request.url);
-  return url.origin === self.location.origin && (request.destination === "document" || request.destination === "script" || request.destination === "style" || request.destination === "image");
+async function cacheOfflineShell() {
+  const response = await fetch(OFFLINE_PAGE, { cache: "reload" });
+  if (!response.ok) throw new Error("Unable to cache the Centre offline page.");
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(OFFLINE_PAGE, response.clone());
+  const html = await response.text();
+  const assets = [...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css)(?:\?[^"]*)?)"/g)]
+    .map((match) => new URL(match[1].replaceAll("&amp;", "&"), self.location.origin).href)
+    .filter((url) => new URL(url).origin === self.location.origin);
+  await Promise.all(assets.map(async (asset) => {
+    try {
+      const assetResponse = await fetch(asset, { cache: "reload" });
+      if (assetResponse.ok) await cache.put(asset, assetResponse);
+    } catch (error) {
+      console.warn("Unable to cache an offline Centre asset.", error);
+    }
+  }));
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) =>
+    cache.addAll(["/manifest.json", "/centre.webmanifest", "/icon.svg"])
+  ));
   self.skipWaiting();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "CACHE_CENTRE_OFFLINE_SHELL") {
+    event.waitUntil(cacheOfflineShell().catch((error) => {
+      console.error("Unable to prepare the Centre offline page.", error);
+    }));
+  }
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => ["dantown-pos-v3", "dantown-centre-pwa-v0"].includes(key))
+        .map((key) => caches.delete(key))
+    ))
   );
   self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
   const request = event.request;
+  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
 
-  if (!isProductRequest(request) && !isAppShellRequest(request)) return;
+  if (request.mode === "navigate" && new URL(request.url).pathname === OFFLINE_PAGE) {
+    event.respondWith(fetch(request).catch(async () =>
+      (await caches.open(CACHE_NAME)).match(OFFLINE_PAGE) ?? Response.error()
+    ));
+    return;
+  }
 
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request).then((cached) => {
-        if (cached) return cached;
-        if (request.mode === "navigate" || request.destination === "document") return caches.match("/pos");
-        throw new Error("Network request failed and no cached asset is available");
-      }))
-  );
+  if (request.mode === "navigate" && isPrivateNavigation(new URL(request.url))) {
+    event.respondWith(fetch(request).catch(async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const offlinePage = await cache.match(OFFLINE_PAGE);
+      if (!offlinePage) return Response.error();
+      const target = new URL(OFFLINE_PAGE, self.location.origin);
+      target.searchParams.set("from", new URL(request.url).pathname);
+      return Response.redirect(target.href, 302);
+    }));
+    return;
+  }
+
+  if (request.destination === "script" || request.destination === "style" || request.destination === "font") {
+    event.respondWith(fetch(request).catch(async () => {
+      const cached = await caches.match(request);
+      return cached ?? Response.error();
+    }));
+  }
 });

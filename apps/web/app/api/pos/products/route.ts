@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthorizedPermission } from "@/lib/auth/server";
+import { getPermissionGuard } from "@/lib/auth/server";
 import { getOrSetCache } from "@/lib/core/cache";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
@@ -15,7 +15,14 @@ type ProductRow = {
 
 export async function GET(request: Request) {
   try {
-    await requireAuthorizedPermission("orders.read");
+    const readGuard = await getPermissionGuard("orders.read");
+    const createGuard = readGuard.ok ? readGuard : await getPermissionGuard("orders.create");
+    if (!createGuard.ok) {
+      return NextResponse.json(
+        { success: false, error: "You are not authorized to access POS products." },
+        { status: createGuard.status },
+      );
+    }
     const url = new URL(request.url);
     const search = url.searchParams.get("search")?.trim() ?? "";
     const categoryId = url.searchParams.get("categoryId");
