@@ -1,10 +1,9 @@
 "use client";
 
 import { ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, LogOut, Wifi, WifiOff, Home, Plus, History, Users, Package, DollarSign, FileText, Settings, Zap, type LucideIcon } from "lucide-react";
+import { Menu, Wifi, WifiOff, Zap } from "lucide-react";
 import type { Permission } from "@dantown/shared";
+import { ResponsiveSidebar, type SidebarSection } from "@/components/navigation/responsive-sidebar";
 import { getOfflineQueueSummary } from "@/lib/pos/offline-queue";
 import { getOfflinePOSProducts, saveCentreOfflineAccess } from "@/lib/centre/offline-storage";
 import { downloadOfflinePOSCatalogue, isWifiConnection } from "@/lib/centre/offline-catalogue";
@@ -36,7 +35,6 @@ export function POSShell({
   staffName?: string;
   staffRole?: string;
 }) {
-  const pathname = usePathname();
   const [now, setNow] = useState<Date | null>(null);
   const [offlineCatalogueStatus, setOfflineCatalogueStatus] = useState<string | null>(null);
   const [catalogueDownloading, setCatalogueDownloading] = useState(false);
@@ -105,60 +103,56 @@ export function POSShell({
       window.removeEventListener("dantown-pos-sync", refreshQueue);
     };
   }, []);
-  const navigation: Array<{ icon: LucideIcon; label: string; href: string; permission: Permission | null }> = [
-    { icon: Home, label: "Dashboard", href: "/pos", permission: null },
-    { icon: Plus, label: "New Sale", href: "/pos/new-sale", permission: "orders.create" },
-    { icon: History, label: "Sales History", href: "/pos/sales-history", permission: "orders.read" },
-    { icon: Users, label: "Customers", href: "/pos/customers", permission: "customers.read" },
-    { icon: Package, label: "Inventory", href: "/pos/inventory", permission: "inventory.read" },
-    { icon: DollarSign, label: "Cash", href: "/pos/cash", permission: null },
-    { icon: FileText, label: "Reports", href: "/pos/reports", permission: "reports.read" },
-    { icon: Settings, label: "Settings", href: "/pos/settings", permission: null },
+  const navigation: Array<{ icon: string; label: string; href: string; permission: Permission | null }> = [
+    { icon: "Home", label: "Dashboard", href: "/pos", permission: null },
+    { icon: "Plus", label: "New Sale", href: "/pos/new-sale", permission: "orders.create" },
+    { icon: "History", label: "Sales History", href: "/pos/sales-history", permission: "orders.read" },
+    { icon: "UsersRound", label: "Customers", href: "/pos/customers", permission: "customers.read" },
+    { icon: "Package", label: "Inventory", href: "/pos/inventory", permission: "inventory.read" },
+    { icon: "DollarSign", label: "Cash", href: "/pos/cash", permission: null },
+    { icon: "FileText", label: "Reports", href: "/pos/reports", permission: "reports.read" },
+    { icon: "Settings", label: "Settings", href: "/pos/settings", permission: null },
   ];
 
   const visibleNav = navigation.filter(
     (item) => !item.permission || permissions.includes(item.permission)
   );
+  const sidebarSections: SidebarSection[] = [{
+    links: visibleNav.map(({ label, href, icon }) => ({ label, href, icon }))
+  }];
 
   return (
     <div className="pos-container">
-      {/* POS Sidebar */}
-      <aside className="pos-sidebar" aria-label="POS Navigation">
-        <div className="pos-sidebar-header">
+      <ResponsiveSidebar
+        ariaLabel="POS navigation"
+        storageKey="dantown-pos-sidebar"
+        variant="pos"
+        sections={sidebarSections}
+        header={
           <div className="pos-logo">
             <span className="pos-logo-mark"><Zap aria-hidden="true" size={18} /></span>
-            <div>
+            <div className="responsive-sidebar-brand-copy">
               <div className="pos-logo-text">DANTOWN</div>
               <div className="pos-logo-subtext">POS</div>
             </div>
           </div>
-        </div>
-
-        <nav className="pos-nav">
-          {visibleNav.map((item) => (
-            <Link key={item.href} href={item.href} className={`pos-nav-item ${pathname === item.href || (item.href !== "/pos" && pathname.startsWith(`${item.href}/`)) ? "active" : ""}`} aria-current={pathname === item.href || (item.href !== "/pos" && pathname.startsWith(`${item.href}/`)) ? "page" : undefined}>
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="pos-sidebar-footer">
-          <div className="pos-staff-info">
+        }
+        footer={
+          <>
+            <div className="pos-staff-info">
             <div className="pos-staff-avatar">{staffName.charAt(0).toUpperCase()}</div>
-            <div>
-              <div className="pos-staff-name">{staffName}</div>
-              <div className="pos-staff-role">{staffRole}</div>
+              <div className="responsive-sidebar-brand-copy">
+                <div className="pos-staff-name">{staffName}</div>
+                <div className="pos-staff-role">{staffRole}</div>
+              </div>
             </div>
-          </div>
-          <button className="pos-sidebar-button pos-lock-button" title="Lock POS" aria-label="Lock POS">
-            <Menu size={18} />
-          </button>
-          <Link href="/logout" className="pos-sidebar-button pos-logout-button" title="Logout" aria-label="Log out of POS">
-            <LogOut size={18} />
-          </Link>
-        </div>
-      </aside>
+            <button className="pos-sidebar-button pos-lock-button" title="Lock POS" aria-label="Lock POS">
+              <Menu size={18} />
+            </button>
+          </>
+        }
+        actions={[{ label: "Log out of POS", href: "/logout", icon: "LogOut" }]}
+      />
 
       {/* POS Main Content */}
       <div className="pos-main">

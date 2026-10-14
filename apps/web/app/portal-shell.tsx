@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { Permission, UserRole } from "@dantown/shared";
 import { OrderAttentionAlerts } from "@/components/admin/order-attention-alerts";
 import { WorkspaceQuickActions } from "@/components/admin/workspace-quick-actions";
 import { InstallCentreApp } from "@/components/centre/install-app-button";
+import { ResponsiveSidebar, type SidebarSection } from "@/components/navigation/responsive-sidebar";
 
 type PortalShellProps = {
   title: string;
@@ -33,7 +33,6 @@ export function PortalShell({
   children,
   wide = false
 }: PortalShellProps) {
-  const pathname = usePathname();
   const visibleLinks = links.filter(
     (link) =>
       (!link.permission || permissions.includes(link.permission)) &&
@@ -71,28 +70,37 @@ export function PortalShell({
         "Audit Logs",
         "CEO view"
       ].includes(link.label)
-  );const activeHref = [...visibleLinks]
-    .filter(
-      (link) =>
-        pathname === link.href || pathname.startsWith(`${link.href}/`)
-    )
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
-  const isActive = (href: string) => href === activeHref;
+  );
   const administration = visibleLinks.filter(
     (link) => !primary.includes(link) && !management.includes(link)
   );
-  
-  const renderLinks = (items: typeof visibleLinks) =>
-    items.map((link) => (
-      <Link
-        className={isActive(link.href) ? "active" : undefined}
-        aria-current={isActive(link.href) ? "page" : undefined}
-        href={link.href}
-        key={link.href}
-      >
-        {link.label}
-      </Link>
-    ));
+  const getIcon = (label: string) => {
+    const icons: Record<string, string> = {
+      Overview: "LayoutDashboard",
+      POS: "Store",
+      Marketplace: "ShoppingBag",
+      Inventory: "Boxes",
+      Orders: "ShoppingCart",
+      Customers: "UsersRound",
+      Projects: "BriefcaseBusiness",
+      Quotations: "Quote",
+      Technicians: "Wrench",
+      Suppliers: "Truck",
+      Analytics: "ChartNoAxesCombined",
+      Team: "UsersRound",
+      "Roles & Permissions": "ShieldCheck",
+      Settings: "Settings",
+      "System Activity": "Activity",
+      "Audit Logs": "FileText",
+      "CEO view": "ChartNoAxesCombined"
+    };
+    return icons[label] ?? "CircleHelp";
+  };
+  const sidebarSections: SidebarSection[] = [
+    { label: "Primary", links: primary.map((link) => ({ ...link, icon: getIcon(link.label) })) },
+    { label: "Business management", links: management.map((link) => ({ ...link, icon: getIcon(link.label) })) },
+    { label: "Management", links: administration.map((link) => ({ ...link, icon: getIcon(link.label) })) }
+  ].filter((section) => section.links.length > 0);
 
   return (
     <main className="portal">
@@ -118,27 +126,18 @@ export function PortalShell({
         </div>
       </header>
       <div className={`portal-body${wide ? " portal-body-wide" : ""}`}>
-        <aside className="portal-sidebar" aria-label="Portal navigation">
-          <div className="portal-sidebar-label">Workspace</div>
-          {primary.length > 0 && (
-            <>
-              <div className="portal-sidebar-group">Primary</div>
-              {renderLinks(primary)}
-            </>
-          )}
-          {management.length > 0 && (
-            <>
-              <div className="portal-sidebar-group">Business management</div>
-              {renderLinks(management)}
-            </>
-          )}
-          {administration.length > 0 && (
-            <>
-              <div className="portal-sidebar-group">Management</div>
-              {renderLinks(administration)}
-            </>
-          )}
-          </aside>
+        <ResponsiveSidebar
+          ariaLabel="Portal navigation"
+          storageKey="dantown-portal-sidebar"
+          variant="portal"
+          sections={sidebarSections}
+          header={
+            <Link className="responsive-sidebar-brand-link" href="/centre">
+              <span className="brand-mark" aria-hidden="true">D</span>
+              <span className="responsive-sidebar-brand-copy">Workspace</span>
+            </Link>
+          }
+        />
         <section className="portal-main">
           <div className="portal-heading">
             <div>

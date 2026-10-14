@@ -105,12 +105,20 @@ body .pos-container .pos-sidebar {
   border-right: 1px solid var(--g-border);
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.4), inset -1px 0 0 rgba(255, 255, 255, 0.06);
 }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body .pos-container .pos-sidebar {
+    background: linear-gradient(180deg, var(--dant-navy, #071a33), var(--dant-deep-blue, #0b2a50)) !important;
+  }
+}
 body .pos-container .pos-sidebar-header { border-bottom: 1px solid var(--g-border); }
 body .pos-container .pos-logo-mark {
   animation: dt-glow 2.8s ease-in-out infinite;
   background: linear-gradient(135deg, var(--g-orange), var(--g-orange-2));
   border-radius: 14px;
   color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  body .pos-container .pos-logo-mark { animation: none; }
 }
 body .pos-container .pos-logo-text { color: #fff; letter-spacing: 0.04em; }
 body .pos-container .pos-logo-subtext { color: var(--g-orange-2); letter-spacing: 0.3em; }

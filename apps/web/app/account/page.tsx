@@ -16,6 +16,7 @@ import { hasBusinessCenterAccess } from "@/lib/auth/business-center-access";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { getDailyQuote } from "../../lib/daily-quote";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
+import { ResponsiveSidebar, type SidebarSection } from "@/components/navigation/responsive-sidebar";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +139,43 @@ export default async function AccountPage() {
     pageSize: 3,
     allowFallback: false
   });
+  const accountIcons: Record<string, string> = {
+    Overview: "LayoutDashboard",
+    "My Profile": "UserRound",
+    "My Purchases": "ShoppingCart",
+    "Electrical Quotations": "Quote",
+    "My Projects": "BriefcaseBusiness",
+    "Installation Tracking": "Wrench",
+    "Saved Products": "Heart",
+    "Delivery Addresses": "MapPin",
+    "Payment Methods": "CreditCard",
+    "Receipts & documents": "Receipt",
+    Policies: "FileText",
+    "Help Centre": "CircleHelp",
+    "Account Preferences": "Settings",
+    "Dantown Centre": "Store",
+    "Manage Centre access": "ShieldCheck"
+  };
+  const accountSections: SidebarSection[] = [
+    {
+      label: "My account",
+      links: accountLinks.map(({ label, href, status }) => ({
+        label,
+        href,
+        icon: accountIcons[label],
+        badge: status
+      }))
+    },
+    {
+      label: "Workspace",
+      links: [
+        ...(canOpenBusinessCenter ? [{ label: "Dantown Centre", href: "/business-center", icon: accountIcons["Dantown Centre"] }] : []),
+        ...(context.permissions.includes("users.manage")
+          ? [{ label: "Manage Centre access", href: "/admin/business-center-access", icon: accountIcons["Manage Centre access"] }]
+          : [])
+      ]
+    }
+  ].filter((section) => section.links.length > 0);
 
   return (
     <StorefrontShell>
@@ -152,34 +190,26 @@ export default async function AccountPage() {
         </div>
 
         <div className="account-hub-layout">
-          <aside className="account-hub-sidebar">
-            <div className="account-hub-profile">
-              <span className="account-avatar">{initials || "D"}</span>
-              <strong>{displayName}</strong>
-              <small>{customer.email || "Email not added yet"}</small>
-              {canOpenBusinessCenter && (
-                <Link className="button button-primary" href="/centre" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
-                  Open Dantown Centre
-                </Link>
-              )}
-              <span className="account-verified"><ShieldCheck size={14} /> {profile.status || "Active customer"}</span>
-            </div>
-            <nav aria-label="Account navigation">
-              {accountLinks.map((link) => (
-                <Link className={link.href === "/account" ? "active" : undefined} href={link.href} key={link.href}>
-                  <span>{link.label}</span>
-                  {link.status && <small className="account-link-status">{link.status}</small>}
-                </Link>
-              ))}
-              {canOpenBusinessCenter && (
-                <Link href="/business-center">Dantown Centre</Link>
-              )}
-              {context.permissions.includes("users.manage") && (
-                <Link href="/admin/business-center-access">Manage Centre access</Link>
-              )}
-              <Link href="/logout">Sign out</Link>
-            </nav>
-          </aside>
+          <ResponsiveSidebar
+            ariaLabel="Account navigation"
+            storageKey="dantown-account-sidebar"
+            variant="account"
+            sections={accountSections}
+            actions={[{ label: "Sign out", href: "/logout", icon: "LogOut" }]}
+            header={
+              <div className="account-hub-profile">
+                <span className="account-avatar">{initials || "D"}</span>
+                <strong className="responsive-sidebar-brand-copy">{displayName}</strong>
+                <small className="responsive-sidebar-brand-copy">{customer.email || "Email not added yet"}</small>
+                {canOpenBusinessCenter && (
+                  <Link className="button button-primary responsive-sidebar-brand-copy" href="/centre">
+                    Open Dantown Centre
+                  </Link>
+                )}
+                <span className="account-verified responsive-sidebar-brand-copy"><ShieldCheck size={14} /> {profile.status || "Active customer"}</span>
+              </div>
+            }
+          />
 
           <div className="account-hub-content">
             <section className="account-welcome-panel account-hub-welcome">
