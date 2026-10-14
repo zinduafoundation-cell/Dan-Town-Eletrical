@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
-import type { ReceiptEffectSale } from "@/lib/pos/receipt-effect";
+import { subscribePOSReceiptEffect, type ReceiptEffectSale } from "@/lib/pos/receipt-effect";
 
 type ActiveReceipt = ReceiptEffectSale & { key: number };
 
@@ -29,8 +29,7 @@ export function ReceiptEffect() {
       }
     };
 
-    const onSaleComplete = (event: Event) => {
-      const sale = (event as CustomEvent<ReceiptEffectSale>).detail;
+    const onSaleComplete = (sale: ReceiptEffectSale) => {
       if (
         !sale?.receiptNumber ||
         !sale.currency ||
@@ -57,10 +56,10 @@ export function ReceiptEffect() {
       }, 7500));
     };
 
-    window.addEventListener("dantown-pos-sale-completed", onSaleComplete);
+    const unsubscribe = subscribePOSReceiptEffect(onSaleComplete);
     return () => {
       clearScheduledWork();
-      window.removeEventListener("dantown-pos-sale-completed", onSaleComplete);
+      unsubscribe();
     };
   }, []);
 

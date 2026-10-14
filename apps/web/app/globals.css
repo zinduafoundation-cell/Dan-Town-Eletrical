@@ -11169,9 +11169,10 @@ body .portal-main .catalog-simple-form-footer .button-primary:hover { background
 .store-shell .receipt-document-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
 .store-shell .receipt-document-actions .button { align-items: center; display: inline-flex; font-size: 12px; gap: 6px; justify-content: center; min-height: 38px; padding: 8px 11px; }
 .store-shell .receipt-action-error { color: #a3311c; font-size: 12px; margin: 0; width: 100%; }
-.receipt-effect-stage { left: auto; max-height: calc(100dvh - 110px); overflow-y: auto; pointer-events: none; position: fixed; right: 20px; top: max(84px, 10vh); width: min(420px, calc(100vw - 32px)); z-index: 1000; }
+.receipt-effect-stage { left: auto; max-height: calc(100dvh - 110px); overflow-y: auto; pointer-events: none; position: fixed; right: 20px; top: max(84px, 10vh); width: min(420px, calc(100vw - 32px)); z-index: var(--z-toast, 6000); }
 .receipt-effect-panel { pointer-events: auto; }
 .receipt-effect-toast { background: linear-gradient(135deg, #071a33, #0b2a50); border: 1px solid rgba(255,255,255,.13); border-radius: 18px; box-shadow: 0 18px 45px rgba(7,26,51,.3); color: #fff; overflow: hidden; }
+.receipt-effect-stage.show .receipt-effect-toast { transform: translateY(0); }
 .receipt-effect-toast-heading { align-items: center; display: grid; gap: 12px; grid-template-columns: 38px minmax(0, 1fr) auto 30px; padding: 16px; }
 .receipt-effect-brand-mark, .receipt-effect-paper-mark { align-items: center; background: linear-gradient(135deg, #f26a1b, #ff9a4d); border-radius: 11px; color: white; display: inline-flex; font-size: 19px; font-weight: 900; height: 38px; justify-content: center; width: 38px; }
 .receipt-effect-toast-heading > span:nth-child(2) { display: grid; gap: 3px; }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BusinessReceipt, type BusinessReceiptLine } from "@/components/documents/business-receipt";
 import { defaultBusinessDocumentSettings, type BusinessDocumentSettings } from "@/lib/documents/business-document-settings";
 import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
+import { APP_CURRENCY } from "@dantown/shared";
 
 type ReceiptData = {
   orderNumber: string;
@@ -52,10 +53,10 @@ export function CustomerOrderReceipt({
           const confirmedReceipt = result.receipt as ReceiptData;
           setReceipt(confirmedReceipt);
           setSettings(result.settings as BusinessDocumentSettings);
-          if (triggerEffectOnLoad && confirmedReceipt.lines.length > 0) {
+          if (triggerEffectOnLoad && confirmedReceipt.lines.length > 0 && confirmedReceipt.paymentMethod) {
             showPOSReceiptEffect({
               receiptNumber: confirmedReceipt.orderNumber,
-              currency: "KES",
+              currency: APP_CURRENCY,
               items: confirmedReceipt.lines.map((line) => ({
                 name: line.name,
                 sku: line.sku,
@@ -67,7 +68,7 @@ export function CustomerOrderReceipt({
               tax: confirmedReceipt.tax,
               delivery: confirmedReceipt.delivery,
               total: confirmedReceipt.total,
-              paymentMethod: confirmedReceipt.paymentMethod ?? "Not recorded",
+              paymentMethod: confirmedReceipt.paymentMethod,
               date: confirmedReceipt.date
             });
             const currentUrl = new URL(window.location.href);

@@ -11,6 +11,15 @@ export type ReceiptEffectSale = {
   date: string;
 };
 
+const pendingReceipts: ReceiptEffectSale[] = [];
+const receiptEffectListeners = new Set<(sale: ReceiptEffectSale) => void>();
+
+export function subscribePOSReceiptEffect(listener: (sale: ReceiptEffectSale) => void) {
+  receiptEffectListeners.add(listener);
+  pendingReceipts.splice(0).forEach((sale) => listener(sale));
+  return () => receiptEffectListeners.delete(listener);
+}
+
 export function showPOSReceiptEffect(sale: ReceiptEffectSale) {
   if (typeof window === "undefined") return;
   if (
@@ -24,5 +33,9 @@ export function showPOSReceiptEffect(sale: ReceiptEffectSale) {
   ) {
     throw new Error("A complete, confirmed receipt is required to show the receipt effect.");
   }
-  window.dispatchEvent(new CustomEvent<ReceiptEffectSale>("dantown-pos-sale-completed", { detail: sale }));
+  if (receiptEffectListeners.size === 0) {
+    pendingReceipts.push(sale);
+    return;
+  }
+  receiptEffectListeners.forEach((listener) => listener(sale));
 }
