@@ -830,11 +830,34 @@ export async function POST(request: Request) {
  * ============================================================
  */
 
-function receiptResponse(
+async function receiptResponse(
   order: ReceiptOrder,
   customer: string,
   paymentMethod: string,
 ) {
+  if (order.payment_status !== "SUCCESS") {
+    return NextResponse.json(
+      { success: false, error: "The receipt will be available after payment is confirmed." },
+      { status: 409 },
+    );
+  }
+
+  const supabase = createSupabaseServiceClient();
+  const [orderResult, itemResult, paymentResult] = await Promise.all([
+    supabase.from("orders").select("subtotal,discount,vat,delivery_fee,total,payment_status,created_at").eq("id", order.id).maybeSingle(),
+    supabase.from("order_items").select("product_name_snapshot,sku_snapshot,quantity,line_total,vat").eq("order_id", order.id),
+    supabase.from("payments").select("method,status").eq("order_id", order.id).eq("status", "SUCCESS").order("created_at", { ascending: false }).limit(1).maybeSingle()
+  ]);
+  if (orderResult.error) throw orderResult.error;
+  if (itemResult.error) throw itemResult.error;
+  if (paymentResult.error) throw paymentResult.error;
+  if (!orderResult.data || orderResult.data.payment_status !== "SUCCESS" || !itemResult.data?.length) {
+    return NextResponse.json(
+      { success: false, error: "The confirmed receipt details are not yet available." },
+      { status: 409 },
+    );
+  }
+
   return NextResponse.json({
     success: true,
 
@@ -848,12 +871,9 @@ function receiptResponse(
       customer,
 
       total:
-        Number(order.total),
+        Number(orderResult.data.total),
 
       paymentMethod,
-
-      paymentStatus:
-        order.payment_status,
 
       servedBy:
         order.processed_by_staff_name,
@@ -862,7 +882,20 @@ function receiptResponse(
         order.processed_by_staff_role,
 
       createdAt:
-        order.created_at,
+        orderResult.data.created_at,
+
+      currency: "KES",
+      subtotal: Number(orderResult.data.subtotal),
+      discount: Number(orderResult.data.discount),
+      tax: Number(orderResult.data.vat),
+      delivery: Number(orderResult.data.delivery_fee),
+      verifiedPaymentMethod: paymentResult.data?.method ?? paymentMethod,
+      items: itemResult.data.map((item) => ({
+        name: item.product_name_snapshot,
+        sku: item.sku_snapshot,
+        qty: item.quantity,
+        total: Number(item.line_total) + Number(item.vat)
+      }))
     },
   });
 }

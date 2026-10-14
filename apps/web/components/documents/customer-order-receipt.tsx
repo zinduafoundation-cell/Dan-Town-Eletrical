@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BusinessReceipt, type BusinessReceiptLine } from "@/components/documents/business-receipt";
 import { defaultBusinessDocumentSettings, type BusinessDocumentSettings } from "@/lib/documents/business-document-settings";
+import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 
 type ReceiptData = {
   orderNumber: string;
@@ -17,7 +18,15 @@ type ReceiptData = {
   total: number;
 };
 
-export function CustomerOrderReceipt({ orderId, enabled = true }: { orderId: string; enabled?: boolean }) {
+export function CustomerOrderReceipt({
+  orderId,
+  enabled = true,
+  triggerEffectOnLoad = false
+}: {
+  orderId: string;
+  enabled?: boolean;
+  triggerEffectOnLoad?: boolean;
+}) {
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [settings, setSettings] = useState<BusinessDocumentSettings>(defaultBusinessDocumentSettings);
   const [message, setMessage] = useState("");
@@ -40,8 +49,32 @@ export function CustomerOrderReceipt({ orderId, enabled = true }: { orderId: str
           return;
         }
         if (active) {
-          setReceipt(result.receipt as ReceiptData);
+          const confirmedReceipt = result.receipt as ReceiptData;
+          setReceipt(confirmedReceipt);
           setSettings(result.settings as BusinessDocumentSettings);
+          if (triggerEffectOnLoad && confirmedReceipt.lines.length > 0) {
+            showPOSReceiptEffect({
+              receiptNumber: confirmedReceipt.orderNumber,
+              currency: "KES",
+              items: confirmedReceipt.lines.map((line) => ({
+                name: line.name,
+                sku: line.sku,
+                qty: line.quantity,
+                total: line.total
+              })),
+              subtotal: confirmedReceipt.subtotal,
+              discount: confirmedReceipt.discount,
+              tax: confirmedReceipt.tax,
+              delivery: confirmedReceipt.delivery,
+              total: confirmedReceipt.total,
+              paymentMethod: confirmedReceipt.paymentMethod ?? "Not recorded",
+              date: confirmedReceipt.date
+            });
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete("paymentVerified");
+            currentUrl.hash = "";
+            window.history.replaceState(window.history.state, "", `${currentUrl.pathname}${currentUrl.search}`);
+          }
         }
       } catch (error) {
         console.error("Unable to load customer receipt.", error);
@@ -49,7 +82,7 @@ export function CustomerOrderReceipt({ orderId, enabled = true }: { orderId: str
       }
     })();
     return () => { active = false; };
-  }, [enabled, orderId]);
+  }, [enabled, orderId, triggerEffectOnLoad]);
 
   if (!enabled) return null;
   return (

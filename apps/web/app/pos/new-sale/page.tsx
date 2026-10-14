@@ -288,11 +288,14 @@ export default function NewSalePage() {
       showPOSReceiptEffect({
         receiptNumber: result.receipt.receiptNumber,
         currency: APP_CURRENCY,
-        items: cart.map((item) => ({
-          name: item.name,
-          qty: item.cartQty,
-          price: (item.price * item.cartQty + Math.round(item.price * item.cartQty * item.vatRate) / 100) / item.cartQty
-        }))
+        items: result.receipt.items,
+        subtotal: result.receipt.subtotal,
+        discount: result.receipt.discount,
+        tax: result.receipt.tax,
+        delivery: result.receipt.delivery,
+        total: Number(result.receipt.total),
+        paymentMethod: result.receipt.verifiedPaymentMethod,
+        date: result.receipt.createdAt
       });
       recordSale(cartIds);
       if (cashPortionForCurrentSale > 0 && cashSession.status === "open") {

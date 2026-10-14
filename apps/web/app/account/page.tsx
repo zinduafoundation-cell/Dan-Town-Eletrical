@@ -29,7 +29,8 @@ const accountLinks = [
   { label: "Saved Products", href: "/account/wishlist" },
   { label: "Delivery Addresses", href: "/account/addresses" },
   { label: "Payment Methods", href: "/account/payments" },
-  { label: "Warranty & Documents", href: "/account/warranty", status: "Coming soon" },
+  { label: "Receipts & documents", href: "/account/warranty" },
+  { label: "Policies", href: "/policies" },
   { label: "Help Centre", href: "/account/support" },
   { label: "Account Preferences", href: "/account/settings" }
 ];

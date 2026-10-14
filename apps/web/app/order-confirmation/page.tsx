@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function OrderConfirmationPage({
   searchParams
 }: {
-  searchParams: Promise<{ orderId?: string }>;
+  searchParams: Promise<{ orderId?: string; paymentVerified?: string }>;
 }) {
   const params = await searchParams;
   const rawId = params.orderId ?? "";
@@ -109,7 +109,7 @@ export default async function OrderConfirmationPage({
                 <strong>{formatCurrency(Number(order.total))}</strong>
               </div>
             </div>}
-            {order && <CustomerOrderReceipt orderId={rawId} enabled={paymentReceived} />}
+            {order && <CustomerOrderReceipt orderId={rawId} enabled={paymentReceived} triggerEffectOnLoad={paymentReceived && params.paymentVerified === "1"} />}
 
             {order && !orderCancelled && <div className="confirmation-next-steps">
               <h3>What&apos;s next</h3>

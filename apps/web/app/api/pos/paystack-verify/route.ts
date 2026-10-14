@@ -49,9 +49,18 @@ export async function POST(request: Request) {
 
     const { data: orderItems, error: itemsError } = await supabase
       .from("order_items")
-      .select("product_name_snapshot,quantity,line_total,vat")
+      .select("product_name_snapshot,sku_snapshot,quantity,line_total,vat")
       .eq("order_id", orderId);
     if (itemsError) throw itemsError;
+    const [{ data: confirmedOrder, error: confirmedOrderError }, { data: verifiedPayment, error: verifiedPaymentError }] = await Promise.all([
+      supabase.from("orders").select("subtotal,discount,vat,delivery_fee,total,payment_status,created_at").eq("id", orderId).maybeSingle(),
+      supabase.from("payments").select("method,status").eq("order_id", orderId).eq("status", "SUCCESS").order("created_at", { ascending: false }).limit(1).maybeSingle()
+    ]);
+    if (confirmedOrderError) throw confirmedOrderError;
+    if (verifiedPaymentError) throw verifiedPaymentError;
+    if (!confirmedOrder || confirmedOrder.payment_status !== "SUCCESS" || !verifiedPayment) {
+      return NextResponse.json({ error: "The verified payment receipt is not yet available." }, { status: 409 });
+    }
 
     return NextResponse.json(
       {
@@ -62,10 +71,18 @@ export async function POST(request: Request) {
         receipt: {
           receiptNumber: order.order_number,
           currency: paymentData.currency,
+          subtotal: Number(confirmedOrder.subtotal),
+          discount: Number(confirmedOrder.discount),
+          tax: Number(confirmedOrder.vat),
+          delivery: Number(confirmedOrder.delivery_fee),
+          total: Number(confirmedOrder.total),
+          paymentMethod: verifiedPayment.method,
+          date: confirmedOrder.created_at,
           items: (orderItems ?? []).map((item) => ({
             name: item.product_name_snapshot,
+            sku: item.sku_snapshot,
             qty: item.quantity,
-            price: (Number(item.line_total) + Number(item.vat)) / item.quantity
+            total: Number(item.line_total) + Number(item.vat)
           }))
         },
         payment_data: {

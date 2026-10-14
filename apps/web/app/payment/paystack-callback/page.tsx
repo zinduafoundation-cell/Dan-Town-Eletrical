@@ -50,7 +50,7 @@ export default function OnlinePaystackCallbackPage() {
           const paymentToken = window.sessionStorage.getItem(`dantown-payment-token:${result.orderId}`);
           window.sessionStorage.removeItem(`dantown-payment-token:${result.orderId}`);
           const tokenHash = paymentToken ? `#paymentToken=${encodeURIComponent(paymentToken)}` : "";
-          window.location.replace(`/order-confirmation?orderId=${encodeURIComponent(result.orderId)}${tokenHash}`);
+          window.location.replace(`/order-confirmation?orderId=${encodeURIComponent(result.orderId)}&paymentVerified=1${tokenHash}`);
         }
       })
       .catch((error: unknown) => {

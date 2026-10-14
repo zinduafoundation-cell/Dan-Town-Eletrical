@@ -19,7 +19,14 @@ export default function PaystackCallbackPage() {
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.error || "Payment could not be confirmed.");
         setMessage(`Payment confirmed for ${result.orderNumber}.`);
-        if (result.receipt?.receiptNumber && result.receipt?.currency && Array.isArray(result.receipt?.items)) {
+        if (
+          result.receipt?.receiptNumber &&
+          result.receipt?.currency &&
+          result.receipt?.paymentMethod &&
+          result.receipt?.date &&
+          Array.isArray(result.receipt?.items) &&
+          [result.receipt.subtotal, result.receipt.discount, result.receipt.tax, result.receipt.delivery, result.receipt.total].every(Number.isFinite)
+        ) {
           showPOSReceiptEffect(result.receipt);
         }
       })

@@ -6,8 +6,8 @@ import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/s
 
 const requestSchema = z.object({ paymentToken: z.string().min(40).max(100).optional() });
 
-export async function POST(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
-  const { orderId } = await params;
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const orderId = (await params).id;
   if (!z.string().uuid().safeParse(orderId).success) {
     return NextResponse.json({ error: "Order receipt not found." }, { status: 404 });
   }

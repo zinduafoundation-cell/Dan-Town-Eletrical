@@ -184,7 +184,7 @@ export function PaymentPageClient({
           );
         }
         window.location.replace(
-          `/order-confirmation?orderId=${encodeURIComponent(result.orderId)}#paymentToken=${encodeURIComponent(paymentToken)}`,
+          `/order-confirmation?orderId=${encodeURIComponent(result.orderId)}&paymentVerified=1#paymentToken=${encodeURIComponent(paymentToken)}`,
         );
         return;
       }

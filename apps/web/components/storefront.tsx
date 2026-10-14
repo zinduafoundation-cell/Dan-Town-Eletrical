@@ -123,6 +123,7 @@ export function StorefrontShell({
                 <Link href="/solar"><Sun size={16} /> Solar</Link>
                 <Link href="/electrical"><Zap size={16} /> Electrical</Link>
                 <Link href="/contact"><CircleHelp size={16} /> Support</Link>
+                <Link href="/policies">Policies</Link>
               </div>
             </details>
             <Link className="nav-quote-link" href="/request-quote">Request a quote</Link>
@@ -152,6 +153,7 @@ export function StorefrontShell({
               <Link href="/request-quote">Request Quote</Link>
               <Link href="/about">About</Link>
               <Link href="/contact">Contact</Link>
+              <Link href="/policies">Policies</Link>
             </div>
 
             <div className="mobile-menu-section">
@@ -209,6 +211,7 @@ export function StorefrontShell({
           <h3>Company</h3>
           <Link href="/about">About Dantown</Link>
           <Link href="/contact">Contact</Link>
+          <Link href="/policies">Policies</Link>
           <a href="https://share.google/A1c3uABqV5xKzVtly" target="_blank" rel="noopener noreferrer">
             Find us on Google Maps
           </a>

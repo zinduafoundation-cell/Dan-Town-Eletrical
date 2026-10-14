@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { buildCustomerProfileSummary } from "@/lib/customer-profile";
 import { buildOrderDocumentSummary } from "@/lib/order-documents";
 import { buildQuoteStatusSummary } from "@/lib/quote-status";
+import { ReceiptDocumentActions } from "@/components/account/receipt-document-actions";
 
 const sectionContent: Record<string, { title: string; description: string; icon: typeof Settings; status?: string; action?: { href: string; label: string } }> = {
   profile: { title: "My profile", description: "Keep your customer details up to date for orders, quotations, and delivery.", icon: Settings, action: { href: "#profile-details", label: "Profile details" } },
@@ -73,21 +74,53 @@ export async function AccountSectionPage({ section }: { section: string }) {
     return <AccountDataShell title="Delivery addresses" description="Saved delivery details for your Dantown orders." icon={Icon}>{addresses?.length ? <div className="account-detail-grid">{addresses.map((address) => <div className="account-address-card" key={address.id}><strong>{address.label}{address.is_default ? " · Default" : ""}</strong><span>{address.recipient_name} · {address.phone || "No phone"}</span><span>{address.address_line_1}{address.address_line_2 ? `, ${address.address_line_2}` : ""}</span><span>{[address.city, address.county, address.postal_code].filter(Boolean).join(", ")}</span></div>)}</div> : <EmptyData text="No delivery addresses saved yet." />}</AccountDataShell>;
   }
   if (section === "warranty") {
-    const { data: customer } = await supabase.from("customers").select("id").eq("user_id", context.userId).maybeSingle();
-    const { data: orders } = customer ? await supabase.from("orders").select("id, order_number, total, order_status, payment_status, created_at").eq("customer_id", customer.id).order("created_at", { ascending: false }).limit(5) : { data: [] };
+    const { data: customer, error: customerError } = await supabase.from("customers").select("id").eq("user_id", context.userId).maybeSingle();
+    if (customerError) throw new Error(`Unable to load your receipts: ${customerError.message}`);
+    const { data: orders, error: ordersError } = customer
+      ? await supabase.from("orders").select("id, order_number, subtotal, discount, vat, delivery_fee, total, order_status, payment_status, created_at").eq("customer_id", customer.id).eq("payment_status", "SUCCESS").order("created_at", { ascending: false }).limit(10)
+      : { data: [], error: null };
+    if (ordersError) throw new Error(`Unable to load your receipts: ${ordersError.message}`);
+    const orderIds = (orders ?? []).map((order) => order.id);
+    const [{ data: lines, error: linesError }, { data: payments, error: paymentsError }] = orderIds.length
+      ? await Promise.all([
+          supabase.from("order_items").select("order_id, product_name_snapshot, sku_snapshot, quantity, line_total, vat").in("order_id", orderIds),
+          supabase.from("payments").select("order_id, method, status, created_at").in("order_id", orderIds).eq("status", "SUCCESS").order("created_at", { ascending: false })
+        ])
+      : [{ data: [], error: null }, { data: [], error: null }];
+    if (linesError) throw new Error(`Unable to load receipt items: ${linesError.message}`);
+    if (paymentsError) throw new Error(`Unable to load receipt payments: ${paymentsError.message}`);
 
-    const documents = (orders ?? []).map((order) => ({
-      ...buildOrderDocumentSummary({
+    const documents = (orders ?? []).map((order) => {
+      const summary = buildOrderDocumentSummary({
         order_number: order.order_number,
         total: order.total,
         payment_status: order.payment_status,
         order_status: order.order_status,
         created_at: order.created_at
-      }),
-      href: `/account/orders/${order.id}`
-    }));
+      });
+      return {
+        ...summary,
+        orderId: order.id,
+        orderNumber: order.order_number,
+        receiptNumber: order.order_number,
+        date: order.created_at,
+        currency: "KES",
+        subtotal: Number(order.subtotal),
+        discount: Number(order.discount),
+        tax: Number(order.vat),
+        delivery: Number(order.delivery_fee),
+        total: Number(order.total),
+        paymentMethod: payments?.find((payment) => payment.order_id === order.id)?.method ?? "Not recorded",
+        items: (lines ?? []).filter((line) => line.order_id === order.id).map((line) => ({
+          name: line.product_name_snapshot,
+          sku: line.sku_snapshot,
+          qty: Number(line.quantity),
+          total: Number(line.line_total) + Number(line.vat)
+        }))
+      };
+    }).filter((document) => document.items.length > 0);
 
-    return <AccountDataShell title="Receipts & documents" description="Recent order documents and payment summaries for your account." icon={Icon}>{documents.length ? <div className="account-detail-grid">{documents.map((document) => <div className="account-address-card" key={document.label}><strong>{document.documentType}</strong><span>{document.label}</span><span>{document.date}</span><span>{document.amount} · {document.status}</span><Link className="text-link" href={document.href}>View order <ArrowRight size={15} /></Link></div>)}</div> : <EmptyData text="No receipts or invoices yet." />}</AccountDataShell>;
+    return <AccountDataShell title="Receipts & documents" description="Paid order receipts with view, print, and PDF download options." icon={Icon}>{documents.length ? <div className="account-detail-grid">{documents.map((document) => <div className="account-address-card receipt-document-card" key={document.orderId}><strong>{document.documentType}</strong><span>{document.orderNumber}</span><span>{new Date(document.date).toLocaleString("en-KE")}</span><span>{document.amount} · Paid</span><ReceiptDocumentActions document={document} /><Link className="text-link" href={`/account/orders/${document.orderId}`}>Order details <ArrowRight size={15} /></Link></div>)}</div> : <EmptyData text="No receipts or invoices yet." />}</AccountDataShell>;
   }
   return (
     <StorefrontShell>

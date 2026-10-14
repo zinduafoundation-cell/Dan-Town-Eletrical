@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const supportLinks = [
   { title: "Order help", description: "Track purchases, payment status, and order details.", href: "/account/orders", icon: Package },
   { title: "Quotation help", description: "Request project pricing or review your quotations.", href: "/request-quote", icon: FileText },
-  { title: "Delivery help", description: "Learn about delivery areas, timing, and collection.", href: "/delivery", icon: Truck },
+  { title: "Delivery help", description: "Review draft delivery information.", href: "/policies/delivery", icon: Truck },
   { title: "Installation help", description: "Talk to the Dantown team about an electrical project.", href: "/services", icon: Wrench },
   { title: "Warranty help", description: "Ask about product warranty and after-sales support.", href: "/account/warranty", icon: ShieldCheck },
   { title: "Contact Dantown", description: "Send a direct support request to the team.", href: "/contact", icon: CircleHelp }
