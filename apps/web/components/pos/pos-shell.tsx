@@ -191,8 +191,14 @@ export function POSShell({
               <span className="pos-sync-text">{queueSummary.PENDING + queueSummary.SYNCING + queueSummary.FAILED + queueSummary.CONFLICT ? `${queueSummary.PENDING + queueSummary.SYNCING} pending · ${queueSummary.FAILED + queueSummary.CONFLICT} need review` : "All changes synced"}</span>
               {offlineCatalogueStatus && <span className="pos-sync-text">{offlineCatalogueStatus}</span>}
               {permissions.includes("orders.create") && !offlineCatalogueStatus?.includes("ready offline") &&
-                <button type="button" className="pos-topbar-button" onClick={() => void downloadCatalogue()} disabled={catalogueDownloading}>
-                  {catalogueDownloading ? "Downloading…" : "Download offline catalogue"}
+                <button
+                  type="button"
+                  className="pos-topbar-button pos-download-catalogue-button"
+                  aria-label="Download offline product catalogue"
+                  onClick={() => void downloadCatalogue()}
+                  disabled={catalogueDownloading}
+                >
+                  {catalogueDownloading ? "Downloading…" : "Download catalogue"}
                 </button>}
             </div>
 
