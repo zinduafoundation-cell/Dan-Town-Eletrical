@@ -8053,6 +8053,15 @@ body .store-shell .mobile-bottom-nav a:hover { color: var(--dt-orange); }
 @media (max-width: 760px) {
   body .store-shell .mobile-bottom-nav {
     display: flex;
+    min-height: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body .store-shell .mobile-bottom-nav a {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 44px;
   }
 }
 body .store-shell .mobile-menu-wrap { background: var(--dt-navy-2); border-bottom: 0; }
@@ -8064,7 +8073,7 @@ body .store-shell .mobile-menu-section p { color: var(--dt-text-3); font-weight:
   body .store-shell .store-product-card .product-info { padding: 12px 12px 14px; }
   body .store-shell .store-product-card .product-info h3, body .store-shell .store-product-card .product-info h3 a { font-size: 13px; }
   body .store-shell .store-product-card .product-price-row strong { font-size: 15px; }
-  body .store-shell .store-footer { margin-bottom: 64px; }
+  body .store-shell .store-footer { margin-bottom: 0; }
 }
 /* ===== DANTOWN REDESIGN: STEP 2 (HOMEPAGE) — paste at the very bottom of globals.css ===== */
 
@@ -10005,6 +10014,8 @@ body .store-shell img, body .store-shell video { max-width: 100%; }
   body .store-shell .brand-mark { border-radius: 10px; height: 38px; width: 38px; }
   body .store-shell .marketplace-search-form { border-radius: 12px; min-height: 46px; }
   body .store-shell .marketplace-search-form button { border-radius: 9px; font-size: 11px; padding: 0 14px; }
+  body .store-shell .page-hero form input { min-width: 0; }
+  body .store-shell .page-hero form button { flex: 0 0 auto; }
 
   /* tap targets + no iOS auto-zoom */
   body .store-shell button,
@@ -10015,9 +10026,9 @@ body .store-shell img, body .store-shell video { max-width: 100%; }
   body textarea { font-size: 16px !important; }
 
   /* spacing: nothing hides behind the fixed bottom bar */
-  body .store-shell { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  body .store-shell { padding-bottom: 0; }
   body .store-shell .page-shell { padding: 18px 14px 56px; }
-  body .store-shell .store-footer { margin-bottom: 0; padding-bottom: 96px; }
+  body .store-shell .store-footer { margin-bottom: 0; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 
   /* floating helpers sit above the bottom bar */
   body .store-shell .dan-ai-launcher { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); right: 12px; }
