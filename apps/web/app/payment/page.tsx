@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { StorefrontShell } from "@/components/storefront";
 import { PaymentPageClient } from "@/components/payment/payment-page-client";
-import { getPaystackMode } from "@/lib/payments/paystack-mode";
-import { isPaywaveConfigured } from "@/lib/payments/paywave";
+import { getPesapalConfig } from "@/lib/payments/pesapal";
 
 export const metadata: Metadata = {
   title: "Payment",
@@ -15,8 +14,7 @@ export default async function PaymentPage({
   searchParams: Promise<{ orderId?: string; orderNumber?: string; total?: string }>;
 }) {
   const params = await searchParams;
-  const paystackMode = getPaystackMode();
-  const paywaveEnabled = isPaywaveConfigured();
+  const pesapalEnabled = Boolean(getPesapalConfig());
 
   return (
     <StorefrontShell>
@@ -24,8 +22,7 @@ export default async function PaymentPage({
         orderId={params.orderId ?? ""}
         orderNumber={params.orderNumber ?? ""}
         total={Number(params.total ?? 0)}
-        paystackMode={paystackMode}
-        paywaveEnabled={paywaveEnabled}
+        pesapalEnabled={pesapalEnabled}
       />
     </StorefrontShell>
   );

@@ -53,7 +53,7 @@ function tenderIcon(method: string) {
   const m = method.toUpperCase();
   if (m.includes("CASH")) return <Banknote size={22} />;
   if (m.includes("MPESA") || m.includes("M-PESA")) return <Smartphone size={22} />;
-  if (m.includes("CARD") || m.includes("PAYSTACK")) return <CreditCard size={22} />;
+  if (m.includes("CARD") || m.includes("PAYSTACK") || m.includes("PESAPAL")) return <CreditCard size={22} />;
   return <Wallet size={22} />;
 }
 
@@ -136,7 +136,7 @@ export default async function POSSectionPage({ params }: { params: Promise<{ sec
           <div className="pos-setting-card">
             <span className="pos-setting-icon"><Monitor size={22} /></span>
             <strong>Register mode</strong>
-            <span>Online with offline sale queue enabled</span>
+            <span>Online checkout required; offline payment is disabled</span>
           </div>
           <div className="pos-setting-card">
             <span className="pos-setting-icon"><Coins size={22} /></span>
@@ -145,11 +145,9 @@ export default async function POSSectionPage({ params }: { params: Promise<{ sec
           </div>
           <div className="pos-setting-card">
             <span className="pos-setting-icon"><Wallet size={22} /></span>
-            <strong>Supported tenders</strong>
+            <strong>Payment provider</strong>
             <div className="pos-chip-row">
-              {["Cash", "Card", "M-Pesa", "Paystack"].map((tender) => (
-                <span className="pos-chip" key={tender}>{tender}</span>
-              ))}
+              <span className="pos-chip">Pesapal only</span>
             </div>
           </div>
         </div>

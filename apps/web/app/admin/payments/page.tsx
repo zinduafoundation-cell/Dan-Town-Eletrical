@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 50;
 const PAYMENT_STATUSES: PaymentStatus[] = ["PENDING", "PROCESSING", "SUCCESS", "FAILED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"];
 const PAYMENT_METHODS = ["MPESA", "CASH", "CARD", "BANK_TRANSFER", "PAY_ON_PICKUP", "COD"] as const;
-const PROVIDERS = ["PAYWAVE_EXPRESS", "PAYSTACK"] as const;
+const PROVIDERS = ["PESAPAL", "PAYWAVE_EXPRESS", "PAYSTACK"] as const;
 const safeSearch = /^[a-zA-Z0-9._/-]{1,100}$/;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

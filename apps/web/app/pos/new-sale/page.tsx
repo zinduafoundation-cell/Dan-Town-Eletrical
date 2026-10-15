@@ -2,30 +2,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { APP_CURRENCY } from "@dantown/shared";
-import { AlertCircle, Banknote, Building2, CreditCard, Minus, Pause, Play, Plus, Search, ShoppingCart, Smartphone, Sparkles, Trash2, type LucideIcon } from "lucide-react";
+import { AlertCircle, CreditCard, Minus, Pause, Play, Plus, Search, ShoppingCart, Sparkles, Trash2 } from "lucide-react";
 import { CameraBarcodeScanner } from "@/components/pos/camera-barcode-scanner";
-import { BusinessReceipt } from "@/components/documents/business-receipt";
-import { CashSessionPanel } from "@/components/pos/cash-session";
-import { canQueueOfflineSale, enqueueSale, getQueuedProductQuantities } from "@/lib/pos/offline-queue";
+import { getQueuedProductQuantities } from "@/lib/pos/offline-queue";
 import { matchesPOSProduct } from "@/lib/pos/product-search";
-import { getCentreOfflineAccess, getOfflinePOSProducts, type OfflinePOSProduct } from "@/lib/centre/offline-storage";
-import { readCashSession, recordCashSale, saveCashSession, type CashSession } from "@/lib/pos/cash-session";
+import { getOfflinePOSProducts, type OfflinePOSProduct } from "@/lib/centre/offline-storage";
 import { createHeldSale, getHeldSales, removeHeldSale, upsertHeldSale, type HeldSale } from "@/lib/pos/held-sales";
-import { boughtTogether, money, parseSmartLine, quickCash, recordSale, topPicks, whatsappUrl } from "@/lib/pos/smart";
-import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
-import { defaultBusinessDocumentSettings, type BusinessDocumentSettings } from "@/lib/documents/business-document-settings";
+import { boughtTogether, money, parseSmartLine, topPicks } from "@/lib/pos/smart";
 
 type Product = OfflinePOSProduct;
 type CartItem = Product & { cartQty: number };
 type Customer = { id: string; name: string; phone: string | null; email: string | null };
-type Tender = "cash" | "card" | "mpesa" | "bank";
-type ReceiptData = { date: string; customer: string; phone: string | null; amount: number; items: number; lines: Array<{ name: string; sku: string; qty: number; total: number }>; receiptNumber: string; servedBy: string | null; staffRole: string | null; paymentMethod: string; tendered: number | null; change: number | null; offlinePending?: boolean };
-
-const tenders: Array<{ id: Tender; label: string; icon: LucideIcon }> = [
-  { id: "cash", label: "Cash", icon: Banknote }, { id: "mpesa", label: "M-Pesa", icon: Smartphone },
-  { id: "card", label: "Card", icon: CreditCard }, { id: "bank", label: "Bank", icon: Building2 },
-];
 
 async function fetchProducts(search: string, limit = 100): Promise<Product[]> {
   const getCachedProducts = async () => {
@@ -61,45 +48,20 @@ export default function NewSalePage() {
   const [customerSearch, setCustomerSearch] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<Tender>("cash");
-  const [splitPayment, setSplitPayment] = useState(false);
-  const [splitTender, setSplitTender] = useState<Tender>("mpesa");
-  const [splitAmount, setSplitAmount] = useState(0);
-  const [tendered, setTendered] = useState(0);
+  const [paymentEmail, setPaymentEmail] = useState("");
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
-  const [documentSettings, setDocumentSettings] = useState<BusinessDocumentSettings>(defaultBusinessDocumentSettings);
-  const [cashSession, setCashSession] = useState<CashSession>(() => readCashSession());
   const [held, setHeld] = useState<HeldSale[]>(() => getHeldSales());
   const [picks, setPicks] = useState<string[]>([]);
   const [seenProducts, setSeenProducts] = useState<Map<string, Product>>(() => new Map());
   const searchRef = useRef<HTMLInputElement>(null);
+  const checkoutRequestId = useRef<string | null>(null);
 
-  useEffect(() => { saveCashSession(cashSession); }, [cashSession]);
-  useEffect(() => {
-    if (!navigator.onLine) return;
-    let active = true;
-    void fetch("/api/documents/settings")
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error ?? "Unable to load receipt settings.");
-        if (active) setDocumentSettings(result.settings as BusinessDocumentSettings);
-      })
-      .catch((error: unknown) => {
-        console.error("Unable to load the shared receipt layout.", error);
-        if (active) setMessage("Could not load the saved receipt layout; using the standard Dantown design.");
-      });
-    return () => { active = false; };
-  }, []);
   useEffect(() => {
     const refreshConnection = () => {
       const online = navigator.onLine;
       setIsOnline(online);
       if (!online) {
-        setPaymentMethod("cash");
-        setSplitPayment(false);
-        setSplitAmount(0);
         setCustomerName("Walk-in Customer");
         setCustomerSearch("");
         setSelectedCustomer(null);
@@ -118,6 +80,9 @@ export default function NewSalePage() {
     const timer = window.setTimeout(() => setHeld(getHeldSales()), 0);
     return () => window.clearTimeout(timer);
   }, []);
+  useEffect(() => {
+    checkoutRequestId.current = null;
+  }, [cart]);
 
   const remember = useCallback((list: Product[]) => {
     setSeenProducts((current) => {
@@ -165,10 +130,6 @@ export default function NewSalePage() {
   const cartIds = cart.map((item) => item.id);
   const together = useMemo(() => boughtTogether(cartIds).map((id) => seenProducts.get(id)).filter((p): p is Product => !!p && p.qty > 0), [cartIds, seenProducts]);
   const pickProducts = useMemo(() => picks.map((id) => seenProducts.get(id)).filter((p): p is Product => !!p && p.qty > 0).slice(0, 6), [picks, seenProducts]);
-  const cashPortionForCurrentSale = paymentMethod === "cash"
-    ? total - (splitPayment ? splitAmount : 0)
-    : splitPayment && splitTender === "cash" ? splitAmount : 0;
-  const change = paymentMethod === "cash" && !splitPayment && tendered > 0 ? tendered - total : null;
 
   const addToCart = useCallback((product: Product, qty = 1) => {
     if (product.qty < 1) return setMessage(`${product.name} is out of stock.`);
@@ -180,7 +141,7 @@ export default function NewSalePage() {
     });
   }, []);
   const updateQuantity = (id: string, quantity: number) => setCart((current) => quantity < 1 ? current.filter((item) => item.id !== id) : current.map((item) => item.id === id ? { ...item, cartQty: Math.min(item.qty, quantity) } : item));
-  const clearSale = useCallback(() => { setCart([]); setCustomerName("Walk-in Customer"); setCustomerSearch(""); setSelectedCustomer(null); setCustomers([]); setSplitPayment(false); setSplitAmount(0); setTendered(0); }, []);
+  const clearSale = useCallback(() => { checkoutRequestId.current = null; setCart([]); setCustomerName("Walk-in Customer"); setCustomerSearch(""); setSelectedCustomer(null); setCustomers([]); setPaymentEmail(""); }, []);
 
   // Barcode (exact) -> loaded list, else ask the server. Used by scanners, camera and Enter key.
   const scanBarcode = useCallback(async (raw: string) => {
@@ -268,87 +229,32 @@ export default function NewSalePage() {
 
   const completeSale = async () => {
     if (!cart.length) return setMessage("Cart is empty.");
-    if (!navigator.onLine && (paymentMethod !== "cash" || splitPayment)) return setMessage("Offline POS accepts cash only. Card, M-Pesa, bank and split payments require internet.");
-    if (splitPayment && (splitTender === paymentMethod || splitAmount <= 0 || splitAmount >= total)) return setMessage("Choose a different second payment method and a valid amount.");
-    if (change !== null && change < 0) return setMessage(`Cash received is Ksh ${Math.abs(change).toLocaleString()} short.`);
+    if (!navigator.onLine) return setMessage("Connect to the internet to start a Pesapal payment. Offline sales are disabled.");
+    if (!paymentEmail.trim()) return setMessage("Enter the customer email required for Pesapal checkout.");
+    const requestId = checkoutRequestId.current ?? window.crypto.randomUUID();
+    checkoutRequestId.current = requestId;
     const payload = {
-      customerId: selectedCustomer?.id ?? null, customerName, subtotal, vat, total, paymentMethod,
-      splitPayments: splitPayment ? [{ method: paymentMethod, amount: total - splitAmount }, { method: splitTender, amount: splitAmount }] : undefined,
+      requestId,
+      customerId: selectedCustomer?.id ?? null,
+      customerName,
+      email: paymentEmail.trim(),
+      phone: selectedCustomer?.phone ?? null,
       items: cart.map((item) => ({ productId: item.id, quantity: item.cartQty })),
     };
-    const lines = cart.map((item) => ({ name: item.name, sku: item.sku, qty: item.cartQty, total: item.price * item.cartQty }));
-    let serverResponded = false;
     try {
       setProcessing(true); setMessage(null);
-      const response = await fetch("/api/pos/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      serverResponded = true;
+      const response = await fetch("/api/pos/pesapal-init", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error ?? "Unable to complete sale.");
-      setReceipt({ date: new Date(result.receipt.createdAt).toLocaleString(), customer: result.receipt.customer, phone: selectedCustomer?.phone ?? null, amount: Number(result.receipt.total), items: itemCount, lines, receiptNumber: result.receipt.receiptNumber, servedBy: result.receipt.servedBy, staffRole: result.receipt.staffRole, paymentMethod: result.receipt.paymentMethod, tendered: change !== null ? tendered : null, change });
-      showPOSReceiptEffect({
-        receiptNumber: result.receipt.receiptNumber,
-        currency: APP_CURRENCY,
-        items: result.receipt.items,
-        subtotal: result.receipt.subtotal,
-        discount: result.receipt.discount,
-        tax: result.receipt.tax,
-        delivery: result.receipt.delivery,
-        total: Number(result.receipt.total),
-        paymentMethod: result.receipt.verifiedPaymentMethod,
-        date: result.receipt.createdAt
-      });
-      recordSale(cartIds);
-      if (cashPortionForCurrentSale > 0 && cashSession.status === "open") {
-        setCashSession((current) => recordCashSale(current, cashPortionForCurrentSale));
+      if (!response.ok || typeof result !== "object" || result === null ||
+        !("redirectUrl" in result) || typeof result.redirectUrl !== "string" ||
+        !("orderId" in result) || typeof result.orderId !== "string") {
+        throw new Error(typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
+          ? result.error
+          : "Unable to start Pesapal checkout.");
       }
-      setProducts((current) => current.map((product) => { const sold = cart.find((item) => item.id === product.id); return sold ? { ...product, qty: product.qty - sold.cartQty } : product; }));
-      clearSale();
+      window.location.assign(result.redirectUrl);
     } catch (error) {
-      if (canQueueOfflineSale(paymentMethod, splitPayment) && !serverResponded && !navigator.onLine) {
-        try {
-          const access = await getCentreOfflineAccess();
-          if (!access?.userId) throw new Error("Sign in online on this device before creating an offline sale.");
-          const offlinePayload = {
-            customerId: null,
-            customerName: "Walk-in Customer",
-            subtotal,
-            vat,
-            total,
-            paymentMethod: "cash" as const,
-            items: cart.map((item) => ({ productId: item.id, quantity: item.cartQty })),
-          };
-          const id = await enqueueSale(offlinePayload, access.userId);
-          recordSale(cartIds);
-          if (cashSession.status === "open") {
-            setCashSession((current) => recordCashSale(current, total));
-          }
-          setProducts((current) => current.map((product) => {
-            const sold = cart.find((item) => item.id === product.id);
-            return sold ? { ...product, qty: Math.max(0, product.qty - sold.cartQty) } : product;
-          }));
-          setReceipt({
-            date: new Date().toLocaleString(),
-            customer: "Walk-in Customer",
-            phone: null,
-            amount: total,
-            items: itemCount,
-            lines,
-            receiptNumber: `PENDING-${id.slice(0, 8).toUpperCase()}`,
-            servedBy: access.staffName,
-            staffRole: access.staffRole,
-            paymentMethod: "Cash · pending sync",
-            tendered: change !== null ? tendered : null,
-            change,
-            offlinePending: true,
-          });
-          clearSale();
-          setMessage("Cash sale saved on this device. It is not confirmed until it syncs.");
-        } catch (queueError) {
-          setMessage(queueError instanceof Error ? queueError.message : "Unable to save this sale offline.");
-        }
-      } else if (error instanceof TypeError && !serverResponded) {
-        setMessage("The connection failed before this sale could be confirmed. Check sales history before retrying.");
-      } else setMessage(error instanceof Error ? error.message : "Unable to complete sale.");
+      setMessage(error instanceof Error ? error.message : "Unable to start Pesapal checkout.");
     } finally { setProcessing(false); }
   };
 
@@ -358,7 +264,6 @@ export default function NewSalePage() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const whatsapp = receipt && !receipt.offlinePending ? whatsappUrl(receipt.phone, `Dantown Electrical receipt ${receipt.receiptNumber}\n${receipt.lines.map((l) => `${l.qty} x ${l.name} - ${money(l.total)}`).join("\n")}\nTotal: ${money(receipt.amount)} (${receipt.paymentMethod})\nThank you!`) : null;
   const ProductTile = ({ product, compact = false }: { product: Product; compact?: boolean }) => (
     <button type="button" className={`px-tile ${compact ? "compact" : ""} ${product.qty === 0 ? "out" : ""}`} onClick={() => addToCart(product)} disabled={!product.qty}>
       {!compact && <span className="px-tile-img">{product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" /> : <b>{product.name.charAt(0)}</b>}</span>}
@@ -370,13 +275,7 @@ export default function NewSalePage() {
 
   return <div className="px-register">
     {message && <div className="px-toast" role="status"><AlertCircle size={18} /><span>{message}</span><button type="button" onClick={() => setMessage(null)} aria-label="Dismiss">×</button></div>}
-    {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: catalogue prices and stock are saved copies; only cash sales can be queued.</span></div>}
-    {receipt && <div className="px-modal"><div className="px-receipt px-receipt-print">
-      <h2>{receipt.offlinePending ? "Saved offline · pending sync" : "Sale complete"}</h2>{receipt.offlinePending && <p role="alert">Provisional record only. This sale is not confirmed until the server syncs it.</p>}
-      <BusinessReceipt settings={documentSettings} reference={receipt.receiptNumber} date={receipt.date} customer={receipt.customer} paymentMethod={receipt.paymentMethod} lines={receipt.lines.map((line) => ({ name: line.name, sku: line.sku, quantity: line.qty, total: line.total }))} total={receipt.amount} />
-      <div className="px-receipt-meta">{receipt.change !== null && <p>Cash {money(receipt.tendered ?? 0)} · Change <b>{money(receipt.change)}</b></p>}{receipt.servedBy && <p>Served by <b>{receipt.servedBy}{receipt.staffRole ? ` · ${receipt.staffRole}` : ""}</b></p>}</div>
-      <div className="px-receipt-actions"><button type="button" className="px-btn primary" onClick={() => window.print()}>Print</button>{whatsapp && <a className="px-btn" href={whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}<button type="button" className="px-btn" onClick={() => setReceipt(null)}>New sale</button></div>
-    </div></div>}
+    {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: browsing the saved catalogue is available, but all sales require Pesapal and an internet connection.</span></div>}
 
     <section className="px-catalog">
       <div className="px-search">
@@ -405,17 +304,23 @@ export default function NewSalePage() {
       {together.length > 0 && <div className="px-together"><h3><Sparkles size={13} /> Often bought together</h3><div>{together.map((product) => <button type="button" key={product.id} onClick={() => addToCart(product)}>+ {product.name}<small>{money(product.price)}</small></button>)}</div></div>}
 
       {cart.length > 0 && <div className="px-checkout">
-        <CashSessionPanel value={cashSession} onChange={setCashSession} />
-        <div className="px-field"><input value={customerSearch || customerName} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value || "Walk-in Customer"); setSelectedCustomer(null); }} placeholder={isOnline ? "Customer (optional)" : "Walk-in only while offline"} aria-label="Customer" disabled={!isOnline} />
-          {customers.length > 0 && <div className="px-dropdown">{customers.map((customer) => <button type="button" key={customer.id} onClick={() => { setSelectedCustomer(customer); setCustomerName(customer.name); setCustomerSearch(customer.name); setCustomers([]); }}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</button>)}</div>}</div>
-        <div className="px-tenders">{tenders.map(({ id, label, icon: Icon }) => <button type="button" key={id} className={paymentMethod === id ? "active" : ""} onClick={() => { setPaymentMethod(id); if (splitTender === id) setSplitTender(tenders.find((t) => t.id !== id)!.id); }} disabled={!isOnline && id !== "cash"}><Icon size={18} />{label}</button>)}</div>
-        {paymentMethod === "cash" && !splitPayment && <div className="px-cash"><div className="px-quickcash">{quickCash(total).map((amount) => <button type="button" key={amount} className={tendered === amount ? "active" : ""} onClick={() => setTendered(amount)}>{amount === Math.ceil(total) ? "Exact" : amount.toLocaleString()}</button>)}</div>
-          <input type="number" min={0} value={tendered || ""} onChange={(event) => setTendered(Number(event.target.value))} placeholder="Cash received" aria-label="Cash received" />
-          {change !== null && <p className={`px-change ${change < 0 ? "short" : ""}`}>{change < 0 ? "Short" : "Change"} <b>{money(Math.abs(change))}</b></p>}</div>}
-        <label className="px-split"><input type="checkbox" checked={splitPayment} onChange={(event) => setSplitPayment(event.target.checked)} disabled={!isOnline} /> Split payment {!isOnline && <small>requires internet</small>}</label>
-        {splitPayment && <div className="px-splitrow"><select value={splitTender} onChange={(event) => setSplitTender(event.target.value as Tender)} aria-label="Second tender">{tenders.filter((t) => t.id !== paymentMethod).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select><input type="number" min={0.01} step={0.01} value={splitAmount || ""} onChange={(event) => setSplitAmount(Number(event.target.value))} placeholder="Second amount" aria-label="Second amount" /></div>}
+        <div className="px-field"><input value={customerSearch || customerName} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value || "Walk-in Customer"); setSelectedCustomer(null); setPaymentEmail(""); }} placeholder={isOnline ? "Customer (optional)" : "Walk-in only while offline"} aria-label="Customer" disabled={!isOnline} />
+          {customers.length > 0 && <div className="px-dropdown">{customers.map((customer) => <button type="button" key={customer.id} onClick={() => { setSelectedCustomer(customer); setCustomerName(customer.name); setCustomerSearch(customer.name); setPaymentEmail(customer.email ?? ""); setCustomers([]); }}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</button>)}</div>}</div>
+        <label className="px-field">
+          <input
+            type="email"
+            autoComplete="email"
+            value={paymentEmail}
+            onChange={(event) => setPaymentEmail(event.target.value)}
+            placeholder="Customer email for Pesapal"
+            aria-label="Customer email for Pesapal"
+            required
+            disabled={!isOnline}
+          />
+        </label>
+        <div className="px-tenders"><span><CreditCard size={18} /> Pesapal checkout only</span></div>
         <div className="px-totals"><p><span>Subtotal</span><b>{money(subtotal)}</b></p><p><span>VAT</span><b>{money(vat)}</b></p></div>
-        <button type="button" className="px-pay" onClick={completeSale} disabled={processing}><span>{processing ? "Processing…" : "Charge"}</span><strong>{money(total)}</strong></button>
+        <button type="button" className="px-pay" onClick={completeSale} disabled={processing || !isOnline || !paymentEmail.trim()}><span>{processing ? "Connecting to Pesapal…" : "Pay with Pesapal"}</span><strong>{money(total)}</strong></button>
       </div>}
     </aside>
     {itemCount > 0 && <button type="button" className="px-mobile-cart" onClick={() => document.getElementById("pos-cart-section")?.scrollIntoView({ behavior: "smooth" })}><ShoppingCart size={18} /><span>View cart</span><strong>{itemCount} · {money(total)}</strong></button>}

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const settings = [
   ["Business profile", "Business identity, contacts, location, currency, and timezone.", Building2, "Configured through the existing business profile and environment settings."],
   ["Product and inventory", "Catalog status, stock policy, barcode behavior, and reorder defaults.", Package, "Product and inventory records already use Supabase as the source of truth."],
-  ["POS and payments", "Register behavior, payment methods, receipts, and offline operation.", CreditCard, "POS checkout, Paystack, and offline queue are already connected."],
+  ["POS and payments", "Register behavior, Pesapal checkout, and receipts.", CreditCard, "Online and POS payments are verified through Pesapal; offline cash checkout is disabled."],
   ["Users and permissions", "Team members, roles, and permission assignments.", Users, "Open the existing team workspace to manage authorized users."],
   ["Automation and n8n", "Workflow health, integration state, and ingestion controls.", Zap, "Secrets remain server-side; external channels require configuration."],
   ["Notifications", "Operational alerts and notification preferences.", Bell, "Uses the existing notifications and preference tables."],

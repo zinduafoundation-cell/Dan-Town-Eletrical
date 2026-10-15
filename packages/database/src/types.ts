@@ -65,6 +65,9 @@ export type Database = {
       complete_pos_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
       prepare_online_paystack_payment: { Args: { target_order_id: string }; Returns: Payment };
       prepare_online_paywave_payment: { Args: { target_order_id: string }; Returns: Payment };
+      prepare_online_pesapal_payment: { Args: { target_order_id: string }; Returns: Payment };
+      create_pos_pesapal_order: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
+      complete_pesapal_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_method: "MPESA" | "CARD" | "BANK_TRANSFER"; provider_payload: Json }; Returns: Order };
       finish_online_paystack_sandbox_test: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
       complete_online_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
       complete_online_paywave_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };

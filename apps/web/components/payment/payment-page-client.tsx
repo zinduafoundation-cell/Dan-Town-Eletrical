@@ -8,8 +8,6 @@ import {
   CreditCard,
   LockKeyhole,
   MapPin,
-  Smartphone,
-  WalletCards,
   ShieldCheck,
   AlertCircle,
   Loader2,
@@ -20,31 +18,23 @@ import {
   readPendingPaymentReminder
 } from "@/lib/pending-payment";
 import { formatCurrency } from "@/lib/store-data";
-import type { PaystackMode } from "@/lib/payments/paystack-mode";
-
-type PaymentMethod = "paystack" | "mpesa" | "card" | "cash";
 
 type Props = {
   orderId: string;
   orderNumber: string;
   total: number;
-  paystackMode: PaystackMode | null;
-  paywaveEnabled: boolean;
+  pesapalEnabled: boolean;
 };
 
 export function PaymentPageClient({
   orderId,
   orderNumber,
   total,
-  paystackMode,
-  paywaveEnabled,
+  pesapalEnabled,
 }: Props) {
-  const [method, setMethod] = useState<PaymentMethod>("paystack");
   const [paymentToken, setPaymentToken] = useState("");
   const [paymentTokenReady, setPaymentTokenReady] = useState(false);
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [paywaveTransactionRequestId, setPaywaveTransactionRequestId] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [startingPayment, setStartingPayment] = useState(false);
 
@@ -112,16 +102,11 @@ export function PaymentPageClient({
     );
   }
 
-  const selectMethod = (value: PaymentMethod) => {
-    setMethod(value);
-    setPaymentError("");
-  };
-
-  const startPaystackCheckout = async () => {
+  const startPesapalCheckout = async () => {
     setStartingPayment(true);
     setPaymentError("");
     try {
-      const response = await fetch("/api/checkout/paystack-init", {
+      const response = await fetch("/api/checkout/pesapal-init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, email, paymentToken })
@@ -131,8 +116,8 @@ export function PaymentPageClient({
         !response.ok ||
         typeof result !== "object" ||
         result === null ||
-        !("authorizationUrl" in result) ||
-        typeof result.authorizationUrl !== "string"
+        !("redirectUrl" in result) ||
+        typeof result.redirectUrl !== "string"
       ) {
         const message =
           typeof result === "object" &&
@@ -140,84 +125,13 @@ export function PaymentPageClient({
           "error" in result &&
           typeof result.error === "string"
             ? result.error
-            : "Unable to start Paystack checkout.";
+            : "Unable to start Pesapal checkout.";
         throw new Error(message);
       }
       window.sessionStorage.setItem(`dantown-payment-token:${orderId}`, paymentToken);
-      window.location.assign(result.authorizationUrl);
+      window.location.assign(result.redirectUrl);
     } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : "Unable to start Paystack checkout.");
-      setStartingPayment(false);
-    }
-  };
-
-  const checkPaywaveStatus = async (transactionRequestId: string) => {
-    setStartingPayment(true);
-    setPaymentError("");
-    try {
-      for (let attempt = 0; attempt < 18; attempt += 1) {
-        if (attempt > 0) await new Promise((resolve) => window.setTimeout(resolve, 5_000));
-        const response = await fetch("/api/checkout/paywave-verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transactionRequestId, paymentToken }),
-        });
-        const result: unknown = await response.json();
-        if (response.status === 202 && typeof result === "object" && result !== null && "status" in result && result.status === "pending") {
-          continue;
-        }
-        if (response.status === 402) {
-          setPaywaveTransactionRequestId("");
-          throw new Error(
-            typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
-              ? result.error
-              : "M-Pesa payment was not completed. You can try again.",
-          );
-        }
-        if (!response.ok || typeof result !== "object" || result === null ||
-          !("success" in result) || result.success !== true ||
-          !("orderId" in result) || typeof result.orderId !== "string") {
-          throw new Error(
-            typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
-              ? result.error
-              : "Unable to verify the M-Pesa payment.",
-          );
-        }
-        window.location.replace(
-          `/order-confirmation?orderId=${encodeURIComponent(result.orderId)}&paymentVerified=1#paymentToken=${encodeURIComponent(paymentToken)}`,
-        );
-        return;
-      }
-      setPaymentError("The M-Pesa request is still pending. Check your phone, then select “Check payment status” again.");
-    } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : "Unable to verify the M-Pesa payment.");
-    } finally {
-      setStartingPayment(false);
-    }
-  };
-
-  const startPaywaveCheckout = async () => {
-    setStartingPayment(true);
-    setPaymentError("");
-    try {
-      const response = await fetch("/api/checkout/paywave-init", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, phone, paymentToken }),
-      });
-      const result: unknown = await response.json();
-      if (!response.ok || typeof result !== "object" || result === null ||
-        !("transactionRequestId" in result) || typeof result.transactionRequestId !== "string") {
-        throw new Error(
-          typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
-            ? result.error
-            : "Unable to send the M-Pesa payment request.",
-        );
-      }
-      setPaywaveTransactionRequestId(result.transactionRequestId);
-      await checkPaywaveStatus(result.transactionRequestId);
-    } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : "Unable to start M-Pesa payment.");
+      setPaymentError(error instanceof Error ? error.message : "Unable to start Pesapal checkout.");
       setStartingPayment(false);
     }
   };
@@ -280,11 +194,7 @@ export function PaymentPageClient({
             <h1>Complete your payment</h1>
 
             <p>
-              {method === "mpesa"
-                ? "Approve the M-Pesa prompt on your phone. Your order is confirmed only after Paywave Express verifies the payment."
-                : paystackMode === "test"
-                  ? "Your order is saved. Paystack sandbox testing does not collect real money."
-                  : "Your order is saved. Complete payment securely with Paystack to send it to Dantown for processing."}
+              Your order will be sent for processing only after Pesapal confirms the payment directly with our server.
             </p>
           </div>
 
@@ -295,149 +205,39 @@ export function PaymentPageClient({
                 <span className="section-number">01</span>
                 <div>
                   <h2>Payment method</h2>
-                  <p>Select how you want to pay.</p>
+                  <p>Pesapal is the only available payment provider.</p>
                 </div>
               </div>
             </div>
 
             <div className="payment-methods">
-              <button
-                type="button"
-                className={`payment-method ${method === "paystack" ? "selected" : ""}`}
-                onClick={() => selectMethod("paystack")}
-              >
-                <div className="method-icon">
-                  <CreditCard size={22} />
+            <div className="payment-method selected" aria-current="true">
+              <div className="method-icon">
+                <CreditCard size={22} />
+              </div>
+              <div className="method-content">
+                <div className="method-title">
+                  <strong>Pesapal</strong>
+                  <span className="recommended">Secure checkout</span>
                 </div>
-                <div className="method-content">
-                  <div className="method-title">
-                    <strong>{paystackMode === "test" ? "Paystack sandbox" : "Paystack"}</strong>
-                    {paystackMode === "test" ? <span className="recommended">Test only</span> : null}
-                  </div>
-                  <p>
-                    {paystackMode === "test"
-                      ? "Use Paystack test credentials to simulate a payment. No real charge."
-                      : "Pay securely with Paystack. Confirmed payments are sent to Dantown for processing."}
-                  </p>
-                </div>
-                <div className="method-radio">
-                  {method === "paystack" && <Check size={15} />}
-                </div>
-              </button>
-
-              {/* MPESA */}
-              <button
-                type="button"
-                className={`payment-method ${
-                  method === "mpesa"
-                    ? "selected"
-                    : ""
-                }`}
-                onClick={() =>
-                  selectMethod("mpesa")
-                }
-              >
-                <div className="method-icon mpesa-icon">
-                  <Smartphone size={22} />
-                </div>
-
-                <div className="method-content">
-                  <div className="method-title">
-                    <strong>M-Pesa via Paywave Express</strong>
-
-                    <span className="recommended">
-                      Recommended
-                    </span>
-                  </div>
-
-                  <p>
-                    {paywaveEnabled
-                      ? "Get a secure STK Push on your phone and approve with your M-Pesa PIN."
-                      : "Paywave Express is not configured for this deployment yet."}
-                  </p>
-                </div>
-
-                <div className="method-radio">
-                  {method === "mpesa" && (
-                    <Check size={15} />
-                  )}
-                </div>
-              </button>
-
-              {/* CARD */}
-              <button
-                type="button"
-                className={`payment-method ${
-                  method === "card"
-                    ? "selected"
-                    : ""
-                }`}
-                onClick={() =>
-                  selectMethod("card")
-                }
-              >
-                <div className="method-icon">
-                  <CreditCard size={22} />
-                </div>
-
-                <div className="method-content">
-                  <strong>Debit / Credit Card</strong>
-
-                  <p>
-                    Card payments are not available yet.
-                  </p>
-                </div>
-
-                <div className="method-radio">
-                  {method === "card" && (
-                    <Check size={15} />
-                  )}
-                </div>
-              </button>
-
-              {/* CASH */}
-              <button
-                type="button"
-                className={`payment-method ${
-                  method === "cash"
-                    ? "selected"
-                    : ""
-                }`}
-                onClick={() =>
-                  selectMethod("cash")
-                }
-              >
-                <div className="method-icon">
-                  <WalletCards size={22} />
-                </div>
-
-                <div className="method-content">
-                  <strong>Cash</strong>
-
-                  <p>
-                    Pay when collecting or receiving your order.
-                  </p>
-                </div>
-
-                <div className="method-radio">
-                  {method === "cash" && (
-                    <Check size={15} />
-                  )}
-                </div>
-              </button>
+                <p>Pay using the payment methods enabled securely in Pesapal checkout.</p>
+              </div>
+              <div className="method-radio">
+                <Check size={15} />
+              </div>
+            </div>
             </div>
           </div>
 
-          {method === "paystack" && (
-            <div className="payment-section payment-input-section">
-              <div className="section-heading">
+          <div className="payment-section payment-input-section">
+            <div className="section-heading">
+              <div>
+                <span className="section-number">02</span>
                 <div>
-                  <span className="section-number">02</span>
-                  <div>
-                    <h2>Email for Paystack</h2>
-                    <p>Paystack requires an email address to open its secure checkout.</p>
-                  </div>
+                  <h2>Email for Pesapal</h2>
+                  <p>Pesapal uses this address for the secure payment session.</p>
                 </div>
+              </div>
               </div>
               <label className="form-field">
                 <span>Email address</span>
@@ -449,110 +249,24 @@ export function PaymentPageClient({
                   required
                 />
               </label>
-              {!paystackMode && (
+              {!pesapalEnabled && (
                 <div className="payment-help">
                   <AlertCircle size={16} />
-                  <span>Paystack is not enabled on this deployment.</span>
+                  <span>Pesapal is not configured on this deployment yet. Contact the Dantown administrator.</span>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* MPESA */}
-          {method === "mpesa" && (
-            <div className="payment-section payment-input-section">
-              <div className="section-heading">
-                <div>
-                  <span className="section-number">02</span>
-
-                  <div>
-                    <h2>M-Pesa number</h2>
-
-                    <p>Paywave Express will send an M-Pesa STK Push to this Kenyan phone number.</p>
-                  </div>
-                </div>
-              </div>
-
-              <label className="form-field">
-                <span>M-Pesa phone number</span>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="0712 345 678"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  disabled={!paywaveEnabled || startingPayment}
-                  required
-                />
-              </label>
-              <div className="payment-help">
-                <ShieldCheck size={16} />
-                <span>Never share your M-Pesa PIN. Dantown will confirm the order only after Paywave Express verifies the transaction.</span>
-              </div>
-            </div>
-          )}
-
-          {/* CARD */}
-          {method === "card" && (
-            <div className="payment-section">
-              <div className="card-coming">
-                <CreditCard size={28} />
-
-                <div>
-                  <strong>Secure card payment</strong>
-
-                  <p>
-                    The card payment gateway is not connected yet.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CASH */}
-          {method === "cash" && (
-            <div className="payment-section">
-              <div className="cash-info">
-                <MapPin size={23} />
-
-                <div>
-                  <strong>Cash payment</strong>
-
-                  <p>
-                    Cash payment instructions are not recorded online yet. Contact Dantown to arrange payment.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* ACTION */}
           <div className="payment-action">
             <button
               type="button"
               className="button button-primary payment-button"
-              onClick={method === "mpesa" ? () => {
-                if (paywaveTransactionRequestId) void checkPaywaveStatus(paywaveTransactionRequestId);
-                else void startPaywaveCheckout();
-              } : startPaystackCheckout}
-              disabled={
-                (method === "paystack" && !paystackMode) ||
-                (method === "mpesa" && (!paywaveEnabled || phone.trim().length < 9)) ||
-                (method !== "paystack" && method !== "mpesa") ||
-                startingPayment || !paymentToken
-              }
+              onClick={startPesapalCheckout}
+              disabled={!pesapalEnabled || !email.trim() || startingPayment || !paymentToken}
             >
               {startingPayment ? <Loader2 className="animate-spin" size={18} /> : null}
-              <span>
-                {method === "mpesa"
-                  ? paywaveTransactionRequestId
-                    ? "Check payment status"
-                    : "Send M-Pesa prompt"
-                  : paystackMode
-                    ? `Continue to Paystack${paystackMode === "test" ? " sandbox" : ""}`
-                    : "Paystack unavailable"}
-              </span>
+              <span>{pesapalEnabled ? "Continue to Pesapal" : "Pesapal unavailable"}</span>
             </button>
             {paymentError && <p className="payment-error" role="alert">{paymentError}</p>}
 
@@ -593,13 +307,7 @@ export function PaymentPageClient({
           <div className="summary-row">
             <span>Payment</span>
 
-            <strong>
-              {method === "mpesa"
-                ? "M-Pesa · Paywave Express"
-                : method === "card"
-                ? "Card"
-                : "Cash"}
-            </strong>
+            <strong>Pesapal</strong>
           </div>
 
           <div className="summary-row">

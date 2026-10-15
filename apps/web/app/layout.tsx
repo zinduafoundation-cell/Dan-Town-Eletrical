@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { PWARegister } from "@/components/pwa-register";
 import { CentreAppGuard } from "@/components/centre/centre-app-guard";
 import { HistoryNavigation } from "@/components/history-navigation";
+import { ReceiptEffect } from "@/components/pos/receipt-effect";
 import "./globals.css";
 import "./styles/centre-app.css";
 import "./auth.css";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 				<Providers>
 					{children}
 					<HistoryNavigation />
+					<ReceiptEffect />
 				</Providers>
 				<SpeedInsights />
 			</body>
