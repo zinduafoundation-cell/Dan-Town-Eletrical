@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
 import { getCatalogCategoryBySlug, getCatalogProducts } from "@dantown/database";
@@ -37,9 +38,23 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
             <p className="eyebrow">Category</p>
             <h1>{category.name}</h1>
             <p>{category.description || `Shop the ${category.name.toLowerCase()} range for reliable installations and projects.`}</p>
-            {childCategories?.length ? <div className="detail-subcategory-row">{childCategories.map((child) => <a key={child.slug} href={`/categories/${child.slug}`}>{child.name} <span>→</span></a>)}</div> : null}
           </div>
         </div>
+
+        {childCategories?.length ? <section className="category-subcategory-section" aria-labelledby="category-subcategories-heading">
+          <div className="category-subcategory-heading">
+            <div><p className="eyebrow">Explore the range</p><h2 id="category-subcategories-heading">Shop by subcategory</h2></div>
+          </div>
+          <div className="detail-subcategory-row">
+            {childCategories.map((child) => <Link key={child.slug} href={`/categories/${child.slug}`} className="detail-subcategory-card">
+              <span className="detail-subcategory-image">
+                {child.image_url ? <Image src={child.image_url} alt="" fill sizes="(max-width: 760px) 45vw, 22vw" unoptimized /> : <span aria-hidden="true">{child.name.charAt(0)}</span>}
+                <span className="detail-subcategory-arrow" aria-hidden="true">↗</span>
+              </span>
+              <span className="detail-subcategory-name">{child.name}</span>
+            </Link>)}
+          </div>
+        </section> : null}
 
         <div className="product-grid catalog-grid">
           {items.length ? items.map((product) => <ProductCard key={product.id} product={product} />) : <div className="empty-state"><h3>Coming soon.</h3><p>We are preparing this category with more supply lines.</p></div>}

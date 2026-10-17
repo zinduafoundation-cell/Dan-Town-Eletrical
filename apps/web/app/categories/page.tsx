@@ -38,7 +38,7 @@ export default async function CategoriesPage() {
         <div className="catalog-intro-strip">
           <span>01</span>
           <p>Start with the system you are working on. Then narrow down to the exact fitting, finish, rating, or brand.</p>
-          <strong>{categories.length} product families</strong>
+          <strong>{rootCategories.length} product families</strong>
         </div>
 
         <div className="category-family-grid">
@@ -53,7 +53,13 @@ export default async function CategoriesPage() {
                 <p className="eyebrow">Product family</p>
                 <h2><Link href={`/categories/${category.slug}`}>{category.name}</Link></h2>
                 <p>{category.description || `Explore ${category.name.toLowerCase()} for homes, projects, and professional installations.`}</p>
-                {children.length > 0 && <div className="subcategory-list">{children.slice(0, 5).map((child) => <Link key={child.slug} href={`/categories/${child.slug}`}>{child.name} <span>→</span></Link>)}</div>}
+                {children.length > 0 && <div className="subcategory-list" aria-label={`${category.name} subcategories`}>{children.map((child) => <Link key={child.slug} href={`/categories/${child.slug}`} className="subcategory-card">
+                  <span className="subcategory-card-image">
+                    {child.image_url ? <Image src={child.image_url} alt="" fill sizes="(max-width: 760px) 35vw, 16vw" unoptimized /> : <span aria-hidden="true">{child.name.charAt(0)}</span>}
+                    <span className="subcategory-card-arrow" aria-hidden="true">↗</span>
+                  </span>
+                  <span className="subcategory-card-name">{child.name}<span aria-hidden="true">→</span></span>
+                </Link>)}</div>}
                 <Link className="text-link" href={`/categories/${category.slug}`}>Explore family <span>→</span></Link>
               </div>
             </article>;

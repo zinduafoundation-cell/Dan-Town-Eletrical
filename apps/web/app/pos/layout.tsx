@@ -5,6 +5,7 @@ import { hasBusinessCenterAccess } from "@/lib/auth/business-center-access";
 import { POSShell } from "@/components/pos/pos-shell";
 import "../styles/pos-premium.css";
 import "../styles/pos-glass.css";
+import "../styles/fixes.css";
 export const dynamic = "force-dynamic";
 
 export default async function POSLayout({ children }: { children: ReactNode }) {

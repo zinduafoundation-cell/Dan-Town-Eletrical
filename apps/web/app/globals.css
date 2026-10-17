@@ -10336,6 +10336,132 @@ lters button { background:#f1f5fa; }
 .store-shell .contact-hero .button-primary,
 .store-shell .services-hero .button-primary { background:#f26a1b; color:#fff; }
 .store-shell .about-hero-visual { border:1px solid rgba(242,106,27,.22); }
+
+.subcategory-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.subcategory-list .subcategory-card {
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 7px;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  overflow: hidden;
+  padding: 5px;
+}
+.subcategory-card-image,
+.detail-subcategory-image {
+  aspect-ratio: 4 / 3;
+  background: #e9eff5;
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
+.subcategory-card-image img,
+.detail-subcategory-image img {
+  object-fit: cover;
+  transition: transform .3s ease;
+}
+.subcategory-card:hover .subcategory-card-image img,
+.detail-subcategory-card:hover .detail-subcategory-image img {
+  transform: scale(1.04);
+}
+.subcategory-card-image > span:first-child:not(.subcategory-card-arrow),
+.detail-subcategory-image > span:first-child:not(.detail-subcategory-arrow) {
+  align-items: center;
+  color: var(--green);
+  display: flex;
+  font-family: var(--display);
+  font-size: 30px;
+  height: 100%;
+  justify-content: center;
+  opacity: .5;
+}
+.subcategory-card-arrow,
+.detail-subcategory-arrow {
+  align-items: center;
+  background: #f26a1b;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  font-size: 11px;
+  height: 23px;
+  justify-content: center;
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 23px;
+}
+.subcategory-card-name {
+  align-items: center;
+  color: var(--green);
+  display: flex;
+  font-size: 10px;
+  font-weight: 700;
+  gap: 5px;
+  justify-content: space-between;
+  line-height: 1.35;
+  min-height: 27px;
+}
+.subcategory-card-name > span {
+  color: #f26a1b;
+  flex: 0 0 auto;
+}
+.category-subcategory-section {
+  margin: 0 0 40px;
+}
+.category-subcategory-heading {
+  margin-bottom: 16px;
+}
+.category-subcategory-heading .eyebrow {
+  color: #f26a1b;
+  font-size: 10px;
+  margin: 0 0 5px;
+}
+.category-subcategory-heading h2 {
+  color: var(--green);
+  font-family: var(--display);
+  font-size: clamp(23px, 3vw, 32px);
+  letter-spacing: -.04em;
+  margin: 0;
+}
+.detail-subcategory-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  margin-top: 0;
+}
+.store-shell .detail-subcategory-row a.detail-subcategory-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  color: var(--green);
+  display: grid;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 10px;
+  overflow: hidden;
+  padding: 7px;
+  transition: border-color .2s ease, transform .2s ease;
+}
+.store-shell .detail-subcategory-row a.detail-subcategory-card:hover,
+.store-shell .detail-subcategory-row a.detail-subcategory-card:focus-visible {
+  border-color: #f26a1b;
+  background: var(--white);
+  color: var(--green);
+  transform: translateY(-2px);
+}
+.detail-subcategory-image {
+  aspect-ratio: 16 / 10;
+}
+.detail-subcategory-name {
+  line-height: 1.35;
+  padding: 0 4px 4px;
+}
+@media (max-width: 760px) {
+  .category-subcategory-section { margin-bottom: 30px; }
+  .detail-subcategory-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-subcategory-row .detail-subcategory-card { font-size: 12px; }
+}
 .store-shell .service-callout .eyebrow { color:#f26a1b; }
 :root { --dantown-lime:#f26a1b; --lime:#f26a1b; --secondary:#f26a1b; --accent:#f26a1b; }
 ::selection { background:#f26a1b; color:#fff; }
@@ -11231,4 +11357,75 @@ body .portal-main .catalog-simple-form-footer .button-primary:hover { background
   .receipt-effect-progress { animation: none; transform: scaleX(1); }
   .receipt-effect-paper { transition: none; transform: none; }
   .store-shell .policy-hub-card { transition: none; }
+}
+/* ===== POS cart: text was inheriting white from the dark POS shell ===== */
+.px-cart,
+.px-cart .px-line strong,
+.px-cart .px-line > b,
+.px-cart .px-totals,
+.px-cart .px-totals b,
+.px-cart .px-empty,
+.px-cart h2,
+.px-cart h3 { color: #071526 !important; }
+.px-cart .px-line small { color: #62748a !important; }
+.px-cart input,
+.px-cart select {
+  color: #071526 !important;
+  -webkit-text-fill-color: #071526;
+  opacity: 1 !important;
+}
+.px-cart .px-pay,
+.px-cart .px-pay span { color: #fff !important; }
+.px-cart .px-pay strong { color: #d1ff42 !important; }
+.px-cart .px-qty button { color: #071526; }
+.px-cart .px-qty button.danger { color: #b42318; }
+
+/* ===== Mobile account page + floating buttons ===== */
+@media (max-width: 1024px) {
+  body .store-shell .account-hub-sidebar { position: static !important; transform: none !important; margin-bottom: 16px; }
+  body .store-shell .account-hub-profile { position: relative; z-index: 0; }
+  body .store-shell .account-hub-stats { position: relative; z-index: 1; margin-top: 16px; }
+  body .store-shell .account-hub-section { position: relative; z-index: 1; }
+}
+@media (max-width: 760px) {
+  body .store-shell main { padding-bottom: 170px; }
+  body .store-shell .mobile-bottom-nav { z-index: 2500; }
+  .floating-support-hub { display: none !important; }
+  .guidance-help-button { bottom: calc(84px + env(safe-area-inset-bottom)) !important; right: 14px !important; }
+  body .store-shell .dan-ai-launcher { bottom: calc(148px + env(safe-area-inset-bottom)) !important; right: 14px !important; }
+}
+/* Cart: light panel, light text -> make text dark */
+.pos-cart,
+.pos-cart * {
+  color: #0f172a !important;
+}
+.pos-cart input,
+.pos-cart [type="email"] {
+  background: #fff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1;
+  opacity: 1 !important;
+}
+.pos-cart .qty-box { color: #fff !important; } /* keep qty badge readable */
+
+/* Mobile: stop overlaps */
+@media (max-width: 768px) {
+  main { padding-bottom: 170px; }
+
+  .profile-card { position: relative !important; z-index: 1; margin-bottom: 16px; }
+  .stats-grid  { position: relative; z-index: 1; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 50; background: #fff;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .floating-help {
+    position: fixed; right: 12px; z-index: 40;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+  .floating-ai {
+    position: fixed; right: 12px; z-index: 40;
+    bottom: calc(140px + env(safe-area-inset-bottom));
+  }
 }

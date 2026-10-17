@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="40" x2="1120" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF1FA"/>
+      <stop offset="1" stop-color="#D6DDF2"/>
+    </linearGradient>
+    <linearGradient id="house" x1="330" y1="220" x2="855" y2="635" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D5E0EF"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" rx="48" fill="url(#bg)"/>
+  <circle cx="600" cy="394" r="255" fill="#FFFFFF" fill-opacity=".48"/>
+  <path d="m322 390 278-228 278 228v229H322V390Z" fill="url(#house)" stroke="#516989" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M523 619V456h154v163" stroke="#516989" stroke-width="16"/>
+  <path d="M470 332c72-72 188-72 260 0m-207-53c42-42 112-42 154 0m-100-54c13-13 34-13 47 0" stroke="#6D79CB" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="600" cy="367" r="13" fill="#F3B65A"/>
+  <path d="M279 665h642" stroke="#8898B5" stroke-width="14" stroke-linecap="round" opacity=".5"/>
+  <circle cx="858" cy="269" r="38" fill="#F3B65A" fill-opacity=".86"/>
+  <path d="M858 211v-28m0 172v-28m58-58h28m-172 0h28m99-41 20-20m-122 122 20-20m82 0 20 20m-122-122 20 20" stroke="#F3B65A" stroke-width="11" stroke-linecap="round"/>
+</svg>

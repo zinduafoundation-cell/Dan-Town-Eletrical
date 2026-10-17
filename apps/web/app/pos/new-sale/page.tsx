@@ -210,7 +210,7 @@ export default function NewSalePage() {
     setMessage(`Sale held for ${sale.customerName}.`);
   };
   const recallSale = (sale: HeldSale) => {
-    if (cart.length) return setMessage("Finish or hold the current sale before recalling another.");
+    if (cart.length) return setMessage("Finish or hold the  before recalling another.");
     const restored = sale.cart
       .map((item) => {
         const product = seenProducts.get(item.id) ?? products.find((entry) => entry.id === item.id);
@@ -290,7 +290,7 @@ export default function NewSalePage() {
     </section>
 
     <aside className="px-cart" id="pos-cart-section">
-      <div className="px-cart-head"><h2>Current sale</h2><div>
+      <div className="px-cart-head"><h2></h2><div>
         {held.length > 0 && <details className="px-held"><summary><Play size={14} /> Held ({held.length})</summary><div className="px-held-list">{held.map((sale) => <div className="px-held-item" key={sale.id}><button type="button" className="px-held-recall" onClick={() => recallSale(sale)}><span>{sale.customerName} · {sale.cart.length} item{sale.cart.length === 1 ? "" : "s"}</span><small>{new Date(sale.updatedAt).toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit" })}</small></button><button type="button" className="px-held-remove" aria-label={`Remove held sale for ${sale.customerName}`} onClick={() => setHeld(removeHeldSale(sale.id))}><Trash2 size={14} /></button></div>)}</div></details>}
         {cart.length > 0 && <><button type="button" className="px-ghost" onClick={holdSale}><Pause size={14} /> Hold</button><button type="button" className="px-ghost" onClick={clearSale}>Clear</button></>}
       </div></div>

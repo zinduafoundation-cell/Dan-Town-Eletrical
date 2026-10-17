@@ -1,0 +1,175 @@
+/* ==========================================================================
+   DANTOWN FIX PACK  (loaded LAST so it wins over every other style)
+   Fixes seen on the live site:
+   1. POS cart / checkout / product panel text invisible (white on white)
+   2. POS top bar items overlapping each other
+   3. Dantown Centre sidebar links invisible (white on pale)
+   4. Faint labels on Finance dashboard and Orders
+   5. Account page: profile card stuck on top of the content on phones
+   Uses only widely supported CSS, so it also works on old till browsers.
+   ========================================================================== */
+
+/* ---------- 1. POS work area: solid, readable panels ---------- */
+body .pos-container .pos-products-section,
+body .pos-container .pos-cart-section {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid #dbe3ec !important;
+  color: #0b1b2e !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+body .pos-container .pos-products-section h1,
+body .pos-container .pos-products-section h2,
+body .pos-container .pos-products-section h3,
+body .pos-container .pos-cart-section h1,
+body .pos-container .pos-cart-section h2,
+body .pos-container .pos-cart-section h3,
+body .pos-container .pos-cart-section strong,
+body .pos-container .pos-cart-section label,
+body .pos-container .pos-cart-item-name,
+body .pos-container .pos-cart-item-total,
+body .pos-container .pos-product-name,
+body .pos-container .pos-total-line strong,
+body .pos-container .pos-grand-total,
+body .pos-container .pos-grand-total strong,
+body .pos-container .pos-form-group label {
+  color: #0b1b2e !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #0b1b2e !important;
+}
+body .pos-container .pos-cart-section p,
+body .pos-container .pos-cart-section small,
+body .pos-container .pos-cart-section span,
+body .pos-container .pos-cart-item-price,
+body .pos-container .pos-cart-empty,
+body .pos-container .pos-total-line,
+body .pos-container .pos-product-category,
+body .pos-container .pos-product-meta,
+body .pos-container .pos-split-toggle {
+  color: #475a73 !important;
+  -webkit-text-fill-color: #475a73 !important;
+}
+body .pos-container .pos-product-price { color: #0251b0 !important; -webkit-text-fill-color: #0251b0 !important; text-shadow: none !important; }
+
+/* inputs in the cart: customer, email, phone, amounts */
+body .pos-container .pos-cart-section input,
+body .pos-container .pos-cart-section select,
+body .pos-container .pos-cart-section textarea,
+body .pos-container .pos-products-section input {
+  background: #ffffff !important;
+  border: 1.5px solid #cfd9e6 !important;
+  color: #0b1b2e !important;
+  -webkit-text-fill-color: #0b1b2e !important;
+  opacity: 1 !important;
+}
+body .pos-container .pos-cart-section input::placeholder,
+body .pos-container .pos-products-section input::placeholder { color: #8393a8 !important; -webkit-text-fill-color: #8393a8 !important; opacity: 1 !important; }
+body .pos-container .pos-cart-section select option { background: #ffffff; color: #0b1b2e; }
+body .pos-container .pos-cart-section input:disabled { background: #eef2f7 !important; color: #62748a !important; -webkit-text-fill-color: #62748a !important; }
+
+/* quantity box, delete, payment choices */
+body .pos-container .pos-qty-input { background: #0b2a50 !important; border: 0 !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+body .pos-container .pos-qty-button { background: #eef3f9 !important; border: 1px solid #cfd9e6 !important; color: #0251b0 !important; }
+body .pos-container .pos-payment-button { background: #f1f5fa !important; border: 1.5px solid #cfd9e6 !important; color: #0b1b2e !important; -webkit-text-fill-color: #0b1b2e !important; }
+body .pos-container .pos-payment-button.active,
+body .pos-container .pos-payment-button.selected { background: #fff1e8 !important; border-color: #f26a1b !important; color: #d95a10 !important; -webkit-text-fill-color: #d95a10 !important; }
+body .pos-container .pos-clear-button { background: #ffeef0 !important; border: 1px solid #f4b5bf !important; color: #c9304a !important; -webkit-text-fill-color: #c9304a !important; }
+body .pos-container .pos-category-filters button { background: #f1f5fa !important; color: #334b65 !important; border: 1px solid #dbe3ec !important; -webkit-text-fill-color: #334b65 !important; }
+body .pos-container .pos-category-filters button.active { background: #f26a1b !important; border-color: #f26a1b !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+
+/* product cards stay legible */
+body .pos-container .pos-products-grid > * { background: #ffffff !important; border: 1px solid #dbe3ec !important; color: #0b1b2e !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* ---------- 2. POS top bar: no overlapping ---------- */
+body .pos-container .pos-topbar { align-items: center !important; display: flex !important; flex-wrap: wrap !important; gap: 8px 14px !important; }
+body .pos-container .pos-topbar > * { min-width: 0; }
+body .pos-container .pos-topbar-title { flex: 0 0 auto !important; white-space: nowrap !important; }
+body .pos-container .pos-search-input,
+body .pos-container .pos-topbar .pos-search-wrapper,
+body .pos-container .pos-topbar input { flex: 1 1 240px !important; max-width: 520px; min-width: 160px !important; position: static !important; }
+body .pos-container .pos-topbar input { background: rgba(255, 255, 255, 0.12) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+body .pos-container .pos-topbar input::placeholder { color: #b9c9e3 !important; -webkit-text-fill-color: #b9c9e3 !important; opacity: 1 !important; }
+body .pos-container .pos-status-indicator { flex: 0 0 auto !important; position: static !important; }
+body .pos-container .pos-sync-text,
+body .pos-container .pos-datetime,
+body .pos-container .pos-topbar [class*="catalog"],
+body .pos-container .pos-topbar [class*="offline"],
+body .pos-container .pos-topbar button:not(.pos-topbar-button) { color: #cfe0ff !important; flex: 0 1 auto; max-width: 230px; overflow: hidden; position: static !important; text-overflow: ellipsis; white-space: nowrap; -webkit-text-fill-color: #cfe0ff !important; }
+body .pos-container .pos-topbar [class*="catalog"] button,
+body .pos-container .pos-topbar button:not(.pos-topbar-button) { background: rgba(255, 255, 255, 0.12) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: 10px !important; padding: 6px 12px !important; }
+
+/* ---------- 3. Dantown Centre sidebar ---------- */
+body .portal-sidebar {
+  background: #0b2a50 !important;
+  background-image: linear-gradient(180deg, #071a33, #0b2a50) !important;
+  border: 0 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 16px 40px rgba(7, 26, 51, 0.22) !important;
+}
+body .portal-sidebar a,
+body .portal-sidebar a span {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.9) !important;
+}
+body .portal-sidebar a:hover { background: rgba(255, 255, 255, 0.12) !important; }
+body .portal-sidebar a.active,
+body .portal-sidebar a.active span { background: #f26a1b !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+body .portal-sidebar a svg { color: inherit !important; }
+body .portal-sidebar-label { color: #ffb98a !important; -webkit-text-fill-color: #ffb98a !important; }
+body .portal-sidebar-group { color: rgba(11, 0, 0, 0.6) !important; -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important; }
+body .portal-header { background: linear-gradient(180deg, #071a33, #0a2342) !important; }
+body .portal-header .brand,
+body .portal-header .brand b { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+
+/* ---------- 4. Centre content: readable text ---------- */
+body .portal { background: #f4f7fb !important; background-image: none !important; }
+body .portal-main { color: #0b1b2e !important; }
+body .portal-heading h1 { color: #0b1b2e !important; -webkit-text-fill-color: #0b1b2e !important; text-shadow: none !important; }
+body .portal-main .portal-heading p:not(.eyebrow),
+body .portal-main .portal-heading div > p:last-child { color: #000307 !important; -webkit-text-fill-color: #475a73 !important; }
+body .portal-main h2,
+body .portal-main h3,
+body .portal-card strong,
+body .finance-metric strong,
+body .finance-list-row strong,
+body .online-order-card strong,
+body .online-order-total { color: #0b1b2e !important; -webkit-text-fill-color: #0b1b2e !important; }
+body .portal-card small,
+body .finance-metric span,
+body .finance-metric small,
+body .finance-list-row span,
+body .finance-bar-column span,
+body .finance-bar-column small,
+body .finance-panel-heading small,
+body .online-order-card small,
+body .online-order-details span,
+body .online-orders-intro p { color: #62748a !important; -webkit-text-fill-color: #62748a !important; }
+body .finance-metric { background: #ffffff !important; border: 1px solid #e3e9f1 !important; border-radius: 16px !important; padding: 14px 16px !important; }
+body .finance-metric strong { color: #071a33 !important; }
+body .portal-main .eyebrow { color: #f26a1b !important; -webkit-text-fill-color: #f26a1b !important; }
+body .portal-main .workspace-quick-actions,
+body .portal-main .workspace-quick-actions * { color: #334b65; }
+body .portal-main .workspace-quick-actions { background: #ffffff !important; border: 1px solid #044eb0e0 !important; }
+
+/* ---------- 5. Account page on phones and small screens ---------- */
+@media (max-width: 1024px) {
+  body .account-hub-layout { display: block !important; }
+  body .account-hub-sidebar,
+  body .account-hub-sidebar nav {
+    margin-bottom: 18px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    top: auto !important;
+    transform: none !important;
+  }
+  body .account-hub-sidebar { z-index: auto !important; }
+  body .account-hub-profile,
+  body .account-hub-welcome,
+  body .account-hub-stats,
+  body .account-hub-section { position: relative !important; z-index: auto !important; }
+  body .account-hub-sidebar nav { display: flex !important; gap: 6px !important; overflow-x: auto !important; padding: 10px !important; }
+  body .account-hub-sidebar nav a { flex: 0 0 auto !important; white-space: nowrap !important; }
+}

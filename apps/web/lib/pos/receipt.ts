@@ -26,8 +26,8 @@ export function formatReceiptText(receipt: POSReceiptData): string {
     "",
     `Total: ${formatCurrency(receipt.amount)}`,
     "----------------------------",
-    "Thank you for shopping with Dantown",
-    "Support: +254 700 000 000"
+    "Thank you for shopping with Dantown Electrical!",
+    "Support: +254 745917655"
   ];
 
   return lines.join("\n");

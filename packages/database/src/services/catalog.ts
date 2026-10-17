@@ -286,17 +286,31 @@ export async function getCatalogProducts(
   } = {}
 ) {
   try {
-    let categoryId: string | null = null;
+    let categoryIds: string[] | null = null;
     if (options.category?.trim()) {
-      const { data: category, error: categoryError } = await client
+      const { data: categories, error: categoriesError } = await client
         .from("categories")
-        .select("id")
-        .eq("slug", options.category.trim())
+        .select("id,slug,parent_id")
         .eq("is_active", true)
-        .maybeSingle();
-      if (categoryError) throw categoryError;
-      if (!category) return [];
-      categoryId = category.id;
+      if (categoriesError) throw categoriesError;
+      const category = categories?.find((item) => item.slug === options.category?.trim());
+      if (!category || !categories) return [];
+
+      const childrenByParent = new Map<string, string[]>();
+      for (const item of categories) {
+        if (!item.parent_id) continue;
+        const children = childrenByParent.get(item.parent_id) ?? [];
+        children.push(item.id);
+        childrenByParent.set(item.parent_id, children);
+      }
+
+      categoryIds = [category.id];
+      for (let index = 0; index < categoryIds.length; index += 1) {
+        const children = childrenByParent.get(categoryIds[index]) ?? [];
+        for (const childId of children) {
+          if (!categoryIds.includes(childId)) categoryIds.push(childId);
+        }
+      }
     }
 
     // Keep storefront reads authoritative: demo data must never mask a catalog outage.
@@ -305,8 +319,8 @@ export async function getCatalogProducts(
       .select(PRODUCT_LIST_SELECT)
       .eq("is_active", true);
 
-    if (categoryId) {
-      query = query.eq("category_id", categoryId);
+    if (categoryIds) {
+      query = query.in("category_id", categoryIds);
     }
 
     if (options.productIds?.length) {

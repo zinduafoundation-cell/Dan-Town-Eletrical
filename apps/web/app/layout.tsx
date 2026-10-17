@@ -14,6 +14,7 @@ import "./styles/themes.css";
 import "./styles/pos.css";
 import "./styles/account.css";
 import "./styles/navigation-sidebar.css";
+import "./styles/fixes.css";
 
 export const metadata: Metadata = {
 	title: {
