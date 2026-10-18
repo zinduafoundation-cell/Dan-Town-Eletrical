@@ -6,7 +6,7 @@ import {
   SectionHeading,
   StorefrontShell
 } from "@/components/storefront";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import {
   getCatalogCategories,
   getCatalogProducts,
@@ -45,7 +45,7 @@ export default async function ShopPage({
         ? "high"
         : "featured";
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceClient();
 
   const [products, categories, productCount] = await Promise.all([
     getCatalogProducts(supabase, {

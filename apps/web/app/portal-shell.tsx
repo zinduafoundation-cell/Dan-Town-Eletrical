@@ -7,6 +7,7 @@ import { OrderAttentionAlerts } from "@/components/admin/order-attention-alerts"
 import { WorkspaceQuickActions } from "@/components/admin/workspace-quick-actions";
 import { InstallCentreApp } from "@/components/centre/install-app-button";
 import { ResponsiveSidebar, type SidebarSection } from "@/components/navigation/responsive-sidebar";
+import { DanTAI } from "@/components/dan-t-ai";
 
 type PortalShellProps = {
   title: string;
@@ -151,6 +152,7 @@ export function PortalShell({
           {children}
         </section>
       </div>
+      <DanTAI />
     </main>
   );
 }

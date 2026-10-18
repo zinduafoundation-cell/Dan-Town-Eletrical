@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState, type PointerEvent } from "react";
+import { usePathname } from "next/navigation";
 import { Bot, Send, X } from "lucide-react";
 import Link from "next/link";
 
@@ -17,6 +18,8 @@ function getSessionId() {
 }
 
 export function DanTAI() {
+  const pathname = usePathname();
+  const surface = pathname.startsWith("/admin") ? "admin" : pathname.startsWith("/centre") || pathname.startsWith("/business-center") ? "centre" : pathname.startsWith("/pos") ? "pos" : "storefront";
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -52,6 +55,17 @@ export function DanTAI() {
     return () => window.removeEventListener("resize", keepOnScreen);
   }, []);
 
+  useEffect(() => {
+    function askFromPage(event: Event) {
+      const question = (event as CustomEvent<unknown>).detail;
+      if (typeof question !== "string" || !question.trim()) return;
+      setInput(question.slice(0, 1200));
+      setOpen(true);
+    }
+    window.addEventListener("dantown-ai-ask", askFromPage);
+    return () => window.removeEventListener("dantown-ai-ask", askFromPage);
+  }, []);
+
   function startDragging(event: PointerEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
     dragState.current = { offsetX: event.clientX - bounds.left, offsetY: event.clientY - bounds.top, moved: false };
@@ -81,7 +95,7 @@ export function DanTAI() {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetch("/api/ai/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, history: messages.slice(-12) }) });
+      const response = await fetch("/api/ai/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, history: messages.slice(-12), surface }) });
       const result = await response.json() as { answer?: string; error?: string; escalationSuggested?: boolean };
       if (!response.ok || !result.answer) throw new Error(result.error || "DAN T AI is temporarily unavailable.");
       setMessages([...nextMessages, { role: "assistant", content: result.answer }]);

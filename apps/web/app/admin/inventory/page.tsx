@@ -9,10 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function InventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[] }>;
+  searchParams: Promise<{ q?: string | string[]; filter?: string | string[] }>;
 }) {
   const params = await searchParams;
   const initialQuery = Array.isArray(params.q) ? params.q[0] ?? "" : params.q ?? "";
+  const requestedFilter = Array.isArray(params.filter) ? params.filter[0] : params.filter;
+  const supportedFilters = ["all", "in-stock", "low-stock", "out-of-stock", "reserved", "not-tracked", "draft", "published", "pos", "missing-prices", "missing-images", "missing-categories", "not-published", "pos-unavailable"] as const;
+  const initialFilter = supportedFilters.find((filter) => filter === requestedFilter) ?? "all";
   const context = await requireAuthorizedPermission("inventory.read");
   const supabase = createSupabaseServiceClient();
   const [{ data: inventory }, { data: products }, { data: warehouses }, { data: categories }, { data: brands }] = await Promise.all([
@@ -45,7 +48,7 @@ export default async function InventoryPage({
   const trackedRows = (inventory ?? []).flatMap((stock) => {
     const product = productMap.get(stock.product_id);
     if (!product) return [];
-    return [{ id: stock.id, productId: stock.product_id, name: product.name, sku: product.sku, barcode: product.barcode, category: categoryMap.get(product.category_id ?? "") ?? "Uncategorized", brand: brandMap.get(product.brand_id ?? "") ?? "No brand", imageUrl: imageByProduct.get(product.id) ?? null, warehouseId: stock.warehouse_id, warehouse: warehouseMap.get(stock.warehouse_id) ?? "Unknown warehouse", quantity: stock.quantity, reserved: stock.reserved_quantity, reorderLevel: stock.reorder_level, costPrice: Number(product.cost_price || 0), retailPrice: Number(product.retail_price || 0), status: product.status, tracked: true, published: product.status === "ACTIVE" && product.is_active, posAvailable: product.status === "ACTIVE" && product.is_active }];
+    return [{ id: stock.id, productId: stock.product_id, name: product.name, sku: product.sku, barcode: product.barcode, category: categoryMap.get(product.category_id ?? "") ?? "Uncategorized", hasCategory: !!product.category_id, brand: brandMap.get(product.brand_id ?? "") ?? "No brand", imageUrl: imageByProduct.get(product.id) ?? null, warehouseId: stock.warehouse_id, warehouse: warehouseMap.get(stock.warehouse_id) ?? "Unknown warehouse", quantity: stock.quantity, reserved: stock.reserved_quantity, reorderLevel: stock.reorder_level, costPrice: Number(product.cost_price || 0), retailPrice: Number(product.retail_price || 0), status: product.status, tracked: true, published: product.status === "ACTIVE" && product.is_active, posAvailable: product.status === "ACTIVE" && product.is_active }];
   });
   const productsWithInventory = new Set(trackedRows.map((row) => row.productId));
   const untrackedRows = (products ?? [])
@@ -57,6 +60,7 @@ export default async function InventoryPage({
       sku: product.sku,
       barcode: product.barcode,
       category: categoryMap.get(product.category_id ?? "") ?? "Uncategorized",
+      hasCategory: !!product.category_id,
       brand: brandMap.get(product.brand_id ?? "") ?? "No brand",
       imageUrl: imageByProduct.get(product.id) ?? null,
       warehouseId: "",
@@ -73,8 +77,8 @@ export default async function InventoryPage({
     }));
   const rows = [...trackedRows, ...untrackedRows];
 
-  return <PortalShell wide title="Stock & inventory." description="Search the full product catalog, view product photos and warehouse stock, and safely adjust the shared stock ledger." roles={context.roles} permissions={context.permissions} links={[{ label: "Overview", href: "/admin" }, { label: "Inventory", href: "/admin/inventory" }, { label: "Products", href: "/admin/catalog", permission: "products.read" }, { label: "Suppliers", href: "/admin/suppliers", permission: "products.read" }, { label: "Purchases", href: "/admin/purchases", permission: "inventory.read" }, { label: "Warehouses", href: "/admin/warehouses", permission: "inventory.read" }]}>
+  return <PortalShell wide title="Stock & inventory." description="Search the full product catalog, view product photos and warehouse stock, and safely adjust the shared stock ledger." roles={context.roles} permissions={context.permissions} links={[{ label: "Overview", href: "/admin" }, { label: "Inventory", href: "/admin/inventory" }, { label: "Recent movements", href: "/admin/inventory/movements", permission: "inventory.read" }, { label: "Products", href: "/admin/catalog", permission: "products.read" }, { label: "Suppliers", href: "/admin/suppliers", permission: "products.read" }, { label: "Purchases", href: "/admin/purchases", permission: "inventory.read" }, { label: "Warehouses", href: "/admin/warehouses", permission: "inventory.read" }]}>
     <WarehouseForm initialWarehouses={(warehouses ?? []).map((warehouse) => ({ id: warehouse.id, name: warehouse.name }))} canManage={context.permissions.includes("inventory.adjust")} />
-    <InventoryWorkspace rows={rows} warehouses={(warehouses ?? []).map((warehouse) => ({ id: warehouse.id, name: warehouse.name }))} canAdjust={context.permissions.includes("inventory.adjust")} canTransfer={context.permissions.includes("inventory.adjust")} initialQuery={initialQuery} />
+    <InventoryWorkspace rows={rows} warehouses={(warehouses ?? []).map((warehouse) => ({ id: warehouse.id, name: warehouse.name }))} canAdjust={context.permissions.includes("inventory.adjust")} canTransfer={context.permissions.includes("inventory.adjust")} initialQuery={initialQuery} initialFilter={initialFilter} />
   </PortalShell>;
 }

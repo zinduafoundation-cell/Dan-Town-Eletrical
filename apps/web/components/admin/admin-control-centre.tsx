@@ -54,6 +54,15 @@ function Metric({ label, value, detail, tone = "default" }: { label: string; val
 
 export function AdminControlCentre({ summary, permissions }: { summary: CentreSummary; permissions: string[] }) {
   const visibleActions = actions.filter((action) => !action.permission || permissions.includes(action.permission));
+  const dataShortcuts = [
+    { label: "Missing prices", value: summary.missingPrices, href: "/admin/inventory?filter=missing-prices", permission: "inventory.read" },
+    { label: "Missing images", value: summary.missingImages, href: "/admin/inventory?filter=missing-images", permission: "inventory.read" },
+    { label: "Missing categories", value: summary.missingCategories, href: "/admin/inventory?filter=missing-categories", permission: "inventory.read" },
+    { label: "Not published", value: summary.unpublishedProducts, href: "/admin/inventory?filter=not-published", permission: "inventory.read" },
+    { label: "POS unavailable", value: summary.posUnavailable, href: "/admin/inventory?filter=pos-unavailable", permission: "inventory.read" },
+    { label: "Recent movements", value: summary.recentMovements, href: "/admin/inventory/movements", permission: "inventory.read" },
+    { label: "Recent purchases", value: summary.recentPurchases, href: "/admin/purchases", permission: "inventory.read" }
+  ].filter((shortcut) => permissions.includes(shortcut.permission));
 
   return <div className="centre-dashboard">
     <section className="centre-summary-grid" aria-label="Business summary">
@@ -66,13 +75,11 @@ export function AdminControlCentre({ summary, permissions }: { summary: CentreSu
     </section>
 
     <section className="centre-data-strip" aria-label="Data quality summary">
-      <div><span>Missing prices</span><strong>{summary.missingPrices}</strong></div>
-      <div><span>Missing images</span><strong>{summary.missingImages}</strong></div>
-      <div><span>Missing categories</span><strong>{summary.missingCategories}</strong></div>
-      <div><span>Not published</span><strong>{summary.unpublishedProducts}</strong></div>
-      <div><span>POS unavailable</span><strong>{summary.posUnavailable}</strong></div>
-      <div><span>Recent movements</span><strong>{summary.recentMovements}</strong></div>
-      <div><span>Recent purchases</span><strong>{summary.recentPurchases}</strong></div>
+      {dataShortcuts.map((shortcut) => (
+        <Link href={shortcut.href} key={shortcut.label} aria-label={`Open ${shortcut.label}: ${shortcut.value}`}>
+          <span>{shortcut.label}</span><strong>{shortcut.value}</strong><small>Open list →</small>
+        </Link>
+      ))}
     </section>
 
     <section className="centre-attention" aria-labelledby="centre-attention-heading">

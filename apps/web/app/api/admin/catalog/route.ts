@@ -261,7 +261,7 @@ export async function POST(request: Request) {
       const { data, error } = await supabase
         .from("categories")
         .insert(insert)
-        .select("id,name,slug,parent_id,department_id")
+        .select("id,name,slug,parent_id,department_id,image_url")
         .single();
 
       if (error) throw error;

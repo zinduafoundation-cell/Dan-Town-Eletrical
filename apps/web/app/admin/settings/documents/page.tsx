@@ -1,21 +1,26 @@
 import { BusinessDocumentSettingsEditor } from "@/components/admin/business-document-settings-editor";
 import { PortalShell } from "@/app/portal-shell";
 import { requireAuthorizedPermission } from "@/lib/auth/server";
-import { defaultBusinessDocumentSettings, businessDocumentSettingsSchema } from "@/lib/documents/business-document-settings";
-import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { defaultBusinessDocumentSettings } from "@/lib/documents/business-document-settings";
+import { loadBusinessConfiguration } from "@/lib/settings/business-configuration";
 
 export const dynamic = "force-dynamic";
 
 export default async function BusinessDocumentsPage() {
   const context = await requireAuthorizedPermission("settings.manage");
-  const supabase = createSupabaseServiceClient();
-  const { data, error } = await supabase
-    .from("business_document_settings")
-    .select("template")
-    .eq("id", "dantown")
-    .maybeSingle();
-  if (error) console.error("Business document settings table is unavailable.", error);
-  const parsed = businessDocumentSettingsSchema.safeParse(data?.template);
+  let initialSettings = defaultBusinessDocumentSettings;
+  let initialUpdatedAt: string | null = null;
+  let migrationReady = true;
+  let initialMessage = "";
+  try {
+    const configuration = await loadBusinessConfiguration();
+    initialSettings = configuration.documentSettings;
+    initialUpdatedAt = configuration.updatedAt;
+  } catch (error) {
+    console.error("Business document settings table is unavailable.", error);
+    migrationReady = false;
+    initialMessage = "Business settings could not be loaded. Confirm the database migration and saved configuration.";
+  }
   return (
     <PortalShell
       title="Invoice & receipt design."
@@ -29,7 +34,7 @@ export default async function BusinessDocumentsPage() {
         { label: "Payments", href: "/admin/payments", permission: "payments.read" },
       ]}
     >
-      <BusinessDocumentSettingsEditor initialSettings={parsed.success ? parsed.data : defaultBusinessDocumentSettings} migrationReady={!error} />
+      <BusinessDocumentSettingsEditor initialSettings={initialSettings} initialUpdatedAt={initialUpdatedAt} migrationReady={migrationReady} initialMessage={initialMessage} />
     </PortalShell>
   );
 }

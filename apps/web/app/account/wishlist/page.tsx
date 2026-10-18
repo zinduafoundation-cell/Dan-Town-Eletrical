@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireAuthenticated } from "../../../lib/auth/server";
-import { createSupabaseServerClient } from "../../../lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceClient } from "../../../lib/supabase/server";
 import { getCatalogProducts } from "@dantown/database";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
 
@@ -21,7 +21,7 @@ export default async function WishlistPage() {
 
   const productIds = (items ?? []).map((item) => item.product_id);
   const favorites = productIds.length
-    ? await getCatalogProducts(supabase, { productIds, pageSize: Math.min(productIds.length, 60), allowFallback: false })
+    ? await getCatalogProducts(createSupabaseServiceClient(), { productIds, pageSize: Math.min(productIds.length, 60), allowFallback: false })
     : [];
 
   return (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BusinessReceipt, type BusinessReceiptLine } from "@/components/documents/business-receipt";
-import { defaultBusinessDocumentSettings, type BusinessDocumentSettings } from "@/lib/documents/business-document-settings";
+import { defaultBusinessDocumentSettings, formatBusinessDocumentDate, type BusinessDocumentSettings } from "@/lib/documents/business-document-settings";
 import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 import { APP_CURRENCY } from "@dantown/shared";
 
@@ -94,7 +94,7 @@ export function CustomerOrderReceipt({
           <BusinessReceipt
             settings={settings}
             reference={receipt.orderNumber}
-            date={new Date(receipt.date).toLocaleString("en-KE")}
+            date={formatBusinessDocumentDate(receipt.date, settings)}
             customer={receipt.customer}
             paymentMethod={receipt.paymentMethod}
             lines={receipt.lines}

@@ -8,7 +8,7 @@ type CategorySeed = { terms: string[]; name: string; description: string };
 export async function getDivisionCategories(client: SupabaseClient<Database>, seeds: CategorySeed[]) {
   const [{ data: categories }, { data: products }] = await Promise.all([
     client.from("categories").select("id,name,slug,image_url,is_active").eq("is_active", true),
-    client.from("products").select("category_id").eq("is_active", true).eq("status", "ACTIVE")
+    client.from("products").select("category_id")
   ]);
   const productCounts = new Map<string, number>();
   for (const product of products ?? []) if (product.category_id) productCounts.set(product.category_id, (productCounts.get(product.category_id) ?? 0) + 1);

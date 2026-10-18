@@ -5,13 +5,14 @@ import { FormEvent, useMemo, useState } from "react";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Search, X } from "lucide-react";
 import { fetchWithBiometric } from "@/lib/auth/passkey-client";
 
-type InventoryRow = {
+export type InventoryRow = {
   id: string;
   productId: string;
   name: string;
   sku: string;
   barcode: string | null;
   category: string;
+  hasCategory: boolean;
   brand: string;
   imageUrl: string | null;
   warehouseId: string;
@@ -29,13 +30,13 @@ type InventoryRow = {
 
 type Warehouse = { id: string; name: string };
 
-type Props = { rows: InventoryRow[]; warehouses: Warehouse[]; canAdjust: boolean; canTransfer: boolean; initialQuery?: string };
-type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock" | "reserved" | "not-tracked" | "draft" | "published" | "pos";
+type Props = { rows: InventoryRow[]; warehouses: Warehouse[]; canAdjust: boolean; canTransfer: boolean; initialQuery?: string; initialFilter?: StockFilter };
+type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock" | "reserved" | "not-tracked" | "draft" | "published" | "pos" | "missing-prices" | "missing-images" | "missing-categories" | "not-published" | "pos-unavailable";
 
-export function InventoryWorkspace({ rows: initialRows, warehouses, canAdjust, canTransfer, initialQuery = "" }: Props) {
+export function InventoryWorkspace({ rows: initialRows, warehouses, canAdjust, canTransfer, initialQuery = "", initialFilter = "all" }: Props) {
   const [rows, setRows] = useState(initialRows);
   const [query, setQuery] = useState(initialQuery);
-  const [filter, setFilter] = useState<StockFilter>("all");
+  const [filter, setFilter] = useState<StockFilter>(initialFilter);
   const [warehouseFilter, setWarehouseFilter] = useState("all");
   const [selected, setSelected] = useState<InventoryRow | null>(null);
   const [delta, setDelta] = useState(1);
@@ -62,7 +63,12 @@ export function InventoryWorkspace({ rows: initialRows, warehouses, canAdjust, c
         (filter === "not-tracked" && !row.tracked) ||
         (filter === "draft" && row.status === "DRAFT") ||
         (filter === "published" && row.published) ||
-        (filter === "pos" && row.posAvailable);
+        (filter === "pos" && row.posAvailable) ||
+        (filter === "missing-prices" && (row.costPrice <= 0 || row.retailPrice <= 0)) ||
+        (filter === "missing-images" && !row.imageUrl) ||
+        (filter === "missing-categories" && !row.hasCategory) ||
+        (filter === "not-published" && !row.published) ||
+        (filter === "pos-unavailable" && !row.posAvailable);
       return matchesQuery && matchesWarehouse && matchesFilter;
     });
   }, [filter, query, rows, warehouseFilter]);
@@ -109,7 +115,7 @@ export function InventoryWorkspace({ rows: initialRows, warehouses, canAdjust, c
   return <div className="inventory-workspace">
     <div className="inventory-toolbar">
       <label className="inventory-search"><Search size={17} /><span className="sr-only">Search inventory</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, SKU, barcode, supplier, brand, category..." /></label>
-      <select value={filter} onChange={(event) => setFilter(event.target.value as StockFilter)} aria-label="Inventory status"><option value="all">All products</option><option value="in-stock">In stock</option><option value="low-stock">Low stock</option><option value="out-of-stock">Out of stock</option><option value="reserved">Reserved stock</option><option value="not-tracked">Not tracked in a warehouse</option><option value="published">Website published</option><option value="pos">POS available</option><option value="draft">Draft</option></select>
+      <select value={filter} onChange={(event) => setFilter(event.target.value as StockFilter)} aria-label="Inventory status"><option value="all">All products</option><option value="in-stock">In stock</option><option value="low-stock">Low stock</option><option value="out-of-stock">Out of stock</option><option value="reserved">Reserved stock</option><option value="not-tracked">Not tracked in a warehouse</option><option value="published">Website published</option><option value="pos">POS available</option><option value="draft">Draft</option><option value="missing-prices">Missing prices</option><option value="missing-images">Missing images</option><option value="missing-categories">Missing categories</option><option value="not-published">Not published</option><option value="pos-unavailable">POS unavailable</option></select>
       <select value={warehouseFilter} onChange={(event) => setWarehouseFilter(event.target.value)} aria-label="Warehouse"><option value="all">All warehouses</option>{warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}</select>
       {canTransfer && <button type="button" className="button button-secondary inventory-transfer-trigger" onClick={() => setTransferOpen(true)}><ArrowLeftRight size={15} /> Transfer stock</button>}
     </div>

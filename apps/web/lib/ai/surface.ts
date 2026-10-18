@@ -13,9 +13,9 @@ export const SURFACE_PERMISSIONS: Record<AiSurface, Permission[]> = {
 
 export const SURFACE_INTENTS: Record<AiSurface, AiIntent[]> = {
   storefront: ["products", "categories", "business", "inventory", "orders", "quotes"],
-  centre: ["sales", "inventory", "business", "products", "categories"],
+  centre: ["sales", "inventory", "business", "products", "categories", "settings"],
   pos: ["products", "inventory", "categories", "business"],
-  admin: ["sales", "inventory", "products", "categories", "business", "orders", "quotes"]
+  admin: ["sales", "inventory", "products", "categories", "business", "orders", "quotes", "settings"]
 };
 
 export function aiSurfaceFor(pathname = ""): AiSurface {

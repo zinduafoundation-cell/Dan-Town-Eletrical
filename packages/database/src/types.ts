@@ -52,6 +52,11 @@ export type Database = {
       price_history: { Row: PriceHistory; Insert: PriceHistoryInsert; Update: Partial<PriceHistoryInsert>; Relationships: [] };
       business_center_access: { Row: BusinessCenterAccess; Insert: BusinessCenterAccessInsert; Update: Partial<BusinessCenterAccessInsert>; Relationships: [] };
       business_document_settings: { Row: BusinessDocumentSettings; Insert: BusinessDocumentSettingsInsert; Update: Partial<BusinessDocumentSettingsInsert>; Relationships: [] };
+      storefront_promotions: { Row: StorefrontPromotion; Insert: StorefrontPromotionInsert; Update: Partial<StorefrontPromotionInsert>; Relationships: [] };
+      business_documents: { Row: BusinessDocument; Insert: BusinessDocumentInsert; Update: Partial<BusinessDocumentInsert>; Relationships: [] };
+      business_document_sequences: { Row: BusinessDocumentSequence; Insert: BusinessDocumentSequenceInsert; Update: Partial<BusinessDocumentSequenceInsert>; Relationships: [] };
+      business_document_events: { Row: BusinessDocumentEvent; Insert: BusinessDocumentEventInsert; Update: Partial<BusinessDocumentEventInsert>; Relationships: [] };
+      business_document_attachments: { Row: BusinessDocumentAttachment; Insert: BusinessDocumentAttachmentInsert; Update: Partial<BusinessDocumentAttachmentInsert>; Relationships: [] };
     };
     Views: { inventory_health: { Row: InventoryHealth; Relationships: [] } };
     Functions: {
@@ -59,6 +64,7 @@ export type Database = {
       adjust_inventory: { Args: { target_product_id: string; target_warehouse_id: string; delta: number; target_movement_type: InventoryMovementType; target_reference_type?: string; target_reference_id?: string }; Returns: Inventory };
       receive_purchase_order_item: { Args: { target_purchase_order_id: string; target_item_id: string; target_received_quantity: number; target_reference_id: string }; Returns: Json };
       transfer_inventory: { Args: { target_product_id: string; target_source_warehouse_id: string; target_destination_warehouse_id: string; target_quantity: number; target_reference_id: string }; Returns: Json };
+      transition_business_document: { Args: { target_document_id: string; target_status: string; transition_note: string; actor_user_id: string | null }; Returns: BusinessDocument };
       complete_pos_sale: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
       complete_pos_sale_split: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json; sale_split_payments: Json }; Returns: Order };
       create_pos_paystack_order: { Args: { sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
@@ -627,3 +633,72 @@ export type PriceHistory = { id: string; product_id: string; price_type: string;
 export type PriceHistoryInsert = Omit<PriceHistory, "id"> & { id?: string };
 export type BusinessDocumentSettings = { id: "dantown"; template: Json; updated_at: string; updated_by: string | null };
 export type BusinessDocumentSettingsInsert = { id?: "dantown"; template: Json; updated_at?: string; updated_by?: string | null };
+export type StorefrontPromotion = { id: string; title: string; description: string; badge: string; image_url: string | null; destination_url: string; starts_at: string | null; ends_at: string | null; is_active: boolean; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
+export type StorefrontPromotionInsert = Omit<StorefrontPromotion, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
+export type BusinessDocumentType =
+  | "QUOTATION" | "SALES_ORDER" | "PROFORMA_INVOICE" | "INVOICE" | "RECEIPT"
+  | "CREDIT_NOTE" | "DEBIT_NOTE" | "CUSTOMER_STATEMENT" | "SALES_RETURN_FORM"
+  | "PURCHASE_REQUISITION" | "PURCHASE_ORDER" | "SUPPLIER_INVOICE"
+  | "GOODS_RECEIVED_NOTE" | "SUPPLIER_PAYMENT_VOUCHER" | "SUPPLIER_STATEMENT"
+  | "PURCHASE_RETURN_FORM" | "STOCK_REGISTER" | "GOODS_ISSUE" | "STOCK_TRANSFER_NOTE"
+  | "DELIVERY_NOTE" | "DISPATCH_NOTE" | "STOCK_ADJUSTMENT" | "STOCK_COUNT_SHEET"
+  | "DAMAGED_GOODS_REPORT" | "GOODS_RETURN_NOTE" | "CASH_RECEIPT_VOUCHER"
+  | "PAYMENT_VOUCHER" | "PETTY_CASH_VOUCHER" | "CASHBOOK" | "DAILY_SALES_REPORT"
+  | "DAILY_EXPENSE_REPORT" | "BANK_RECONCILIATION" | "MPESA_RECONCILIATION"
+  | "ACCOUNTS_RECEIVABLE_REPORT" | "ACCOUNTS_PAYABLE_REPORT" | "PROFIT_AND_LOSS_REPORT"
+  | "GENERAL_LEDGER_REPORT" | "CUSTOMER_REGISTRATION" | "SUPPLIER_REGISTRATION"
+  | "CREDIT_APPLICATION" | "CUSTOMER_ACCOUNT_RECORD" | "SUPPLIER_ACCOUNT_RECORD"
+  | "COMPLAINT_RETURN_FORM" | "BUSINESS_REGISTRATION_RECORD" | "KRA_RECORD"
+  | "ETIMS_TAX_INVOICE" | "VAT_RECORD" | "TAX_RETURN_SUPPORT" | "BUSINESS_PERMIT"
+  | "REGISTRATION_CERTIFICATE" | "CONTRACT" | "EMPLOYEE_RECORD" | "PAYROLL_DOCUMENT"
+  | "LEAVE_RECORD" | "ASSET_REGISTER" | "INTERNAL_APPROVAL" | "INCIDENT_REPORT"
+  | "FILING_REGISTER" | "OTHER";
+export type BusinessDocumentGroup = "SALES" | "PURCHASES" | "INVENTORY" | "FINANCE" | "PARTIES" | "COMPLIANCE" | "ADMINISTRATION" | "REPORTS" | "ARCHIVE";
+export type BusinessDocumentStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "SENT" | "CONFIRMED" | "PARTIALLY_DELIVERED" | "DELIVERED" | "CANCELLED" | "REVERSED" | "ARCHIVED";
+export type BusinessDocument = {
+  id: string;
+  document_number: string;
+  document_type: BusinessDocumentType;
+  document_group: BusinessDocumentGroup;
+  document_title: string | null;
+  document_status: BusinessDocumentStatus;
+  counterparty_type: "CUSTOMER" | "SUPPLIER" | "INTERNAL";
+  customer_name: string | null;
+  customer_contact: string | null;
+  issue_date: string;
+  due_date: string | null;
+  payment_method: string | null;
+  payment_terms: string | null;
+  currency: "KES";
+  line_items: Json[];
+  subtotal: number;
+  discount: number;
+  tax: number;
+  total: number;
+  notes: string;
+  terms_and_conditions: string;
+  tax_pin: string | null;
+  related_reference: string | null;
+  related_document_id: string | null;
+  prepared_by: string | null;
+  checked_by: string | null;
+  approved_by: string | null;
+  financial_year: number;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+};
+export type BusinessDocumentInsert = Omit<BusinessDocument, "id" | "created_at" | "document_number" | "financial_year" | "document_status" | "updated_by"> & {
+  id?: string;
+  created_at?: string;
+  document_number?: string;
+  financial_year?: number;
+  document_status?: BusinessDocumentStatus;
+  updated_by?: string | null;
+};
+export type BusinessDocumentSequence = { document_type: BusinessDocumentType; financial_year: number; last_number: number; updated_at: string };
+export type BusinessDocumentSequenceInsert = Omit<BusinessDocumentSequence, "updated_at"> & { updated_at?: string };
+export type BusinessDocumentEvent = { id: string; business_document_id: string; event_type: "CREATED" | "STATUS_CHANGED" | "ATTACHMENT_ADDED"; previous_status: BusinessDocumentStatus | null; new_status: BusinessDocumentStatus; note: string; actor_id: string | null; created_at: string };
+export type BusinessDocumentEventInsert = Omit<BusinessDocumentEvent, "id" | "created_at"> & { id?: string; created_at?: string };
+export type BusinessDocumentAttachment = { id: string; business_document_id: string; storage_path: string; file_name: string; mime_type: "application/pdf" | "image/jpeg" | "image/png" | "image/webp"; size_bytes: number; uploaded_by: string | null; created_at: string };
+export type BusinessDocumentAttachmentInsert = Omit<BusinessDocumentAttachment, "id" | "created_at"> & { id?: string; created_at?: string };

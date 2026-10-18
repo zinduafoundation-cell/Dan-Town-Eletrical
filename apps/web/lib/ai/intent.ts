@@ -1,2 +1,13 @@
-export type AiIntent = "products" | "categories" | "orders" | "quotes" | "inventory" | "sales" | "business";export function classifyQuestion(question : string): AiIntent {const text = question.toLowerCase();if (/(quotation|quote)/.test(text)) return "quotes";if (/(order|delivery|where is my)/.test(text)) return "orders";if (/(stock|available|availability|inventory|in stock)/.test(text)) return "inventory";if (/(sales|revenue|selling|performance)/.test(text)) return "sales";if (/(category|categories)/.test(text)) return "categories";if (/(contact|location|opening|hours|pay|payment)/.test(text)) return "business";return "products";
+export type AiIntent = "products" | "categories" | "orders" | "quotes" | "inventory" | "sales" | "business" | "settings";
+
+export function classifyQuestion(question: string): AiIntent {
+  const text = question.toLowerCase();
+  if (/(settings|configuration|configure|setting page)/.test(text)) return "settings";
+  if (/(quotation|quote)/.test(text)) return "quotes";
+  if (/(order|delivery|where is my)/.test(text)) return "orders";
+  if (/(stock|available|availability|inventory|in stock)/.test(text)) return "inventory";
+  if (/(sales|revenue|selling|performance)/.test(text)) return "sales";
+  if (/(category|categories)/.test(text)) return "categories";
+  if (/(contact|location|opening|hours|pay|payment)/.test(text)) return "business";
+  return "products";
 }

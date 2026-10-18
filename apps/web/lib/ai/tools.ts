@@ -7,6 +7,8 @@ import { createSupabaseServerClient } from "../supabase/server";
 import { getCentreMetrics } from "../centre/metrics";
 import { classifyQuestion } from "./intent";
 import { isSurfaceAllowed, isSurfaceIntentAllowed, type AiSurface } from "./surface";
+import { searchSettingsCategories } from "../settings/categories";
+import { loadBusinessConfiguration } from "../settings/business-configuration";
 
 export type AiToolResult = { tool: string; data: unknown };
 
@@ -39,6 +41,33 @@ export async function runApprovedTool(question: string, context: AuthorizationCo
 
   if (!isSurfaceIntentAllowed(surface, intent)) {
     return { tool: "authorization", data: `This question is not available on the ${surface} surface.` };
+  }
+
+  if (intent === "settings") {
+    if (!context) return { tool: "authorization", data: "Sign in to search business settings." };
+    if (/\b(profile|numbering|document template|business name)\b/i.test(question) && requires(context, "settings.manage")) {
+      const { documentSettings } = await loadBusinessConfiguration();
+      return {
+        tool: "get_setting",
+        data: {
+          setting: "shared business document profile",
+          businessName: documentSettings.businessName,
+          businessCode: documentSettings.businessCode,
+          financialYearStartMonth: documentSettings.financialYearStartMonth,
+          country: documentSettings.country,
+          timeZone: documentSettings.timeZone,
+          dateLocale: documentSettings.dateLocale,
+        },
+      };
+    }
+    const matches = searchSettingsCategories(question).map((category) => ({
+      category: category.title,
+      description: category.description,
+      links: category.links
+        .filter((link) => !link.permission || context.permissions.includes(link.permission))
+        .map(({ label, href }) => ({ label, href })),
+    }));
+    return { tool: "search_settings", data: matches };
   }
 
   if (intent === "products") {

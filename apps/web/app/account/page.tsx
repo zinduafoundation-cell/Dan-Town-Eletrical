@@ -13,7 +13,7 @@ import {
 import { getCatalogProducts } from "@dantown/database";
 import { requireAuthenticated } from "../../lib/auth/server";
 import { hasBusinessCenterAccess } from "@/lib/auth/business-center-access";
-import { createSupabaseServerClient } from "../../lib/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceClient } from "../../lib/supabase/server";
 import { getDailyQuote } from "../../lib/daily-quote";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
 import { ResponsiveSidebar, type SidebarSection } from "@/components/navigation/responsive-sidebar";
@@ -133,7 +133,7 @@ export default async function AccountPage() {
         .select("product_id", { count: "exact", head: true })
         .eq("wishlist_id", wishlist.id)).count ?? 0
     : 0;
-  const recommendations = await getCatalogProducts(supabase, {
+  const recommendations = await getCatalogProducts(createSupabaseServiceClient(), {
     sort: "featured",
     page: 1,
     pageSize: 3,

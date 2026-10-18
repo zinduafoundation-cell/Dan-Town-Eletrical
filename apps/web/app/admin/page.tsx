@@ -81,6 +81,7 @@ export default async function AdminPage() {
     { label: "Inventory", href: "/admin/inventory", permission: "inventory.read" as const },
     { label: "Suppliers", href: "/admin/suppliers", permission: "products.read" as const },
     { label: "Purchases", href: "/admin/purchases", permission: "inventory.read" as const },
+    { label: "Business documents", href: "/admin/documents", permission: "settings.manage" as const },
     { label: "Automation", href: "/admin/automation", permission: "automation.read" as const },
     { label: "Smart Match activity", href: "/admin/ai/smart-match", permission: "orders.read" as const },
     { label: "Team", href: "/admin/team", permission: "users.read" as const },

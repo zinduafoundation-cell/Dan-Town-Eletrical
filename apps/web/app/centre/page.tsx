@@ -23,6 +23,8 @@ const centreLinks = [
   { label: "Sales", href: "/admin/reports", permission: "reports.read" as Permission },
   { label: "POS Monitor", href: "/pos", permission: "orders.read" as Permission },
   { label: "Products", href: "/admin/products", permission: "products.read" as Permission },
+  { label: "Promotions", href: "/admin/promotions", permission: "products.update" as Permission },
+  { label: "Business documents", href: "/admin/documents", permission: "settings.manage" as Permission },
   { label: "Inventory", href: "/admin/inventory", permission: "inventory.read" as Permission },
   { label: "Payments", href: "/admin/payments", permission: "payments.read" as Permission },
   { label: "Customers", href: "/admin/customers", permission: "customers.read" as Permission },

@@ -80,8 +80,6 @@ export async function matchCatalogItems(
   const { data: rows, error: productsError } = await client
     .from("products")
     .select("id, name, sku, slug, retail_price, short_description, description, brand_id, category_id")
-    .eq("is_active", true)
-    .eq("status", "ACTIVE")
     .order("name", { ascending: true })
     .range(0, 999);
 

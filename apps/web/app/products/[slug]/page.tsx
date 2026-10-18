@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Tag } from "lucide-react";
 
 import { StorefrontShell } from "@/components/storefront";
 import { ProductCardActions } from "@/components/product-card-actions";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getCatalogProductBySlug } from "@dantown/database";
 import { formatCurrency } from "@/lib/store-data";
 
@@ -19,7 +19,7 @@ export async function generateMetadata({
   params
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceClient();
 
   const product = await getCatalogProductBySlug(supabase, slug);
 
@@ -43,7 +43,7 @@ export default async function ProductPage({
 }: ProductPageProps) {
   const { slug } = await params;
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceClient();
   const product = await getCatalogProductBySlug(supabase, slug);
 
   if (!product) {

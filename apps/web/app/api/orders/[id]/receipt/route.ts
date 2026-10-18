@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { businessDocumentSettingsSchema, defaultBusinessDocumentSettings } from "@/lib/documents/business-document-settings";
 import { verifyOrderPaymentAccessToken } from "@/lib/payments/order-payment-access";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
+import { loadBusinessConfiguration } from "@/lib/settings/business-configuration";
 
 const requestSchema = z.object({ paymentToken: z.string().min(40).max(100).optional() });
 
@@ -54,19 +54,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "The receipt will be available after payment is confirmed." }, { status: 409 });
   }
 
-  const [{ data: lines, error: linesError }, { data: payment, error: paymentError }, { data: customer, error: customerError }, { data: settings, error: settingsError }] = await Promise.all([
+  const [{ data: lines, error: linesError }, { data: payment, error: paymentError }, { data: customer, error: customerError }, configuration] = await Promise.all([
     service.from("order_items").select("product_name_snapshot,sku_snapshot,quantity,line_total").eq("order_id", order.id),
     service.from("payments").select("method,status").eq("order_id", order.id).eq("status", "SUCCESS").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     order.customer_id
       ? service.from("customers").select("name").eq("id", order.customer_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
-    service.from("business_document_settings").select("template").eq("id", "dantown").maybeSingle(),
+    loadBusinessConfiguration(),
   ]);
   if (linesError) throw linesError;
   if (paymentError) throw paymentError;
   if (customerError) throw customerError;
-  if (settingsError) throw settingsError;
-  const parsedSettings = businessDocumentSettingsSchema.safeParse(settings?.template);
 
   return NextResponse.json({
     receipt: {
@@ -86,6 +84,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       delivery: Number(order.delivery_fee),
       total: Number(order.total),
     },
-    settings: parsedSettings.success ? parsedSettings.data : defaultBusinessDocumentSettings,
+    settings: configuration.documentSettings,
   });
 }

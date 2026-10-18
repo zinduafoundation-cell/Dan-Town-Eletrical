@@ -6,7 +6,7 @@ import { ArrowLeftRight, ImagePlus, PackagePlus, Plus, Search, Tags } from "luci
 import { z } from "zod";
 
 type Department = { id: string; name: string; slug: string; icon: string | null; sort_order: number };
-type Category = { id: string; name: string; slug: string; parent_id: string | null; department_id: string | null };
+type Category = { id: string; name: string; slug: string; parent_id: string | null; department_id: string | null; image_url: string | null };
 type Brand = { id: string; name: string; slug: string; logo_url: string | null };
 const nullableNumberSchema = z.preprocess(
   (value) => value === null || value === "" ? null : value,
@@ -125,6 +125,20 @@ async function uploadProductImage(productId: string, file: File) {
   return parsedResponse.data.data.imageUrl;
 }
 
+async function uploadCategoryImage(categoryId: string, file: File) {
+  const form = new FormData();
+  form.set("file", file);
+  const response = await fetch(`/api/admin/catalog/categories/${categoryId}/image`, { method: "POST", body: form });
+  const result: unknown = await response.json();
+  if (!response.ok) {
+    const parsedError = imageUploadErrorSchema.safeParse(result);
+    throw new Error(parsedError.success ? parsedError.data.error : "Unable to upload category image.");
+  }
+  const parsedResponse = z.object({ data: z.object({ categoryId: z.string().uuid(), imageUrl: z.string().url() }) }).safeParse(result);
+  if (!parsedResponse.success) throw new Error("The category image upload returned an invalid response.");
+  return parsedResponse.data.data.imageUrl;
+}
+
 function ProductFields({ product, categories, brands }: { product?: Product; categories: Category[]; brands: Brand[] }) {
   return (
     <div className="catalog-product-fields">
@@ -198,6 +212,7 @@ export default function CatalogManager({ departments, categories: initialCategor
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [uploadingCategoryId, setUploadingCategoryId] = useState<string | null>(null);
   const [activeComposer, setActiveComposer] = useState<"category" | "brand" | "product">("product");
 
   async function searchProducts(nextPage = 1, nextQuery = query, nextStatus = statusFilter) {
@@ -232,9 +247,11 @@ export default function CatalogManager({ departments, categories: initialCategor
     const form = new FormData(event.currentTarget);
     const imageFile = form.get("productImage");
     const productImage = imageFile instanceof File && imageFile.size > 0 ? imageFile : null;
+    const categoryImageFile = form.get("categoryImage");
+    const categoryImage = categoryImageFile instanceof File && categoryImageFile.size > 0 ? categoryImageFile : null;
     const name = String(form.get("name") ?? "");
     const payload = type === "category"
-      ? { type, name, slug: slugify(name), description: String(form.get("description") ?? ""), parentId: String(form.get("parentId") ?? "") || null, departmentId: String(form.get("departmentId") ?? "") || null, imageUrl: String(form.get("imageUrl") ?? "") || null }
+      ? { type, name, slug: slugify(name), description: String(form.get("description") ?? ""), parentId: String(form.get("parentId") ?? "") || null, departmentId: String(form.get("departmentId") ?? "") || null, imageUrl: categoryImage ? null : String(form.get("imageUrl") ?? "") || null }
       : type === "brand"
         ? { type, name, slug: slugify(name), description: String(form.get("description") ?? ""), logoUrl: String(form.get("logoUrl") ?? "") || null }
         : { type, ...productFormPayload(form), imageUrl: productImage ? null : String(form.get("imageUrl") ?? "") || null };
@@ -244,7 +261,20 @@ export default function CatalogManager({ departments, categories: initialCategor
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not save catalog item");
       event.currentTarget.reset();
-      if (type === "category") setCategories((current) => [...current, result.data]);
+      if (type === "category") {
+        const createdCategory = result.data as Category;
+        setCategories((current) => [...current, createdCategory]);
+        if (categoryImage) {
+          try {
+            const imageUrl = await uploadCategoryImage(createdCategory.id, categoryImage);
+            setCategories((current) => current.map((category) => category.id === createdCategory.id ? { ...category, image_url: imageUrl } : category));
+            setMessage("Subcategory created and its image is visible on the public category pages.");
+          } catch (error) {
+            setMessage(`Subcategory created, but its image was not uploaded: ${error instanceof Error ? error.message : "Please upload it from Public category images."}`);
+          }
+          return;
+        }
+      }
       if (type === "brand") setBrands((current) => [...current, result.data]);
       if (type === "product") {
         const parsedProduct = productMutationResponseSchema.safeParse(result);
@@ -266,6 +296,21 @@ export default function CatalogManager({ departments, categories: initialCategor
       setMessage(`${type[0].toUpperCase()}${type.slice(1)} created successfully.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save catalog item"); }
     finally { setSaving(false); }
+  }
+
+  async function handleCategoryImageChange(category: Category, file: File | undefined) {
+    if (!file) return;
+    setUploadingCategoryId(category.id);
+    setMessage("");
+    try {
+      const imageUrl = await uploadCategoryImage(category.id, file);
+      setCategories((current) => current.map((item) => item.id === category.id ? { ...item, image_url: imageUrl } : item));
+      setMessage(`Image updated for ${category.name}. It is now used on the public category pages.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : `Unable to upload an image for ${category.name}.`);
+    } finally {
+      setUploadingCategoryId(null);
+    }
   }
 
   async function updateProduct(event: FormEvent<HTMLFormElement>) {
@@ -339,7 +384,7 @@ export default function CatalogManager({ departments, categories: initialCategor
         <section className="catalog-simple-form-section">
           <div className="catalog-simple-form-section-heading"><span>01</span><div><h3>Family information</h3><p>Set a clear name and describe what belongs in this range.</p></div></div>
           <div className="catalog-simple-fields">
-            <label>Name<input name="name" placeholder="Lighting" required /></label>
+            <label>Name<input name="name" placeholder="Lighting or LED downlights" required /></label>
             <label>Department<select name="departmentId"><option value="">No department yet</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
             <label className="catalog-simple-field-wide">Description<textarea name="description" placeholder="Products for bright, efficient spaces." rows={3} /></label>
           </div>
@@ -349,9 +394,10 @@ export default function CatalogManager({ departments, categories: initialCategor
           <div className="catalog-simple-fields">
             <label>Parent family<select name="parentId"><option value="">Top-level family</option>{categoryOptions.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
             <label>Image URL<input name="imageUrl" type="url" placeholder="https://example.com/family.jpg" /></label>
+            <label className="catalog-simple-field-wide">Upload category picture<input name="categoryImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>JPG, PNG or WEBP · up to 6 MB. This picture appears in the public category sections.</small></label>
           </div>
         </section>
-        <div className="catalog-simple-form-footer"><p>Families help organize product browsing across Dantown.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding family..." : "Add family"}</button></div>
+        <div className="catalog-simple-form-footer"><p>Choose a parent family to create a public subcategory section.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding category..." : "Add category"}</button></div>
       </form>}
       {activeComposer === "brand" && <form className="catalog-manager-form catalog-simple-form catalog-brand-form" onSubmit={(event) => submit(event, "brand")}>
         <div className="catalog-simple-form-heading">
@@ -370,6 +416,21 @@ export default function CatalogManager({ departments, categories: initialCategor
       </form>}
       {activeComposer === "product" && <form className="catalog-manager-form catalog-manager-form-wide catalog-product-form" onSubmit={(event) => submit(event, "product")}><div className="catalog-product-form-heading"><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><div><p className="eyebrow">New inventory item</p><h2>Add a product</h2><p>Complete the essentials first. Optional details can be added as needed.</p></div></div><ProductFields categories={categories} brands={brands} /><section className="catalog-product-section catalog-product-media"><div className="catalog-product-section-heading"><span>05</span><div><h3>Product image</h3><p>Add a photo for the storefront and POS, or paste an image URL.</p></div></div><div className="catalog-product-media-fields"><label className="catalog-product-image-field"><span>Upload product photo</span><input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>JPG, PNG or WEBP · up to 6 MB. Used across the storefront and POS.</small></label><label>Or use an existing image URL<input name="imageUrl" type="url" placeholder="https://example.com/product.jpg" /></label></div></section><div className="catalog-product-submit"><p>Products marked active and available will appear in sales channels.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding product..." : "Add product"}</button></div></form>}
     </div>
+    {activeComposer === "category" && <section className="catalog-manager-list">
+      <div className="section-heading"><div><p className="eyebrow">Public category pages</p><h2>Subcategory pictures</h2></div><strong>{categories.length} categories</strong></div>
+      <p className="catalog-category-image-help">Upload a picture for each category or subcategory. The image is shown in its public category section and at the top of the category page.</p>
+      <div className="catalog-category-image-grid">
+        {categories.map((category) => <article className="catalog-category-image-card" key={category.id}>
+          {category.image_url ? <img src={category.image_url} alt={`${category.name} category`} /> : <div className="catalog-category-image-placeholder"><Tags aria-hidden="true" size={24} /></div>}
+          <div><p className="eyebrow">{category.parent_id ? "Subcategory" : "Family"}</p><h3>{category.name}</h3><small>{category.slug}</small>
+            <label className="button button-secondary catalog-category-image-upload">
+              {uploadingCategoryId === category.id ? "Uploading…" : category.image_url ? "Replace picture" : "Upload picture"}
+              <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" disabled={uploadingCategoryId !== null} onChange={(event) => { void handleCategoryImageChange(category, event.target.files?.[0]); event.target.value = ""; }} />
+            </label>
+          </div>
+        </article>)}
+      </div>
+    </section>}
     {editingProduct && <form className="catalog-manager-form catalog-manager-form-wide catalog-edit-form" onSubmit={updateProduct}><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><p className="eyebrow">Edit any product</p><h2>{editingProduct.name}</h2><ProductFields product={editingProduct} categories={categories} brands={brands} /><label className="catalog-product-image-field"><span>Replace primary product photo</span>{editingProduct.image_url && <img src={editingProduct.image_url} alt={`${editingProduct.name} current product photo`} />}<input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>Choose a new JPG, PNG or WEBP image, up to 6 MB. It will update storefront and POS.</small></label><div className="catalog-edit-actions"><a className="button button-secondary" href={`/admin/inventory?q=${encodeURIComponent(editingProduct.sku)}`}><ArrowLeftRight size={15} /> Manage stock by store</a><button type="button" className="button button-quiet" onClick={() => setEditingProduct(null)}>Cancel</button><button className="button button-primary" disabled={saving}>{saving ? "Saving..." : "Save product"}</button></div></form>}
     <section className="catalog-manager-list">
       <div className="section-heading"><div><p className="eyebrow">Product master</p><h2>Find and manage every product</h2></div><strong>{productCount.toLocaleString()} total · page {page}</strong></div>

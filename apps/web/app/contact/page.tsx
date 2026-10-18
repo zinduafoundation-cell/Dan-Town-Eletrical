@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { StorefrontShell } from "@/components/storefront";
+import { formatBusinessTime } from "@/lib/documents/business-document-settings";
+import { loadBusinessConfiguration } from "@/lib/settings/business-configuration";
 
 export const metadata: Metadata = {
   title: "Contact Dantown Electrical",
   description:
-    "Contact Dantown Electrical in Kitale for electrical products, lighting, solar solutions, quotations, project support and customer assistance."
+    "Contact Dantown Electrical for electrical products, lighting, solar solutions, quotations, project support and customer assistance."
 };
 
 const contactTopics = [
@@ -34,16 +36,6 @@ const contactTopics = [
   }
 ];
 
-const businessHours = [
-  { day: "Monday", hours: "8:00 AM – 6:00 PM" },
-  { day: "Tuesday", hours: "8:00 AM – 6:00 PM" },
-  { day: "Wednesday", hours: "8:00 AM – 6:00 PM" },
-  { day: "Thursday", hours: "8:00 AM – 6:00 PM" },
-  { day: "Friday", hours: "8:00 AM – 6:00 PM" },
-  { day: "Saturday", hours: "8:30 AM – 5:00 PM" },
-  { day: "Sunday", hours: "Closed" }
-];
-
 const faqs = [
   {
     question: "Can I request a quotation before buying?",
@@ -67,7 +59,12 @@ const faqs = [
   }
 ];
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const { documentSettings } = await loadBusinessConfiguration();
+  const businessHours = Object.entries(documentSettings.openingHours).map(([day, hours]) => ({
+    day: day[0].toUpperCase() + day.slice(1),
+    hours: hours.closed ? "Closed" : `${formatBusinessTime(hours.open, documentSettings)} – ${formatBusinessTime(hours.close, documentSettings)}`,
+  }));
   return (
     <StorefrontShell>
       <main className="page-shell contact-page-shell">
@@ -115,7 +112,7 @@ export default function ContactPage() {
               <span>⚡ Electrical Solutions</span>
               <span>💡 Lighting</span>
               <span>🔋 Power & Solar</span>
-              <span>📍 Kitale, Kenya</span>
+              <span>📍 {documentSettings.address || documentSettings.country}</span>
             </div>
           </div>
 
@@ -248,7 +245,7 @@ export default function ContactPage() {
 
                   <div>
                     <span>Location</span>
-                    <strong>Kitale, Kenya</strong>
+                    <strong>{documentSettings.address || documentSettings.country}</strong>
                   </div>
                 </div>
               </div>

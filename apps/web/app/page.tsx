@@ -5,7 +5,7 @@ import { buttonClassName } from "@dantown/ui";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { FeatureStrip } from "@/components/feature-strip";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getCatalogProducts } from "@dantown/database";
 
 export const dynamic = "force-dynamic";
@@ -101,7 +101,7 @@ const heroPromos = [
 ];
 
 export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceClient();
   const catalogProducts = await getCatalogProducts(supabase, {
     sort: "featured",
     allowFallback: true

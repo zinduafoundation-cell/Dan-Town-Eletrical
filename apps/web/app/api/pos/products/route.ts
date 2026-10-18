@@ -33,9 +33,7 @@ export async function GET(request: Request) {
     const result = await getOrSetCache(key, async () => {
       let query = createSupabaseServiceClient()
         .from("products")
-        .select("id,name,sku,barcode,description,retail_price,vat_rate,category_id,categories(name),inventory(quantity,reserved_quantity),product_images(image_url,is_primary,sort_order)", { count: "exact" })
-        .eq("is_active", true)
-        .eq("status", "ACTIVE");
+        .select("id,name,sku,barcode,description,retail_price,vat_rate,category_id,categories(name),inventory(quantity,reserved_quantity),product_images(image_url,is_primary,sort_order)", { count: "exact" });
       if (search) query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%,barcode.ilike.%${search}%`);
       if (categoryId) query = query.eq("category_id", categoryId);
       if (brandId) query = query.eq("brand_id", brandId);
