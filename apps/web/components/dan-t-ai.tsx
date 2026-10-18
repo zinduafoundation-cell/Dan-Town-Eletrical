@@ -6,6 +6,7 @@ import { Bot, Send, X } from "lucide-react";
 import Link from "next/link";
 
 type Message = { role: "user" | "assistant"; content: string };
+type SettingChangeProposal = { field: string; value: string; label: string };
 const suggestions = ["Find a 2.5mm cable", "Do you have sockets?", "How do I request a quotation?", "Where is my order?"];
 
 function getSessionId() {
@@ -27,6 +28,8 @@ export function DanTAI() {
   const [error, setError] = useState<string | null>(null);
   const [escalationSuggested, setEscalationSuggested] = useState(false);
   const [escalationMessage, setEscalationMessage] = useState<string | null>(null);
+  const [settingChangeProposal, setSettingChangeProposal] = useState<SettingChangeProposal | null>(null);
+  const [savingSettingChange, setSavingSettingChange] = useState(false);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const smartMatchSuggested = messages.some((message) => /\b(quotation|quote|invoice|upload|photo|picture|image|identify|match)\b/i.test(message.content));
   const dragState = useRef<{ offsetX: number; offsetY: number; moved: boolean } | null>(null);
@@ -93,19 +96,42 @@ export function DanTAI() {
     setMessages(nextMessages);
     setInput("");
     setError(null);
+    setSettingChangeProposal(null);
     setLoading(true);
     try {
       const response = await fetch("/api/ai/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, history: messages.slice(-12), surface }) });
-      const result = await response.json() as { answer?: string; error?: string; escalationSuggested?: boolean };
+      const result = await response.json() as { answer?: string; error?: string; escalationSuggested?: boolean; confirmationRequired?: SettingChangeProposal };
       if (!response.ok || !result.answer) throw new Error(result.error || "DAN T AI is temporarily unavailable.");
       setMessages([...nextMessages, { role: "assistant", content: result.answer }]);
       setEscalationSuggested(Boolean(result.escalationSuggested));
+      setSettingChangeProposal(result.confirmationRequired ?? null);
     } catch (requestError) {
       setMessages(messages);
       setInput(message);
       setError(requestError instanceof Error ? requestError.message : "DAN T AI is temporarily unavailable.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function confirmSettingChange() {
+    if (!settingChangeProposal || savingSettingChange) return;
+    setSavingSettingChange(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/ai/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: settingChangeProposal.field, value: settingChangeProposal.value }),
+      });
+      const result = await response.json() as { updatedAt?: string; error?: string };
+      if (!response.ok || !result.updatedAt) throw new Error(result.error || "The business setting was not saved.");
+      setMessages((current) => [...current, { role: "assistant", content: `Saved the ${settingChangeProposal.label}. The change was validated and recorded.` }]);
+      setSettingChangeProposal(null);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "The business setting could not be saved.");
+    } finally {
+      setSavingSettingChange(false);
     }
   }
 
@@ -128,6 +154,14 @@ export function DanTAI() {
       <div className="dan-ai-messages" aria-live="polite">
         {!messages.length && <div className="dan-ai-welcome"><Bot size={28} /><strong>How can I help?</strong><p>I can help you find products, check confirmed information, and guide you through Dantown services.</p><div className="dan-ai-suggestions">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => void ask(suggestion)}>{suggestion}</button>)}</div></div>}
         {messages.map((message, index) => <div key={`${message.role}-${index}`} className={`dan-ai-message ${message.role}`}><span>{message.content}</span></div>)}
+        {settingChangeProposal && <section className="dan-ai-setting-confirmation" aria-label="Confirm business setting change">
+          <strong>Confirm this business setting change</strong>
+          <p>{settingChangeProposal.label}: <span>{settingChangeProposal.value}</span></p>
+          <div>
+            <button type="button" className="button button-primary" disabled={savingSettingChange} onClick={() => void confirmSettingChange()}>{savingSettingChange ? "Saving..." : "Confirm and save"}</button>
+            <button type="button" className="button button-secondary" disabled={savingSettingChange} onClick={() => setSettingChangeProposal(null)}>Cancel</button>
+          </div>
+        </section>}
         {smartMatchSuggested && <Link className="dan-ai-handoff" href="/ai/smart-match">Scan a quotation or product photo</Link>}
         {loading && <div className="dan-ai-message assistant"><span className="dan-ai-typing">DAN T AI is checking...</span></div>}
         {error && <div className="dan-ai-error"><span>{error}</span><button type="button" onClick={() => void ask(input)}>Retry</button></div>}

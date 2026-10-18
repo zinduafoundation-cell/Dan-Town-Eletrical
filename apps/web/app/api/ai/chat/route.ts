@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { getAuthorizationContext } from "@/lib/auth/server";
+import { getAuthorizationContext, getPermissionGuard } from "@/lib/auth/server";
 import { recordAiInteraction, type AiInteractionProvider } from "@/lib/ai/audit";
 import { completeWithApprovedContext } from "@/lib/ai/provider";
 import { runApprovedTool } from "@/lib/ai/tools";
 import { isSurfaceAllowed, type AiSurface } from "@/lib/ai/surface";
+import { parseAiBusinessSettingChange } from "@/lib/ai/settings-change";
 import { AppError } from "@/lib/core/errors";
 
 const requestSchema = z.object({
@@ -37,6 +38,53 @@ export async function POST(request: Request) {
         latency_ms: Date.now() - startedAt,
       });
       return NextResponse.json({ error: "You are not authorized to use this Dantown AI surface." }, { status: 403 });
+    }
+
+    const proposedSettingChange = parseAiBusinessSettingChange(parsed.data.message);
+    if (proposedSettingChange) {
+      if (requestedSurface !== "admin" && requestedSurface !== "centre") {
+        await recordAiInteraction({
+          ...auditContext,
+          request_id: requestId,
+          outcome: "DENIED",
+          approved_tool: "update_setting",
+          provider: "not-invoked",
+          latency_ms: Date.now() - startedAt,
+        });
+        return NextResponse.json({ error: "Business profile changes are only available from the authorized Centre or admin assistant." }, { status: 403 });
+      }
+      const guard = await getPermissionGuard("settings.manage");
+      if (!guard.ok) {
+        await recordAiInteraction({
+          ...auditContext,
+          request_id: requestId,
+          outcome: "DENIED",
+          approved_tool: "update_setting",
+          provider: "not-invoked",
+          latency_ms: Date.now() - startedAt,
+        });
+        return NextResponse.json({ error: guard.message }, { status: guard.status });
+      }
+      await recordAiInteraction({
+        ...auditContext,
+        request_id: requestId,
+        outcome: "HELD",
+        approved_tool: "update_setting",
+        provider: "not-invoked",
+        latency_ms: Date.now() - startedAt,
+      });
+      return NextResponse.json({
+        answer: `I can change the ${proposedSettingChange.label} to “${proposedSettingChange.value}”. Confirm below to validate and save it.`,
+        tool: "update_setting",
+        provider: "not-invoked",
+        escalationSuggested: false,
+        surface: requestedSurface,
+        confirmationRequired: {
+          field: proposedSettingChange.field,
+          value: proposedSettingChange.value,
+          label: proposedSettingChange.label,
+        },
+      });
     }
 
     const response = await completeWithApprovedContext({

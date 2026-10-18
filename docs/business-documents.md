@@ -23,6 +23,12 @@ Creating or approving a document does not post a payment, change inventory, crea
 
 The form keeps the source transaction unchanged: review the populated draft and its displayed source total before saving. The register currently uses KES to match the transaction schema. Document attachments are private and available only through short-lived signed links to authorized users.
 
+## AI-assisted business profile changes
+
+From an authorized Centre or admin AI surface, a clear request such as “change the business phone to …” produces a confirmation prompt. Only the supported non-secret profile fields are eligible. Confirming calls a server-side handler that checks the BSK-protected `settings.manage` permission, validates the complete saved settings object, persists it, and records the settings audit event. Without confirmation, no setting is changed. Payment credentials, KRA PINs, tax controls, user permissions, and financial records are not writable through this AI flow.
+
+AI-assisted backups and restore are not enabled: the application has no configured backup provider or restore service. Use the Supabase platform’s configured backup process; the AI does not claim to create backups.
+
 ## Database
 
 The register requires the `20261018140400_business_document_register_workflow.sql` migration. It is recorded as applied on the linked Supabase project. The migration creates sequence, audit, attachment, numbering, and status-transition support; no example business documents were inserted.
