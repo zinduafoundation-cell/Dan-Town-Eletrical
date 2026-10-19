@@ -4,14 +4,20 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Search } from "lucide-react";
 import type { Permission } from "@dantown/shared";
+import type { PaymentProviderReadiness, PaymentProviderSettings } from "@/lib/payments/payment-provider-options";
 import type { SettingsCategory } from "@/lib/settings/categories";
+import { PaymentProviderSettingsForm } from "./payment-provider-settings-form";
 
 export function SettingsCategoryWorkspace({
   category,
   permissions,
+  paymentSettings,
+  paymentReadiness,
 }: {
   category: SettingsCategory;
   permissions: Permission[];
+  paymentSettings: { settings: PaymentProviderSettings; updatedAt: string | null } | null;
+  paymentReadiness: PaymentProviderReadiness | null;
 }) {
   const [query, setQuery] = useState("");
   const links = useMemo(() => category.links.filter((link) =>
@@ -29,6 +35,15 @@ export function SettingsCategoryWorkspace({
         <strong>{category.status}</strong>
       </section>
       <div className="settings-category-notice">{category.notice}</div>
+      {category.slug === "payments-and-finance" && paymentSettings && paymentReadiness
+        ? <PaymentProviderSettingsForm
+          initialSettings={paymentSettings.settings}
+          initialReadiness={paymentReadiness}
+          updatedAt={paymentSettings.updatedAt}
+        />
+        : category.slug === "payments-and-finance" && !permissions.includes("settings.manage")
+          ? <p className="settings-access-note">Payment method configuration is restricted to authorized administrators.</p>
+          : null}
       <label className="settings-global-search settings-category-search">
         <Search size={18} aria-hidden="true" />
         <span className="sr-only">Search actions in {category.title}</span>

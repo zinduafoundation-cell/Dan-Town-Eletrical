@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSidebarLinkActive } from "./responsive-sidebar";
+import { isSidebarGroupActive, isSidebarLinkActive, type SidebarLink } from "./responsive-sidebar";
 
 describe("isSidebarLinkActive", () => {
   it("matches the current route and nested pages", () => {
@@ -15,5 +15,21 @@ describe("isSidebarLinkActive", () => {
   it("only matches the root link on the root route", () => {
     expect(isSidebarLinkActive("/", "/")).toBe(true);
     expect(isSidebarLinkActive("/shop", "/")).toBe(false);
+  });
+
+  it("matches a filtered route only when its query values are active", () => {
+    const filteredRoute = "/admin/documents?group=SALES&type=INVOICE";
+    expect(isSidebarLinkActive("/admin/documents", filteredRoute, "?group=SALES&type=INVOICE")).toBe(true);
+    expect(isSidebarLinkActive("/admin/documents", filteredRoute, "?group=SALES&type=QUOTATION")).toBe(false);
+    expect(isSidebarLinkActive("/admin/documents", filteredRoute, "")).toBe(false);
+  });
+
+  it("activates a parent group when one of its filtered children is active", () => {
+    const children: SidebarLink[] = [
+      { label: "Invoices", href: "/admin/documents?group=SALES&type=INVOICE", icon: "Receipt" },
+      { label: "Purchase orders", href: "/admin/documents?group=PURCHASES&type=PURCHASE_ORDER", icon: "ShoppingCart" },
+    ];
+    expect(isSidebarGroupActive("/admin/documents", children, "?group=PURCHASES&type=PURCHASE_ORDER")).toBe(true);
+    expect(isSidebarGroupActive("/admin/documents", children, "?group=SALES&type=QUOTATION")).toBe(false);
   });
 });

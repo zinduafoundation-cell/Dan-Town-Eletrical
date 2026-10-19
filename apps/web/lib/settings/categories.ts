@@ -158,8 +158,8 @@ export const settingsCategories: SettingsCategory[] = [
     title: "AI assistant configuration",
     description: "Review AI knowledge, availability, and safe business-data assistance.",
     keywords: ["ai", "assistant", "openai", "model", "knowledge", "tools", "configuration"],
-    status: "AI uses approved, permission-filtered read-only context",
-    notice: "The AI provider key and model are server environment settings. The current assistant cannot change settings or create backups; it can guide staff to authorized workspaces.",
+    status: "AI uses permission-filtered business data and confirmed profile updates",
+    notice: "The AI provider key and model are server environment settings. It can update supported business-profile fields only after confirmation and authorization; it cannot create backups or restore data.",
     links: [
       { label: "Manage approved AI knowledge", href: "/admin/knowledge", permission: "settings.manage" },
       { label: "Check AI configuration", href: "/admin/ai/smart-match", permission: "products.read" },

@@ -29,6 +29,7 @@ export type PaystackInitialization = {
   email: string;
   amount: number;
   callback_url: string;
+  reference?: string;
   metadata: {
     order_id: string;
     customer_name: string;

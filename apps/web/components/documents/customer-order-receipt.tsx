@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BusinessReceipt, type BusinessReceiptLine } from "@/components/documents/business-receipt";
 import { defaultBusinessDocumentSettings, formatBusinessDocumentDate, type BusinessDocumentSettings } from "@/lib/documents/business-document-settings";
 import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 import { APP_CURRENCY } from "@dantown/shared";
 
 type ReceiptData = {
+  receiptNumber: string;
+  paymentId: string;
+  paymentAmount: number;
   orderNumber: string;
   date: string;
   customer: string | null;
+  customerContact: string | null;
+  taxPin: string | null;
   paymentMethod: string | null;
+  payments: Array<{ id: string; method: string; amount: number; currency: string; date: string }>;
   lines: BusinessReceiptLine[];
   subtotal: number;
   discount: number;
@@ -29,20 +35,30 @@ export function CustomerOrderReceipt({
   triggerEffectOnLoad?: boolean;
 }) {
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [selectedPaymentId, setSelectedPaymentId] = useState("");
   const [settings, setSettings] = useState<BusinessDocumentSettings>(defaultBusinessDocumentSettings);
   const [message, setMessage] = useState("");
+  const accessToken = useRef<{ orderId: string; token?: string }>({ orderId, token: undefined });
 
   useEffect(() => {
     if (!enabled) return;
     let active = true;
     void (async () => {
       try {
-        const match = window.location.hash.match(/(?:^#|&)paymentToken=([^&]+)/);
-        const paymentToken = match ? decodeURIComponent(match[1]) : undefined;
+        if (accessToken.current.orderId !== orderId) {
+          accessToken.current = { orderId, token: undefined };
+        }
+        if (!accessToken.current.token) {
+          const match = window.location.hash.match(/(?:^#|&)paymentToken=([^&]+)/);
+          if (match) accessToken.current.token = decodeURIComponent(match[1]);
+        }
         const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/receipt`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(paymentToken ? { paymentToken } : {}),
+          body: JSON.stringify({
+            ...(accessToken.current.token ? { paymentToken: accessToken.current.token } : {}),
+            ...(selectedPaymentId ? { paymentId: selectedPaymentId } : {}),
+          }),
         });
         const result = await response.json();
         if (!response.ok) {
@@ -52,10 +68,11 @@ export function CustomerOrderReceipt({
         if (active) {
           const confirmedReceipt = result.receipt as ReceiptData;
           setReceipt(confirmedReceipt);
+          if (!selectedPaymentId) setSelectedPaymentId(confirmedReceipt.paymentId);
           setSettings(result.settings as BusinessDocumentSettings);
-          if (triggerEffectOnLoad && confirmedReceipt.lines.length > 0 && confirmedReceipt.paymentMethod) {
+          if (triggerEffectOnLoad && !selectedPaymentId && confirmedReceipt.lines.length > 0 && confirmedReceipt.paymentMethod) {
             showPOSReceiptEffect({
-              receiptNumber: confirmedReceipt.orderNumber,
+              receiptNumber: confirmedReceipt.receiptNumber,
               currency: APP_CURRENCY,
               items: confirmedReceipt.lines.map((line) => ({
                 name: line.name,
@@ -83,7 +100,7 @@ export function CustomerOrderReceipt({
       }
     })();
     return () => { active = false; };
-  }, [enabled, orderId, triggerEffectOnLoad]);
+  }, [enabled, orderId, selectedPaymentId, triggerEffectOnLoad]);
 
   if (!enabled) return null;
   return (
@@ -91,12 +108,27 @@ export function CustomerOrderReceipt({
       <h2>Payment receipt</h2>
       {receipt ? (
         <>
+          {receipt.payments.length > 1 && <label className="customer-receipt-payment-select">
+            Receipt for payment
+            <select value={receipt.paymentId} onChange={(event) => {
+              setSelectedPaymentId(event.target.value);
+              setReceipt(null);
+              setMessage("Loading the selected verified payment receipt…");
+            }}>
+              {receipt.payments.map((payment) => <option key={payment.id} value={payment.id}>
+                {payment.currency} {payment.amount.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · {payment.method} · {formatBusinessDocumentDate(payment.date, settings)}
+              </option>)}
+            </select>
+          </label>}
           <BusinessReceipt
             settings={settings}
-            reference={receipt.orderNumber}
+            reference={receipt.receiptNumber}
             date={formatBusinessDocumentDate(receipt.date, settings)}
             customer={receipt.customer}
+            customerContact={receipt.customerContact}
             paymentMethod={receipt.paymentMethod}
+            taxPin={receipt.taxPin}
+            relatedReference={receipt.orderNumber}
             lines={receipt.lines}
             subtotal={receipt.subtotal}
             discount={receipt.discount}

@@ -9,13 +9,14 @@ The business-document register is available at `/admin/documents` to users allow
 3. Enter the counterparty, dates, payment terms, line items, amounts, and any notes or conditions.
 4. For supported sales and purchase documents, search and select an existing order or purchase order. The form loads the saved party, contact, tax PIN (when present), payment terms (when present), line items, discounts, and tax from that live record. The API verifies the selected reference before saving.
 5. Save the record as a draft. The database assigns the sequential number.
-6. Select a saved record to review its audit history, attach a private source file, change its allowed status, or use **Print / save PDF**.
+6. Select a saved record to review its audit history, attach a private source file, change its allowed status, or use **Print / save PDF**. The shared document settings select A4, A5, or US Letter portrait paper; the browser's print dialog can still override printer-specific options.
+7. A draft that has not been approved or sent can be edited from the selected record. Its assigned number, document type, issue date, and source links are locked; saved revisions create an audit event. Payment documents and non-draft records cannot be edited through this workflow.
 
 Supported source lookups cover sales orders, invoices, credit/debit notes, sales returns, delivery/dispatch notes, purchase orders, supplier invoices, goods received notes, and purchase returns. Other document types can retain a manually entered source reference when the source is external to the application.
 
 ## Payments and receipts
 
-Payment receipts and payment vouchers cannot be created as standalone documents. To issue a customer receipt, open the related order and use its receipt action after the payment status is confirmed as successful. The receipt includes the verified payment method and saved business identity/print settings. An unverified or pending payment does not produce a receipt.
+Payment receipts and payment vouchers cannot be created as standalone documents. After a payment is verified as successful, the system creates one idempotent receipt record per payment in the register and assigns the configured `REC` sequence. To view or print it, open the related order and use its receipt action. Customers with multiple successful payments can select which payment receipt to view. Each receipt records the verified payment amount and method, its related order, customer details when available, and the saved business identity/print settings. An unverified or pending payment does not produce a receipt.
 
 ## What document actions do not do
 
@@ -29,6 +30,8 @@ From an authorized Centre or admin AI surface, a clear request such as “change
 
 AI-assisted backups and restore are not enabled: the application has no configured backup provider or restore service. Use the Supabase platform’s configured backup process; the AI does not claim to create backups.
 
+In the authorized Centre/admin assistant, staff with `settings.manage` can search recent business documents or retrieve a document by its assigned number, and find invoices past their due date. For overdue documents, payment status is included only when the document's reference matches a live order; a due date alone is not treated as proof that an invoice is unpaid. Staff with `orders.read` can search recent or unpaid orders, or retrieve a specific order and its line items by order number. Staff with `quotes.read` can search recent or pending quotations, or retrieve one by its explicit quotation number. Staff with `customers.read` can search customers by name; staff with `products.read` can search suppliers by company name. Those searches return only basic names, types, and statuses, not contact details, addresses, tax identifiers, or payment terms. Signed-in customers can search only receipts linked to their own verified payments. The assistant can also prepare a seven-day sales report and summarize low-stock products from live records. These tools do not modify operational records.
+
 ## Database
 
-The register requires the `20261018140400_business_document_register_workflow.sql` migration. It is recorded as applied on the linked Supabase project. The migration creates sequence, audit, attachment, numbering, and status-transition support; no example business documents were inserted.
+The register requires the `20261018140400_business_document_register_workflow.sql` migration. It is recorded as applied on the linked Supabase project. The migration creates sequence, audit, attachment, numbering, and status-transition support; no example business documents were inserted. Draft editing additionally requires `20261019052839_business_document_draft_content_edits.sql`, which is prepared but not yet applied remotely. Automatic verified receipt registration additionally requires `20261018185848_verified_payment_receipt_register.sql`, also prepared but not yet applied remotely.

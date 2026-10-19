@@ -19,7 +19,16 @@ export async function PATCH(
     const { documentId } = await context.params;
     const parsedId = z.string().uuid().safeParse(documentId);
     if (!parsedId.success) return NextResponse.json({ error: "Choose a valid document." }, { status: 400 });
-    const parsed = statusSchema.safeParse(await request.json());
+    let input: unknown;
+    try {
+      input = await request.json();
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        return NextResponse.json({ error: "Document status must be valid JSON." }, { status: 400 });
+      }
+      throw error;
+    }
+    const parsed = statusSchema.safeParse(input);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Choose a valid status." }, { status: 400 });
     const { data, error } = await createSupabaseServiceClient().rpc("transition_business_document", {
       target_document_id: parsedId.data,

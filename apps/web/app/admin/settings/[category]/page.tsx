@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { PortalShell } from "@/app/portal-shell";
 import { SettingsCategoryWorkspace } from "@/components/admin/settings-category-workspace";
 import { requireAuthorizedPermission } from "@/lib/auth/server";
+import { loadPaymentProviderReadiness, loadPaymentProviderSettings } from "@/lib/payments/payment-provider-settings";
 import { findSettingsCategory } from "@/lib/settings/categories";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,12 @@ export default async function SettingsCategoryPage({
   const { category: slug } = await params;
   const category = findSettingsCategory(slug);
   if (!category) notFound();
+  const paymentSettings = slug === "payments-and-finance" && context.permissions.includes("settings.manage")
+    ? await loadPaymentProviderSettings()
+    : null;
+  const paymentReadiness = paymentSettings
+    ? await loadPaymentProviderReadiness(paymentSettings.settings)
+    : null;
 
   return <PortalShell
     title={`${category.title}.`}
@@ -28,6 +35,11 @@ export default async function SettingsCategoryPage({
       { label: "Dantown Centre", href: "/centre", permission: "reports.read" },
     ]}
   >
-    <SettingsCategoryWorkspace category={category} permissions={context.permissions} />
+    <SettingsCategoryWorkspace
+      category={category}
+      permissions={context.permissions}
+      paymentSettings={paymentSettings}
+      paymentReadiness={paymentReadiness}
+    />
   </PortalShell>;
 }

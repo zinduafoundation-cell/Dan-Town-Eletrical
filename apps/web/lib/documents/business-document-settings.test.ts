@@ -13,6 +13,27 @@ describe("shared business document settings", () => {
     expect(businessDocumentSettingsSchema.safeParse({ ...defaultBusinessDocumentSettings, accentColor: "purple" }).success).toBe(false);
   });
 
+  it("validates print paper sizes and defaults legacy settings to A4", () => {
+    for (const paperSize of ["A4", "A5", "LETTER"] as const) {
+      expect(businessDocumentSettingsSchema.safeParse({ ...defaultBusinessDocumentSettings, paperSize }).success).toBe(true);
+    }
+    expect(businessDocumentSettingsSchema.safeParse({ ...defaultBusinessDocumentSettings, paperSize: "LEGAL" }).success).toBe(false);
+    const parsed = businessDocumentSettingsSchema.safeParse({
+      businessName: "Dantown Electrical",
+      address: "Kitale, Kenya",
+      phone: "",
+      email: "",
+      logoUrl: "",
+      accentColor: "#f58220",
+      footer: "",
+      showCustomer: true,
+      showItemSkus: true,
+      showTax: true,
+      showPaymentMethod: true,
+    });
+    expect(parsed.success && parsed.data.paperSize).toBe("A4");
+  });
+
   it("keeps legacy settings compatible while applying Kenya-friendly business defaults", () => {
     const parsed = businessDocumentSettingsSchema.safeParse({
       businessName: "Dantown Electrical",

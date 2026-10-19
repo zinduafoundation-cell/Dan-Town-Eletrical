@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { MapPin, Package, Phone, ShoppingBag, Truck } from "lucide-react";
 import { OrderManagementActions } from "@/components/order-management-actions";
 import { OrderFulfillmentActions } from "@/components/admin/order-fulfillment-actions";
+import { matchesOrderView, type OrderView } from "@/lib/order-view";
 
 export type OnlineOrder = {
   id: string;
@@ -28,8 +29,6 @@ export type OnlineOrder = {
   items: Array<{ id: string; name: string; sku: string; quantity: number; unitPrice: number; lineTotal: number }>;
 };
 
-type OrderView = "all" | "ongoing" | "ready" | "delivered" | "cancelled";
-
 const statusLabels: Record<string, string> = {
   PENDING: "Order received",
   PAYMENT_PENDING: "Payment pending",
@@ -45,26 +44,18 @@ const statusLabels: Record<string, string> = {
   FAILED: "Failed",
 };
 
-function matchesView(order: OnlineOrder, view: OrderView) {
-  if (view === "all") return true;
-  if (view === "ongoing") return ["PENDING", "PAYMENT_PENDING", "PAID", "PROCESSING"].includes(order.orderStatus);
-  if (view === "ready") return ["READY_FOR_PICKUP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY"].includes(order.orderStatus);
-  if (view === "delivered") return order.orderStatus === "DELIVERED";
-  return ["CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED", "FAILED"].includes(order.orderStatus);
-}
-
 function money(value: number) {
   return `KSh ${value.toLocaleString()}`;
 }
 
-export function OnlineOrdersWorkspace({ orders, isAdmin = false }: { orders: OnlineOrder[]; isAdmin?: boolean }) {
-  const [view, setView] = useState<OrderView>("all");
+export function OnlineOrdersWorkspace({ orders, isAdmin = false, initialView = "all" }: { orders: OnlineOrder[]; isAdmin?: boolean; initialView?: OrderView }) {
+  const [view, setView] = useState<OrderView>(initialView);
   const [query, setQuery] = useState("");
 
   const filteredOrders = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return orders.filter((order) => {
-      const matchesStatus = matchesView(order, view);
+      const matchesStatus = matchesOrderView(order, view);
       if (!matchesStatus) return false;
       if (!normalized) return true;
 
@@ -75,10 +66,11 @@ export function OnlineOrdersWorkspace({ orders, isAdmin = false }: { orders: Onl
 
   const counts = useMemo(() => ({
     all: orders.length,
-    ongoing: orders.filter((order) => matchesView(order, "ongoing")).length,
-    ready: orders.filter((order) => matchesView(order, "ready")).length,
-    delivered: orders.filter((order) => matchesView(order, "delivered")).length,
-    cancelled: orders.filter((order) => matchesView(order, "cancelled")).length,
+    pending: orders.filter((order) => matchesOrderView(order, "pending")).length,
+    processing: orders.filter((order) => matchesOrderView(order, "processing")).length,
+    completed: orders.filter((order) => matchesOrderView(order, "completed")).length,
+    cancelled: orders.filter((order) => matchesOrderView(order, "cancelled")).length,
+    returns: orders.filter((order) => matchesOrderView(order, "returns")).length,
   }), [orders]);
 
   return (
@@ -103,9 +95,9 @@ export function OnlineOrdersWorkspace({ orders, isAdmin = false }: { orders: Onl
         </label>
 
         <div className="online-orders-tabs" role="tablist" aria-label="Order status">
-          {(["all", "ongoing", "ready", "delivered", "cancelled"] as const).map((key) => (
+          {(["all", "pending", "processing", "completed", "cancelled", "returns"] as const).map((key) => (
             <button key={key} type="button" role="tab" aria-selected={view === key} className={view === key ? "is-active" : ""} onClick={() => setView(key)}>
-              {key === "ready" ? "Ready / pickup" : key[0].toUpperCase() + key.slice(1)} <b>{counts[key]}</b>
+              {key[0].toUpperCase() + key.slice(1)} <b>{counts[key]}</b>
             </button>
           ))}
         </div>

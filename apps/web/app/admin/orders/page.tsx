@@ -1,11 +1,20 @@
 import { OnlineOrdersWorkspace, type OnlineOrder } from "@/components/admin/online-orders-workspace";
 import { PortalShell } from "@/app/portal-shell";
 import { requireAuthorizedPermission } from "@/lib/auth/server";
+import type { OrderView } from "@/lib/order-view";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const requestedStatus = Array.isArray(params.status) ? params.status[0] : params.status;
+  const validViews: OrderView[] = ["all", "pending", "processing", "completed", "cancelled", "returns"];
+  const initialView = validViews.find((view) => view === requestedStatus) ?? "all";
   const context = await requireAuthorizedPermission("orders.read");
   const supabase = createSupabaseServiceClient();
   const { data: orders, error } = await supabase
@@ -93,7 +102,7 @@ export default async function OrdersPage() {
         { label: "Payments", href: "/admin/payments", permission: "payments.read" }
       ]}
     >
-      <OnlineOrdersWorkspace orders={viewRows} isAdmin={context.permissions.includes("orders.update")} />
+      <OnlineOrdersWorkspace key={initialView} orders={viewRows} isAdmin={context.permissions.includes("orders.update")} initialView={initialView} />
     </PortalShell>
   );
 }

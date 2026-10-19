@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getStaffIdentity, requireAuthorizedPermission } from "@/lib/auth/server";
 import { getAppUrl } from "@/lib/env";
 import { getPesapalConfig, PesapalApiError } from "@/lib/payments/pesapal";
+import { isPaymentProviderAvailable } from "@/lib/payments/payment-provider-settings";
 import { initializePesapalCheckout } from "@/lib/payments/pesapal-checkout";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
@@ -25,6 +26,9 @@ export async function POST(request: Request) {
 
   try {
     const context = await requireAuthorizedPermission("orders.create");
+    if (!(await isPaymentProviderAvailable("pos", "pesapal"))) {
+      return NextResponse.json({ error: "Pesapal POS checkout is disabled or not configured." }, { status: 503 });
+    }
     const staff = await getStaffIdentity(context);
     const parsed = initSchema.safeParse(await request.json());
     if (!parsed.success) {

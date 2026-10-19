@@ -103,7 +103,9 @@ export function BusinessDocumentsWorkspace({
   const [documents, setDocuments] = useState(initialDocuments);
   const [events, setEvents] = useState(initialEvents);
   const [selectedId, setSelectedId] = useState<string | null>(initialDocuments[0]?.id ?? null);
+  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(null);
   const selected = documents.find((document) => document.id === selectedId) ?? null;
+  const isEditing = editingDocumentId !== null;
   const [documentType, setDocumentType] = useState<BusinessDocumentType>("QUOTATION");
   const [documentTitle, setDocumentTitle] = useState("");
   const [counterpartyType, setCounterpartyType] = useState<"CUSTOMER" | "SUPPLIER" | "INTERNAL">("CUSTOMER");
@@ -168,6 +170,7 @@ export function BusinessDocumentsWorkspace({
   }, [selectedId, resourceVersion]);
 
   function resetForm() {
+    setEditingDocumentId(null);
     setDocumentType("QUOTATION");
     setDocumentTitle("");
     setCounterpartyType("CUSTOMER");
@@ -215,8 +218,8 @@ export function BusinessDocumentsWorkspace({
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/business-documents", {
-        method: "POST",
+      const response = await fetch(isEditing ? `/api/admin/business-documents/${encodeURIComponent(editingDocumentId!)}` : "/api/admin/business-documents", {
+        method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           documentType,
@@ -247,20 +250,27 @@ export function BusinessDocumentsWorkspace({
       });
       const result = await response.json() as { data?: BusinessDocument; error?: string };
       if (!response.ok || !result.data) throw new Error(result.error ?? "Unable to save document.");
-      setDocuments((current) => [result.data!, ...current].slice(0, 50));
+      setDocuments((current) => isEditing
+        ? current.map((document) => document.id === result.data!.id ? result.data! : document)
+        : [result.data!, ...current].slice(0, 50));
       setSelectedId(result.data.id);
-      setEvents((current) => [{
-        id: `new-${result.data!.id}`,
-        business_document_id: result.data!.id,
-        event_type: "CREATED",
-        previous_status: null,
-        new_status: result.data!.document_status,
-        note: "",
-        actor_id: result.data!.created_by,
-        created_at: result.data!.created_at,
-      }, ...current]);
+      if (!isEditing) {
+        setEvents((current) => [{
+          id: `new-${result.data!.id}`,
+          business_document_id: result.data!.id,
+          event_type: "CREATED",
+          previous_status: null,
+          new_status: result.data!.document_status,
+          note: "",
+          actor_id: result.data!.created_by,
+          created_at: result.data!.created_at,
+        }, ...current]);
+      }
       resetForm();
-      setMessage(`Saved ${result.data.document_number}. This creates a document record only; it does not create a payment, order, stock movement, or tax filing.`);
+      setResourceVersion((current) => current + 1);
+      setMessage(isEditing
+        ? `Updated ${result.data.document_number}. The draft change was added to its audit history.`
+        : `Saved ${result.data.document_number}. This creates a document record only; it does not create a payment, order, stock movement, or tax filing.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save document.");
     } finally {
@@ -269,7 +279,43 @@ export function BusinessDocumentsWorkspace({
   }
 
   async function selectDocument(document: BusinessDocument) {
+    if (isEditing) {
+      setMessage("Save or cancel the current draft edit before selecting another document.");
+      return;
+    }
     setSelectedId(document.id);
+  }
+
+  function editSelectedDraft() {
+    if (!selected || selected.document_status !== "DRAFT" || sourceOnlyDocumentTypes.has(selected.document_type)) return;
+    const savedLines = readLines(selected.line_items);
+    setDocumentType(selected.document_type);
+    setDocumentTitle(selected.document_title ?? "");
+    setCounterpartyType(selected.counterparty_type);
+    setCustomerName(selected.customer_name ?? "");
+    setCustomerContact(selected.customer_contact ?? "");
+    setTaxPin(selected.tax_pin ?? "");
+    setIssueDate(selected.issue_date);
+    setDueDate(selected.due_date ?? "");
+    setPaymentMethod(selected.payment_method ?? "");
+    setPaymentTerms(selected.payment_terms ?? "");
+    setRelatedReference(selected.related_reference ?? "");
+    setRelatedDocumentId(selected.related_document_id ?? "");
+    setPreparedBy(selected.prepared_by ?? "");
+    setCheckedBy(selected.checked_by ?? "");
+    setApprovedBy(selected.approved_by ?? "");
+    setTermsAndConditions(selected.terms_and_conditions);
+    setDiscount(Number(selected.discount));
+    setTax(Number(selected.tax));
+    setNotes(selected.notes);
+    setLines(savedLines.length ? savedLines.map((line) => ({
+      name: line.name,
+      sku: line.sku ?? "",
+      quantity: line.quantity,
+      unitPrice: line.unit_price,
+    })) : [{ name: "", sku: "", quantity: 1, unitPrice: 0 }]);
+    setEditingDocumentId(selected.id);
+    setMessage(`Editing draft ${selected.document_number}. Its type, issue date, and source links remain fixed so the assigned number and origin stay valid.`);
   }
 
   async function uploadAttachment(event: React.FormEvent<HTMLFormElement>) {
@@ -351,10 +397,10 @@ export function BusinessDocumentsWorkspace({
       <div className="business-documents-grid">
         <form className="business-document-form no-print" onSubmit={createDocument}>
           <section>
-            <h2>Create a document record</h2>
+            <h2>{isEditing ? `Edit draft ${selected?.document_number ?? ""}` : "Create a document record"}</h2>
             <p className="business-document-safety-note">Sequential number is assigned on save. The record starts as a draft; approval does not post a payment or stock transaction.</p>
             <p>To create a real payment receipt, choose a confirmed, paid order from <Link href="/admin/orders">Orders</Link>.</p>
-            <label>Business area<select value={typeConfig?.group ?? "SALES"} disabled={sourceSearching} onChange={(event) => {
+            <label>Business area<select value={typeConfig?.group ?? "SALES"} disabled={sourceSearching || isEditing} onChange={(event) => {
               const group = event.target.value;
               const first = businessDocumentTypes.find((item) => item.group === group && !sourceOnlyDocumentTypes.has(item.value));
               if (first) {
@@ -364,7 +410,7 @@ export function BusinessDocumentsWorkspace({
                 setSourceResults([]);
               }
             }}>{businessDocumentGroups.map((group) => <option value={group.value} key={group.value}>{group.label}</option>)}</select></label>
-            <label>Document type<select value={documentType} disabled={sourceSearching} onChange={(event) => {
+            <label>Document type<select value={documentType} disabled={sourceSearching || isEditing} onChange={(event) => {
               const nextType = event.target.value as BusinessDocumentType;
               setDocumentType(nextType);
               setRelatedReference("");
@@ -377,8 +423,8 @@ export function BusinessDocumentsWorkspace({
             }}>{businessDocumentTypes.filter((type) => type.group === typeConfig?.group).map((type) => <option key={type.value} value={type.value} disabled={sourceOnlyDocumentTypes.has(type.value)}>{type.label}{sourceOnlyDocumentTypes.has(type.value) ? " · requires a real payment record" : ""}</option>)}</select></label>
             {documentType === "OTHER" && <label>Document title<input value={documentTitle} maxLength={160} onChange={(event) => setDocumentTitle(event.target.value)} required /></label>}
             {(typeConfig?.sourceRecordRequired || sourceKind) && !sourceOnlyDocumentTypes.has(documentType) && sourceKind && <div className="business-document-source-search">
-              <label>Search existing {sourceKind === "order" ? "sales orders" : "purchase orders"}<input value={sourceQuery} maxLength={80} onChange={(event) => setSourceQuery(event.target.value)} placeholder="Enter at least two characters of the order number" /></label>
-              <button className="button button-secondary" type="button" disabled={sourceSearching || sourceQuery.trim().length < 2} onClick={() => void searchSourceRecords()}>{sourceSearching ? "Searching..." : "Find source record"}</button>
+              <label>Search existing {sourceKind === "order" ? "sales orders" : "purchase orders"}<input value={sourceQuery} maxLength={80} disabled={isEditing} onChange={(event) => setSourceQuery(event.target.value)} placeholder="Enter at least two characters of the order number" /></label>
+              <button className="button button-secondary" type="button" disabled={isEditing || sourceSearching || sourceQuery.trim().length < 2} onClick={() => void searchSourceRecords()}>{sourceSearching ? "Searching..." : "Find source record"}</button>
               <label>Selected source record<input value={relatedReference} readOnly required placeholder="Choose a live source record below" /></label>
               {sourceResults.length > 0 && <ul aria-label="Matching source records">{sourceResults.map((source) => <li key={source.id}>
                 <button type="button" onClick={() => {
@@ -397,7 +443,7 @@ export function BusinessDocumentsWorkspace({
                 </button>
               </li>)}</ul>}
             </div>}
-            {typeConfig?.sourceRecordRequired && !sourceOnlyDocumentTypes.has(documentType) && !sourceKind && <label>Source record reference<input value={relatedReference} maxLength={160} onChange={(event) => setRelatedReference(event.target.value)} required placeholder="Enter the external or system record reference" /></label>}
+            {typeConfig?.sourceRecordRequired && !sourceOnlyDocumentTypes.has(documentType) && !sourceKind && <label>Source record reference<input value={relatedReference} maxLength={160} disabled={isEditing} onChange={(event) => setRelatedReference(event.target.value)} required placeholder="Enter the external or system record reference" /></label>}
           </section>
           <section>
             <h2>Party and dates</h2>
@@ -406,10 +452,10 @@ export function BusinessDocumentsWorkspace({
             <label>Contact details<input value={customerContact} maxLength={120} onChange={(event) => setCustomerContact(event.target.value)} /></label>
             <label>Party KRA PIN (optional)<input value={taxPin} maxLength={24} onChange={(event) => setTaxPin(event.target.value)} /></label>
             <div className="business-document-date-grid">
-              <label>Issue date<input type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} required /></label>
+              <label>Issue date<input type="date" value={issueDate} disabled={isEditing} onChange={(event) => setIssueDate(event.target.value)} required /></label>
               <label>Due date (optional)<input type="date" min={issueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label>
             </div>
-            <label>Link to another saved document<select value={relatedDocumentId} onChange={(event) => setRelatedDocumentId(event.target.value)}><option value="">No related document</option>{documents.map((document) => <option value={document.id} key={document.id}>{document.document_number} · {titleFor(document.document_type, document.document_title)}</option>)}</select></label>
+            <label>Link to another saved document<select value={relatedDocumentId} disabled={isEditing} onChange={(event) => setRelatedDocumentId(event.target.value)}><option value="">No related document</option>{documents.map((document) => <option value={document.id} key={document.id}>{document.document_number} · {titleFor(document.document_type, document.document_title)}</option>)}</select></label>
             <label>Payment method (information only)<input value={paymentMethod} maxLength={48} onChange={(event) => setPaymentMethod(event.target.value)} placeholder="M-Pesa, cash, bank transfer..." /></label>
             <label>Payment terms / duration<input value={paymentTerms} maxLength={240} onChange={(event) => setPaymentTerms(event.target.value)} placeholder="Payment terms for this document" /></label>
           </section>
@@ -439,11 +485,16 @@ export function BusinessDocumentsWorkspace({
             <label>Terms and conditions<textarea rows={3} maxLength={3000} value={termsAndConditions} onChange={(event) => setTermsAndConditions(event.target.value)} /></label>
             <label>Notes<textarea rows={3} maxLength={2000} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
           </section>
-          <button className="button button-primary" type="submit" disabled={saving}>{saving ? "Saving document..." : "Save document record"}</button>
+          <div className="business-document-section-heading">
+            {isEditing && <button className="button button-secondary" type="button" disabled={saving} onClick={resetForm}>Cancel edit</button>}
+            <button className="button button-primary" type="submit" disabled={saving}>{saving ? "Saving document..." : isEditing ? "Save draft changes" : "Save document record"}</button>
+          </div>
         </form>
 
         <section className="business-document-library no-print">
-          <div className="business-document-section-heading"><div><p className="eyebrow">Saved records</p><h2>{filters.group ? businessDocumentGroups.find((group) => group.value === filters.group)?.label : "Document register"}</h2></div><strong>{total.toLocaleString()} records</strong></div>
+          <div className="business-document-section-heading"><div><p className="eyebrow">Saved records</p><h2>{filters.group ? businessDocumentGroups.find((group) => group.value === filters.group)?.label : "Document register"}</h2></div><strong>{total.toLocaleString()} records</strong>
+            {selected?.document_status === "DRAFT" && !sourceOnlyDocumentTypes.has(selected.document_type) && <button className="button button-secondary" type="button" disabled={isEditing} onClick={editSelectedDraft}>Edit selected draft</button>}
+          </div>
           {documents.length ? <div className="business-document-list">{documents.map((document) => (
             <button className={`business-document-list-item${selected?.id === document.id ? " is-selected" : ""}`} type="button" key={document.id} onClick={() => void selectDocument(document)}>
               <strong>{document.document_number} <span className="business-document-status">{statusLabel(document.document_status)}</span></strong>
@@ -469,7 +520,7 @@ export function BusinessDocumentsWorkspace({
             </div>
             <div className="business-document-activity">
               <h3>Audit history</h3>
-              {events.filter((event) => event.business_document_id === selected.id).length ? events.filter((event) => event.business_document_id === selected.id).map((event) => <p key={event.id}><strong>{event.event_type === "CREATED" ? "Created" : event.event_type === "ATTACHMENT_ADDED" ? "Attachment added" : `Status: ${statusLabel(event.new_status)}`}</strong><time>{new Date(event.created_at).toLocaleString()}</time>{event.note && <span>{event.note}</span>}</p>) : <p>Loading record history…</p>}
+              {events.filter((event) => event.business_document_id === selected.id).length ? events.filter((event) => event.business_document_id === selected.id).map((event) => <p key={event.id}><strong>{event.event_type === "CREATED" ? "Created" : event.event_type === "ATTACHMENT_ADDED" ? "Attachment added" : event.event_type === "CONTENT_UPDATED" ? "Draft content updated" : `Status: ${statusLabel(event.new_status)}`}</strong><time>{new Date(event.created_at).toLocaleString()}</time>{event.note && <span>{event.note}</span>}</p>) : <p>Loading record history…</p>}
             </div>
             <div className="business-document-attachments">
               <h3>Private attachments</h3>

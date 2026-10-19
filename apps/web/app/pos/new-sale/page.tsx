@@ -2,17 +2,42 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, CreditCard, Minus, Pause, Play, Plus, Search, ShoppingCart, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, Banknote, CreditCard, Minus, Pause, Play, Plus, Search, ShoppingCart, Sparkles, Trash2 } from "lucide-react";
+import { z } from "zod";
+import { APP_CURRENCY } from "@dantown/shared";
 import { CameraBarcodeScanner } from "@/components/pos/camera-barcode-scanner";
+import { CashSessionPanel } from "@/components/pos/cash-session";
 import { getQueuedProductQuantities } from "@/lib/pos/offline-queue";
 import { matchesPOSProduct } from "@/lib/pos/product-search";
 import { getOfflinePOSProducts, type OfflinePOSProduct } from "@/lib/centre/offline-storage";
 import { createHeldSale, getHeldSales, removeHeldSale, upsertHeldSale, type HeldSale } from "@/lib/pos/held-sales";
+import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 import { boughtTogether, money, parseSmartLine, topPicks } from "@/lib/pos/smart";
 
 type Product = OfflinePOSProduct;
 type CartItem = Product & { cartQty: number };
 type Customer = { id: string; name: string; phone: string | null; email: string | null };
+
+const cashCheckoutResponseSchema = z.object({
+  success: z.literal(true),
+  change: z.number().finite(),
+  receipt: z.object({
+    receiptNumber: z.string(),
+    subtotal: z.number(),
+    discount: z.number(),
+    tax: z.number(),
+    delivery: z.number(),
+    total: z.number(),
+    paymentMethod: z.string(),
+    date: z.string(),
+    items: z.array(z.object({
+      name: z.string(),
+      sku: z.string().nullable(),
+      qty: z.number(),
+      total: z.number(),
+    })).min(1),
+  }),
+});
 
 async function fetchProducts(search: string, limit = 100): Promise<Product[]> {
   const getCachedProducts = async () => {
@@ -49,7 +74,10 @@ export default function NewSalePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentEmail, setPaymentEmail] = useState("");
+  const [tenderMethod, setTenderMethod] = useState<"CASH" | "PESAPAL">("PESAPAL");
+  const [cashReceived, setCashReceived] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [cashSessionId, setCashSessionId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [held, setHeld] = useState<HeldSale[]>(() => getHeldSales());
   const [picks, setPicks] = useState<string[]>([]);
@@ -141,7 +169,7 @@ export default function NewSalePage() {
     });
   }, []);
   const updateQuantity = (id: string, quantity: number) => setCart((current) => quantity < 1 ? current.filter((item) => item.id !== id) : current.map((item) => item.id === id ? { ...item, cartQty: Math.min(item.qty, quantity) } : item));
-  const clearSale = useCallback(() => { checkoutRequestId.current = null; setCart([]); setCustomerName("Walk-in Customer"); setCustomerSearch(""); setSelectedCustomer(null); setCustomers([]); setPaymentEmail(""); }, []);
+  const clearSale = useCallback(() => { checkoutRequestId.current = null; setCart([]); setCustomerName("Walk-in Customer"); setCustomerSearch(""); setSelectedCustomer(null); setCustomers([]); setPaymentEmail(""); setCashReceived(""); }, []);
 
   // Barcode (exact) -> loaded list, else ask the server. Used by scanners, camera and Enter key.
   const scanBarcode = useCallback(async (raw: string) => {
@@ -229,8 +257,13 @@ export default function NewSalePage() {
 
   const completeSale = async () => {
     if (!cart.length) return setMessage("Cart is empty.");
-    if (!navigator.onLine) return setMessage("Connect to the internet to start a Pesapal payment. Offline sales are disabled.");
-    if (!paymentEmail.trim()) return setMessage("Enter the customer email required for Pesapal checkout.");
+    if (!navigator.onLine) return setMessage("Connect to the internet to record this sale securely.");
+    if (tenderMethod === "CASH" && !cashSessionId) return setMessage("Open a cash session before accepting cash.");
+    const cashAmount = Number(cashReceived);
+    if (tenderMethod === "CASH" && (!Number.isFinite(cashAmount) || cashAmount < total)) {
+      return setMessage("Enter the cash amount received; it must cover the current sale total.");
+    }
+    if (tenderMethod === "PESAPAL" && !paymentEmail.trim()) return setMessage("Enter the customer email required for Pesapal checkout.");
     const requestId = checkoutRequestId.current ?? window.crypto.randomUUID();
     checkoutRequestId.current = requestId;
     const payload = {
@@ -243,6 +276,35 @@ export default function NewSalePage() {
     };
     try {
       setProcessing(true); setMessage(null);
+      if (tenderMethod === "CASH") {
+        const response = await fetch("/api/pos/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestId,
+            customerId: selectedCustomer?.id ?? null,
+            cashReceived: cashAmount,
+            subtotal,
+            vat,
+            total,
+            items: cart.map((item) => ({ productId: item.id, quantity: item.cartQty })),
+          }),
+        });
+        const result: unknown = await response.json();
+        const parsedResult = cashCheckoutResponseSchema.safeParse(result);
+        if (!response.ok || !parsedResult.success) {
+          const error = typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
+            ? result.error
+            : "Unable to record the cash sale.";
+          throw new Error(error);
+        }
+        const { receipt, change } = parsedResult.data;
+        showPOSReceiptEffect({ ...receipt, currency: APP_CURRENCY });
+        window.dispatchEvent(new Event("dantown-pos-cash-session-refresh"));
+        clearSale();
+        setMessage(`Cash sale recorded. Change due: ${money(change)}.`);
+        return;
+      }
       const response = await fetch("/api/pos/pesapal-init", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const result = await response.json();
       if (!response.ok || typeof result !== "object" || result === null ||
@@ -254,7 +316,7 @@ export default function NewSalePage() {
       }
       window.location.assign(result.redirectUrl);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to start Pesapal checkout.");
+      setMessage(error instanceof Error ? error.message : `Unable to complete ${tenderMethod.toLowerCase()} checkout.`);
     } finally { setProcessing(false); }
   };
 
@@ -275,7 +337,7 @@ export default function NewSalePage() {
 
   return <div className="px-register">
     {message && <div className="px-toast" role="status"><AlertCircle size={18} /><span>{message}</span><button type="button" onClick={() => setMessage(null)} aria-label="Dismiss">×</button></div>}
-    {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: browsing the saved catalogue is available, but all sales require Pesapal and an internet connection.</span></div>}
+    {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: browsing the saved catalogue is available, but recording a new cash or Pesapal sale requires an internet connection.</span></div>}
 
     <section className="px-catalog">
       <div className="px-search">
@@ -294,6 +356,9 @@ export default function NewSalePage() {
         {held.length > 0 && <details className="px-held"><summary><Play size={14} /> Held ({held.length})</summary><div className="px-held-list">{held.map((sale) => <div className="px-held-item" key={sale.id}><button type="button" className="px-held-recall" onClick={() => recallSale(sale)}><span>{sale.customerName} · {sale.cart.length} item{sale.cart.length === 1 ? "" : "s"}</span><small>{new Date(sale.updatedAt).toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit" })}</small></button><button type="button" className="px-held-remove" aria-label={`Remove held sale for ${sale.customerName}`} onClick={() => setHeld(removeHeldSale(sale.id))}><Trash2 size={14} /></button></div>)}</div></details>}
         {cart.length > 0 && <><button type="button" className="px-ghost" onClick={holdSale}><Pause size={14} /> Hold</button><button type="button" className="px-ghost" onClick={clearSale}>Clear</button></>}
       </div></div>
+      <div className="px-checkout">
+        <CashSessionPanel onSessionChange={setCashSessionId} />
+      </div>
 
       <div className="px-lines">{cart.length === 0 ? <p className="px-empty"><ShoppingCart size={26} /><br />Scan or search to start a sale</p> : cart.map((item) => <div key={item.id} className="px-line">
         <div><strong>{item.name}</strong><small>{money(item.price)} each{item.cartQty >= item.qty ? " · max stock" : ""}</small></div>
@@ -306,21 +371,56 @@ export default function NewSalePage() {
       {cart.length > 0 && <div className="px-checkout">
         <div className="px-field"><input value={customerSearch || customerName} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value || "Walk-in Customer"); setSelectedCustomer(null); setPaymentEmail(""); }} placeholder={isOnline ? "Customer (optional)" : "Walk-in only while offline"} aria-label="Customer" disabled={!isOnline} />
           {customers.length > 0 && <div className="px-dropdown">{customers.map((customer) => <button type="button" key={customer.id} onClick={() => { setSelectedCustomer(customer); setCustomerName(customer.name); setCustomerSearch(customer.name); setPaymentEmail(customer.email ?? ""); setCustomers([]); }}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</button>)}</div>}</div>
-        <label className="px-field">
-          <input
-            type="email"
-            autoComplete="email"
-            value={paymentEmail}
-            onChange={(event) => setPaymentEmail(event.target.value)}
-            placeholder="Customer email for Pesapal"
-            aria-label="Customer email for Pesapal"
-            required
-            disabled={!isOnline}
-          />
-        </label>
-        <div className="px-tenders"><span><CreditCard size={18} /> Pesapal checkout only</span></div>
+        <div className="px-tenders" aria-label="Payment method">
+          <button type="button" className={tenderMethod === "CASH" ? "active" : ""} onClick={() => setTenderMethod("CASH")} disabled={!isOnline}>
+            <Banknote size={18} /> Cash
+          </button>
+          <button type="button" className={tenderMethod === "PESAPAL" ? "active" : ""} onClick={() => setTenderMethod("PESAPAL")} disabled={!isOnline}>
+            <CreditCard size={18} /> Pesapal
+          </button>
+        </div>
+        {tenderMethod === "CASH" ? (
+          <label className="px-field">
+            <input
+              type="number"
+              min={total}
+              step="0.01"
+              inputMode="decimal"
+              value={cashReceived}
+              onChange={(event) => setCashReceived(event.target.value)}
+              placeholder={`Cash received (at least ${money(total)})`}
+              aria-label="Cash received from customer"
+              required
+              disabled={!isOnline}
+            />
+            {Number(cashReceived) >= total && <small>Change due: {money(Number(cashReceived) - total)}</small>}
+          </label>
+        ) : (
+          <label className="px-field">
+            <input
+              type="email"
+              autoComplete="email"
+              value={paymentEmail}
+              onChange={(event) => setPaymentEmail(event.target.value)}
+              placeholder="Customer email for Pesapal"
+              aria-label="Customer email for Pesapal"
+              required
+              disabled={!isOnline}
+            />
+          </label>
+        )}
         <div className="px-totals"><p><span>Subtotal</span><b>{money(subtotal)}</b></p><p><span>VAT</span><b>{money(vat)}</b></p></div>
-        <button type="button" className="px-pay" onClick={completeSale} disabled={processing || !isOnline || !paymentEmail.trim()}><span>{processing ? "Connecting to Pesapal…" : "Pay with Pesapal"}</span><strong>{money(total)}</strong></button>
+        <button
+          type="button"
+          className="px-pay"
+          onClick={completeSale}
+          disabled={processing || !isOnline || (tenderMethod === "CASH" ? !cashSessionId || Number(cashReceived) < total : !paymentEmail.trim())}
+        >
+          <span>{processing
+            ? tenderMethod === "CASH" ? "Recording cash sale…" : "Connecting to Pesapal…"
+            : tenderMethod === "CASH" ? "Confirm cash received" : "Pay with Pesapal"}</span>
+          <strong>{money(total)}</strong>
+        </button>
       </div>}
     </aside>
     {itemCount > 0 && <button type="button" className="px-mobile-cart" onClick={() => document.getElementById("pos-cart-section")?.scrollIntoView({ behavior: "smooth" })}><ShoppingCart size={18} /><span>View cart</span><strong>{itemCount} · {money(total)}</strong></button>}

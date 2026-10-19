@@ -147,7 +147,7 @@ export default async function POSSectionPage({ params }: { params: Promise<{ sec
             <span className="pos-setting-icon"><Wallet size={22} /></span>
             <strong>Payment provider</strong>
             <div className="pos-chip-row">
-              <span className="pos-chip">Pesapal only</span>
+              <span className="pos-chip">Cash / Pesapal</span>
             </div>
           </div>
         </div>

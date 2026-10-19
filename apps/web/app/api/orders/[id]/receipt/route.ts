@@ -4,7 +4,10 @@ import { verifyOrderPaymentAccessToken } from "@/lib/payments/order-payment-acce
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import { loadBusinessConfiguration } from "@/lib/settings/business-configuration";
 
-const requestSchema = z.object({ paymentToken: z.string().min(40).max(100).optional() });
+const requestSchema = z.object({
+  paymentToken: z.string().min(40).max(100).optional(),
+  paymentId: z.string().uuid().optional(),
+});
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const orderId = (await params).id;
@@ -35,11 +38,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!order) return NextResponse.json({ error: "Order receipt not found." }, { status: 404 });
 
   let authorized = Boolean(input.paymentToken && verifyOrderPaymentAccessToken(input.paymentToken, order.payment_access_token_hash));
+  let actorUserId: string | null = null;
   if (!authorized && order.customer_id) {
     const auth = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await auth.auth.getUser();
     if (authError && authError.name !== "AuthSessionMissingError") throw authError;
     if (user) {
+      actorUserId = user.id;
       const { data: customer, error: customerError } = await service
         .from("customers")
         .select("user_id")
@@ -50,39 +55,79 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
   }
   if (!authorized) return NextResponse.json({ error: "Sign in to the account that placed this order, or open the original payment link." }, { status: 403 });
-  if (order.payment_status !== "SUCCESS") {
-    return NextResponse.json({ error: "The receipt will be available after payment is confirmed." }, { status: 409 });
-  }
 
-  const [{ data: lines, error: linesError }, { data: payment, error: paymentError }, { data: customer, error: customerError }, configuration] = await Promise.all([
-    service.from("order_items").select("product_name_snapshot,sku_snapshot,quantity,line_total").eq("order_id", order.id),
-    service.from("payments").select("method,status").eq("order_id", order.id).eq("status", "SUCCESS").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  const [{ data: payments, error: paymentsError }, { data: customer, error: customerError }, configuration] = await Promise.all([
+    service.from("payments").select("id,method,status,amount,currency,created_at")
+      .eq("order_id", order.id)
+      .in("status", ["SUCCESS", "PARTIALLY_REFUNDED", "REFUNDED"])
+      .order("created_at", { ascending: false }),
     order.customer_id
-      ? service.from("customers").select("name").eq("id", order.customer_id).maybeSingle()
+      ? service.from("customers").select("name,phone,tax_number").eq("id", order.customer_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
     loadBusinessConfiguration(),
   ]);
-  if (linesError) throw linesError;
-  if (paymentError) throw paymentError;
+  if (paymentsError) throw paymentsError;
   if (customerError) throw customerError;
+  if (!payments?.length) {
+    return NextResponse.json({ error: "No verified payment is available for this receipt." }, { status: 409 });
+  }
+  const payment = input.paymentId
+    ? payments.find((candidate) => candidate.id === input.paymentId)
+    : payments[0];
+  if (!payment) return NextResponse.json({ error: "This verified payment does not belong to the order." }, { status: 404 });
+  let receiptNumber: string;
+  if (payment.status === "SUCCESS") {
+    const { data: receiptDocument, error: receiptError } = await service.rpc("issue_verified_payment_receipt", {
+      target_payment_id: payment.id,
+      actor_user_id: actorUserId,
+    });
+    if (receiptError || !receiptDocument) {
+      console.error("Unable to issue verified payment receipt.", receiptError);
+      return NextResponse.json({ error: "The verified payment receipt could not be issued." }, { status: 500 });
+    }
+    receiptNumber = receiptDocument.document_number;
+  } else {
+    const { data: receiptDocument, error: receiptError } = await service.from("business_documents")
+      .select("document_number")
+      .eq("document_type", "RECEIPT")
+      .eq("related_reference", `PAYMENT:${payment.id}`)
+      .maybeSingle();
+    if (receiptError) throw receiptError;
+    if (!receiptDocument) {
+      return NextResponse.json({ error: "The original receipt was not recorded before this payment was refunded." }, { status: 409 });
+    }
+    receiptNumber = receiptDocument.document_number;
+  }
+  const paymentAmount = Number(payment.amount);
 
   return NextResponse.json({
     receipt: {
+      receiptNumber,
+      paymentId: payment.id,
+      paymentAmount,
       orderNumber: order.order_number,
-      date: order.created_at,
+      date: payment.created_at,
       customer: customer?.name ?? null,
-      paymentMethod: payment?.method ?? null,
-      lines: (lines ?? []).map((line) => ({
-        name: line.product_name_snapshot,
-        sku: line.sku_snapshot,
-        quantity: line.quantity,
-        total: Number(line.line_total),
+      customerContact: customer?.phone ?? null,
+      taxPin: customer?.tax_number ?? null,
+      paymentMethod: payment.method,
+      payments: payments.map((record) => ({
+        id: record.id,
+        method: record.method,
+        amount: Number(record.amount),
+        currency: record.currency,
+        date: record.created_at,
       })),
-      subtotal: Number(order.subtotal),
-      discount: Number(order.discount),
-      tax: Number(order.vat),
-      delivery: Number(order.delivery_fee),
-      total: Number(order.total),
+      lines: [{
+        name: `Payment received for order ${order.order_number}`,
+        quantity: 1,
+        total: paymentAmount,
+      }],
+      subtotal: paymentAmount,
+      discount: 0,
+      tax: 0,
+      delivery: 0,
+      total: paymentAmount,
     },
     settings: configuration.documentSettings,
   });

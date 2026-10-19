@@ -23,20 +23,23 @@ type Props = {
   orderId: string;
   orderNumber: string;
   total: number;
-  pesapalEnabled: boolean;
+  enabledProviders: Array<"PESAPAL" | "PAYSTACK">;
 };
 
 export function PaymentPageClient({
   orderId,
   orderNumber,
   total,
-  pesapalEnabled,
+  enabledProviders,
 }: Props) {
   const [paymentToken, setPaymentToken] = useState("");
   const [paymentTokenReady, setPaymentTokenReady] = useState(false);
   const [email, setEmail] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [startingPayment, setStartingPayment] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<"PESAPAL" | "PAYSTACK">(
+    enabledProviders.includes("PESAPAL") ? "PESAPAL" : "PAYSTACK",
+  );
 
   useEffect(() => {
     if (!orderId) return;
@@ -102,11 +105,11 @@ export function PaymentPageClient({
     );
   }
 
-  const startPesapalCheckout = async () => {
+  const startProviderCheckout = async () => {
     setStartingPayment(true);
     setPaymentError("");
     try {
-      const response = await fetch("/api/checkout/pesapal-init", {
+      const response = await fetch(`/api/checkout/${selectedProvider.toLowerCase()}-init`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, email, paymentToken })
@@ -131,7 +134,7 @@ export function PaymentPageClient({
       window.sessionStorage.setItem(`dantown-payment-token:${orderId}`, paymentToken);
       window.location.assign(result.redirectUrl);
     } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : "Unable to start Pesapal checkout.");
+      setPaymentError(error instanceof Error ? error.message : `Unable to start ${selectedProvider} checkout.`);
       setStartingPayment(false);
     }
   };
@@ -193,9 +196,7 @@ export function PaymentPageClient({
 
             <h1>Complete your payment</h1>
 
-            <p>
-              Your order will be sent for processing only after Pesapal confirms the payment directly with our server.
-            </p>
+            <p>Your order will be processed only after the selected provider confirms payment directly with our server.</p>
           </div>
 
           {/* PAYMENT METHODS */}
@@ -205,27 +206,39 @@ export function PaymentPageClient({
                 <span className="section-number">01</span>
                 <div>
                   <h2>Payment method</h2>
-                  <p>Pesapal is the only available payment provider.</p>
+                  <p>Select a payment provider available for this order.</p>
                 </div>
               </div>
             </div>
 
             <div className="payment-methods">
-            <div className="payment-method selected" aria-current="true">
-              <div className="method-icon">
-                <CreditCard size={22} />
-              </div>
-              <div className="method-content">
-                <div className="method-title">
-                  <strong>Pesapal</strong>
-                  <span className="recommended">Secure checkout</span>
+              {enabledProviders.map((provider) => (
+                <button
+                  className={`payment-method${selectedProvider === provider ? " selected" : ""}`}
+                  type="button"
+                  key={provider}
+                  aria-pressed={selectedProvider === provider}
+                  onClick={() => setSelectedProvider(provider)}
+                >
+                  <div className="method-icon"><CreditCard size={22} /></div>
+                  <div className="method-content">
+                    <div className="method-title">
+                      <strong>{provider === "PESAPAL" ? "Pesapal" : "Paystack"}</strong>
+                      {selectedProvider === provider && <span className="recommended">Secure checkout</span>}
+                    </div>
+                    <p>{provider === "PESAPAL"
+                      ? "Pay using the payment methods securely enabled in Pesapal checkout."
+                      : "Continue to Paystack’s secure checkout to complete your payment."}</p>
+                  </div>
+                  <div className="method-radio">{selectedProvider === provider && <Check size={15} />}</div>
+                </button>
+              ))}
+              {enabledProviders.length === 0 && (
+                <div className="payment-help">
+                  <AlertCircle size={16} />
+                  <span>No online payment method is configured. Contact Dantown support to complete this order.</span>
                 </div>
-                <p>Pay using the payment methods enabled securely in Pesapal checkout.</p>
-              </div>
-              <div className="method-radio">
-                <Check size={15} />
-              </div>
-            </div>
+              )}
             </div>
           </div>
 
@@ -234,8 +247,8 @@ export function PaymentPageClient({
               <div>
                 <span className="section-number">02</span>
                 <div>
-                  <h2>Email for Pesapal</h2>
-                  <p>Pesapal uses this address for the secure payment session.</p>
+                  <h2>Email for payment</h2>
+                  <p>The selected provider uses this address for the secure payment session.</p>
                 </div>
               </div>
               </div>
@@ -249,10 +262,10 @@ export function PaymentPageClient({
                   required
                 />
               </label>
-              {!pesapalEnabled && (
+              {enabledProviders.length === 0 && (
                 <div className="payment-help">
                   <AlertCircle size={16} />
-                  <span>Pesapal is not configured on this deployment yet. Contact the Dantown administrator.</span>
+                  <span>Payment methods are unavailable. Contact the Dantown administrator.</span>
                 </div>
               )}
           </div>
@@ -262,11 +275,11 @@ export function PaymentPageClient({
             <button
               type="button"
               className="button button-primary payment-button"
-              onClick={startPesapalCheckout}
-              disabled={!pesapalEnabled || !email.trim() || startingPayment || !paymentToken}
+              onClick={startProviderCheckout}
+              disabled={!enabledProviders.length || !email.trim() || startingPayment || !paymentToken}
             >
               {startingPayment ? <Loader2 className="animate-spin" size={18} /> : null}
-              <span>{pesapalEnabled ? "Continue to Pesapal" : "Pesapal unavailable"}</span>
+              <span>{enabledProviders.length ? `Continue to ${selectedProvider === "PESAPAL" ? "Pesapal" : "Paystack"}` : "Payment unavailable"}</span>
             </button>
             {paymentError && <p className="payment-error" role="alert">{paymentError}</p>}
 
@@ -307,7 +320,7 @@ export function PaymentPageClient({
           <div className="summary-row">
             <span>Payment</span>
 
-            <strong>Pesapal</strong>
+            <strong>{selectedProvider === "PESAPAL" ? "Pesapal" : "Paystack"}</strong>
           </div>
 
           <div className="summary-row">

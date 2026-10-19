@@ -85,7 +85,8 @@ export function BusinessDocumentSettingsEditor({
           <label>KRA PIN (optional)<input value={settings.kraPin} maxLength={24} onChange={(event) => update("kraPin", event.target.value)} /></label>
         </section>
         <section>
-          <h2>Receipt appearance</h2>
+          <h2>Document appearance</h2>
+          <label>Print / PDF paper size<select value={settings.paperSize} onChange={(event) => update("paperSize", event.target.value as BusinessDocumentSettings["paperSize"])}><option value="A4">A4 portrait</option><option value="A5">A5 portrait</option><option value="LETTER">US Letter portrait</option></select><small>Applied when printing saved business documents or choosing Save as PDF.</small></label>
           <label>Accent color<div className="business-document-color"><input type="color" value={settings.accentColor} onChange={(event) => update("accentColor", event.target.value)} /><input value={settings.accentColor} maxLength={7} onChange={(event) => update("accentColor", event.target.value)} /></div></label>
           <label>Footer note<textarea value={settings.footer} maxLength={300} rows={3} onChange={(event) => update("footer", event.target.value)} /></label>
           <div className="business-document-toggles">

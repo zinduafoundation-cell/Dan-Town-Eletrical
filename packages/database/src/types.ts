@@ -22,13 +22,19 @@ export type Database = {
       order_status_history: { Row: OrderStatusHistory; Insert: OrderStatusHistoryInsert; Update: Partial<OrderStatusHistoryInsert>; Relationships: [] };
       order_items: { Row: OrderItem; Insert: OrderItemInsert; Update: Partial<OrderItemInsert>; Relationships: [] };
       payments: { Row: Payment; Insert: PaymentInsert; Update: Partial<PaymentInsert>; Relationships: [] };
+      refunds: { Row: Refund; Insert: RefundInsert; Update: Partial<RefundInsert>; Relationships: [] };
       payment_transactions: { Row: PaymentTransaction; Insert: PaymentTransactionInsert; Update: Partial<PaymentTransactionInsert>; Relationships: [] };
+      payment_provider_settings: { Row: PaymentProviderSettings; Insert: PaymentProviderSettingsInsert; Update: Partial<PaymentProviderSettingsInsert>; Relationships: [] };
       paystack_webhook_events: { Row: PaystackWebhookEvent; Insert: PaystackWebhookEventInsert; Update: Partial<PaystackWebhookEventInsert>; Relationships: [] };
       pos_sessions: { Row: PosSession; Insert: PosSessionInsert; Update: Partial<PosSessionInsert>; Relationships: [] };
+      pos_transactions: { Row: PosTransaction; Insert: PosTransactionInsert; Update: Partial<PosTransactionInsert>; Relationships: [] };
+      pos_transaction_items: { Row: PosTransactionItem; Insert: PosTransactionItemInsert; Update: Partial<PosTransactionItemInsert>; Relationships: [] };
+      cash_movements: { Row: CashMovement; Insert: CashMovementInsert; Update: Partial<CashMovementInsert>; Relationships: [] };
       pos_sync_records: { Row: PosSyncRecord; Insert: PosSyncRecordInsert; Update: Partial<PosSyncRecordInsert>; Relationships: [] };
       ai_knowledge_entries: { Row: AiKnowledgeEntry; Insert: AiKnowledgeEntryInsert; Update: Partial<AiKnowledgeEntryInsert>; Relationships: [] };
       ai_support_escalations: { Row: AiSupportEscalation; Insert: AiSupportEscalationInsert; Update: Partial<AiSupportEscalationInsert>; Relationships: [] };
       quotations: { Row: Quotation; Insert: QuotationInsert; Update: Partial<QuotationInsert>; Relationships: [] };
+      quotation_items: { Row: QuotationItem; Insert: QuotationItemInsert; Update: Partial<QuotationItemInsert>; Relationships: [] };
       roles: { Row: Role; Insert: RoleInsert; Update: Partial<RoleInsert>; Relationships: [] };
       permissions: { Row: PermissionRow; Insert: PermissionInsert; Update: Partial<PermissionInsert>; Relationships: [] };
       user_roles: { Row: UserRoleRow; Insert: UserRoleInsert; Update: Partial<UserRoleInsert>; Relationships: [] };
@@ -65,7 +71,12 @@ export type Database = {
       receive_purchase_order_item: { Args: { target_purchase_order_id: string; target_item_id: string; target_received_quantity: number; target_reference_id: string }; Returns: Json };
       transfer_inventory: { Args: { target_product_id: string; target_source_warehouse_id: string; target_destination_warehouse_id: string; target_quantity: number; target_reference_id: string }; Returns: Json };
       transition_business_document: { Args: { target_document_id: string; target_status: string; transition_note: string; actor_user_id: string | null }; Returns: BusinessDocument };
+      update_business_document_draft: { Args: { target_document_id: string; document_data: Json; actor_user_id: string | null }; Returns: BusinessDocument };
+      issue_verified_payment_receipt: { Args: { target_payment_id: string; actor_user_id?: string | null }; Returns: BusinessDocument };
       complete_pos_sale: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
+      complete_pos_cash_sale: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json; sale_cash_received: number }; Returns: Order };
+      open_pos_cash_session: { Args: { target_employee_id: string; target_warehouse_id: string; target_opening_balance: number; target_opening_notes?: string }; Returns: PosSession };
+      close_pos_cash_session: { Args: { target_session_id: string; target_employee_id: string; target_closing_balance: number; target_closing_notes?: string }; Returns: PosSession };
       complete_pos_sale_split: { Args: { sale_order_number: string; sale_customer_id: string | null; sale_subtotal: number; sale_vat: number; sale_total: number; sale_payment_method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER"; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json; sale_split_payments: Json }; Returns: Order };
       create_pos_paystack_order: { Args: { sale_customer_id: string | null; sale_customer_name: string; sale_staff_user_id: string | null; sale_staff_name: string; sale_staff_role: string; sale_items: Json }; Returns: Order };
       complete_pos_paystack_payment: { Args: { target_order_id: string; target_provider_reference: string; provider_amount: number; provider_payload: Json }; Returns: Order };
@@ -354,6 +365,15 @@ export type OrderItem = {
 export type OrderItemInsert = Omit<OrderItem, "id"> & { id?: string };
 export type Payment = { id: string; order_id: string; method: "MPESA" | "CASH" | "CARD" | "BANK_TRANSFER" | "PAY_ON_PICKUP" | "COD"; status: PaymentStatus; amount: number; currency: string; provider: string | null; created_at: string; updated_at: string };
 export type PaymentInsert = Omit<Payment, "id" | "created_at" | "updated_at" | "currency" | "provider"> & { id?: string; currency?: string; provider?: string | null };
+export type Refund = { id: string; payment_id: string; amount: number; reason: string; status: PaymentStatus; requested_by: string | null; approved_by: string | null; created_at: string; updated_at: string };
+export type RefundInsert = Omit<Refund, "id" | "created_at" | "updated_at" | "status" | "requested_by" | "approved_by"> & {
+  id?: string;
+  status?: PaymentStatus;
+  requested_by?: string | null;
+  approved_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
 export type PaymentTransaction = {
   id: string;
   payment_id: string;
@@ -371,6 +391,22 @@ export type PaymentTransactionInsert = Omit<PaymentTransaction, "id" | "created_
   id?: string;
   created_at?: string;
 };
+export type PaymentProviderSettings = {
+  id: "dantown";
+  online_pesapal_enabled: boolean;
+  pos_pesapal_enabled: boolean;
+  online_paystack_enabled: boolean;
+  updated_at: string;
+  updated_by: string | null;
+};
+export type PaymentProviderSettingsInsert = {
+  id?: "dantown";
+  online_pesapal_enabled?: boolean;
+  pos_pesapal_enabled?: boolean;
+  online_paystack_enabled?: boolean;
+  updated_at?: string;
+  updated_by?: string | null;
+};
 export type PaystackWebhookEvent = {
   id: string;
   provider: string;
@@ -387,8 +423,15 @@ export type PaystackWebhookEventInsert = Omit<PaystackWebhookEvent, "id" | "rece
   received_at?: string;
   created_at?: string;
 };
-export type PosSession = { id: string; employee_id: string; warehouse_id: string; status: "OPEN" | "CLOSED"; opening_balance: number; closing_balance: number | null; opened_at: string; closed_at: string | null };
-export type PosSessionInsert = Omit<PosSession, "id"> & { id?: string };
+export type PosSession = { id: string; employee_id: string; warehouse_id: string; status: "OPEN" | "CLOSED"; opening_balance: number; closing_balance: number | null; opened_at: string; closed_at: string | null; opening_notes: string; closing_notes: string };
+export type PosSessionInsert = Omit<PosSession, "id" | "opening_notes" | "closing_notes"> & { id?: string; opening_notes?: string; closing_notes?: string };
+export type PosTransaction = { id: string; session_id: string; order_id: string; status: "COMPLETED" | "VOIDED" | "REFUNDED"; subtotal: number; total: number; created_by: string; created_at: string };
+export type PosTransactionInsert = Omit<PosTransaction, "id" | "created_at" | "status"> & { id?: string; created_at?: string; status?: PosTransaction["status"] };
+export type PosTransactionItem = { id: string; transaction_id: string; product_id: string; variant_id: string | null; product_name_snapshot: string; sku_snapshot: string; quantity: number; unit_price: number; line_total: number };
+export type PosTransactionItemInsert = Omit<PosTransactionItem, "id"> & { id?: string };
+export type CashMovementType = "OPENING" | "SALE" | "REFUND" | "PAID_IN" | "PAID_OUT" | "CLOSING";
+export type CashMovement = { id: string; session_id: string; movement_type: CashMovementType; amount: number; reason: string | null; created_by: string | null; created_at: string };
+export type CashMovementInsert = Omit<CashMovement, "id" | "created_at"> & { id?: string; created_at?: string };
 export type PosSyncStatus = "PENDING" | "SYNCING" | "SYNCED" | "FAILED" | "CONFLICT";
 export type PosSyncRecord = { transaction_id: string; device_id: string; staff_user_id: string | null; status: PosSyncStatus; payload: Json; order_id: string | null; retry_count: number; error_message: string | null; created_at: string; synced_at: string | null };
 export type PosSyncRecordInsert = Omit<PosSyncRecord, "created_at" | "synced_at"> & { created_at?: string; synced_at?: string | null };
@@ -417,6 +460,19 @@ export type Quotation = {
   updated_at: string;
 };
 export type QuotationInsert = Omit<Quotation, "id"> & { id?: string };
+export type QuotationItem = {
+  id: string;
+  quotation_id: string;
+  product_id: string | null;
+  product_name_snapshot: string;
+  sku_snapshot: string;
+  quantity: number;
+  unit_price: number;
+  discount: number;
+  vat: number;
+  line_total: number;
+};
+export type QuotationItemInsert = Omit<QuotationItem, "id"> & { id?: string };
 export type Role = { id: string; code: string; name: string; description: string | null };
 export type RoleInsert = Omit<Role, "id"> & { id?: string };
 export type PermissionRow = { id: string; code: string; description: string | null };
@@ -698,7 +754,7 @@ export type BusinessDocumentInsert = Omit<BusinessDocument, "id" | "created_at" 
 };
 export type BusinessDocumentSequence = { document_type: BusinessDocumentType; financial_year: number; last_number: number; updated_at: string };
 export type BusinessDocumentSequenceInsert = Omit<BusinessDocumentSequence, "updated_at"> & { updated_at?: string };
-export type BusinessDocumentEvent = { id: string; business_document_id: string; event_type: "CREATED" | "STATUS_CHANGED" | "ATTACHMENT_ADDED"; previous_status: BusinessDocumentStatus | null; new_status: BusinessDocumentStatus; note: string; actor_id: string | null; created_at: string };
+export type BusinessDocumentEvent = { id: string; business_document_id: string; event_type: "CREATED" | "STATUS_CHANGED" | "CONTENT_UPDATED" | "ATTACHMENT_ADDED"; previous_status: BusinessDocumentStatus | null; new_status: BusinessDocumentStatus; note: string; actor_id: string | null; created_at: string };
 export type BusinessDocumentEventInsert = Omit<BusinessDocumentEvent, "id" | "created_at"> & { id?: string; created_at?: string };
 export type BusinessDocumentAttachment = { id: string; business_document_id: string; storage_path: string; file_name: string; mime_type: "application/pdf" | "image/jpeg" | "image/png" | "image/webp"; size_bytes: number; uploaded_by: string | null; created_at: string };
 export type BusinessDocumentAttachmentInsert = Omit<BusinessDocumentAttachment, "id" | "created_at"> & { id?: string; created_at?: string };

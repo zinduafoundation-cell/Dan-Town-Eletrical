@@ -27,7 +27,10 @@ function validDate(value: string) {
 export default async function PaymentDashboardPage({ searchParams }: { searchParams: SearchParams }) {
   const context = await requireAuthorizedPermission("payments.read");
   const params = await searchParams;
-  const status = PAYMENT_STATUSES.includes(getValue(params.status) as PaymentStatus) ? getValue(params.status) as PaymentStatus : "";
+  const requestedStatus = getValue(params.status);
+  const status = requestedStatus === "refunds"
+    ? requestedStatus
+    : PAYMENT_STATUSES.includes(requestedStatus as PaymentStatus) ? requestedStatus as PaymentStatus : "";
   const method = PAYMENT_METHODS.find((item) => item === getValue(params.method)) ?? "";
   const provider = PROVIDERS.includes(getValue(params.provider) as typeof PROVIDERS[number]) ? getValue(params.provider) : "";
   const search = safeSearch.test(getValue(params.search)) ? getValue(params.search) : "";
@@ -68,7 +71,8 @@ export default async function PaymentDashboardPage({ searchParams }: { searchPar
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(PAGE_SIZE + 1);
-  if (status) paymentQuery = paymentQuery.eq("status", status);
+  if (status === "refunds") paymentQuery = paymentQuery.in("status", ["REFUNDED", "PARTIALLY_REFUNDED"]);
+  else if (status) paymentQuery = paymentQuery.eq("status", status);
   if (method) paymentQuery = paymentQuery.eq("method", method);
   if (provider) paymentQuery = paymentQuery.eq("provider", provider);
   if (from) paymentQuery = paymentQuery.gte("created_at", from.toISOString());
@@ -134,7 +138,7 @@ export default async function PaymentDashboardPage({ searchParams }: { searchPar
         </div>
         <form className="payment-dashboard-filters" action="/admin/payments" method="get">
             <label>Exact order / provider reference<input name="search" defaultValue={search} maxLength={100} placeholder="Paste an order number or transaction reference" /></label>
-          <label>Status<select name="status" defaultValue={status}><option value="">All statuses</option>{PAYMENT_STATUSES.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label>Status<select name="status" defaultValue={status}><option value="">All statuses</option><option value="refunds">Refunded or partially refunded</option>{PAYMENT_STATUSES.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Method<select name="method" defaultValue={method}><option value="">All methods</option>{PAYMENT_METHODS.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Provider<select name="provider" defaultValue={provider}><option value="">All providers</option>{PROVIDERS.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>From<input type="date" name="from" defaultValue={getValue(params.from)} /></label>

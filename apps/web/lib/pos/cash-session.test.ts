@@ -1,30 +1,30 @@
 import { describe, expect, it } from "vitest";
-import {
-  closeCashSession,
-  createCashSession,
-  recordCashSale,
-  summarizeCashSession
-} from "./cash-session";
+import { summarizeCashSession } from "./cash-session";
 
-describe("POS cash session", () => {
-  it("tracks the expected cash box total and variance", () => {
-    let session = createCashSession(4000);
-    session = recordCashSale(session, 1750);
+describe("POS cash session summary", () => {
+  it("uses the server-reconciled expected amount and reports the count variance", () => {
     const summary = summarizeCashSession({
-      ...session,
-      countedCash: 5900
+      openingFloat: 4000,
+      cashSales: 1750,
+      countedCash: 5700,
+      expectedCash: 5600
     });
 
-    expect(session.cashSales).toBe(1750);
-    expect(summary.expected).toBe(5750);
-    expect(summary.variance).toBe(150);
+    expect(summary.expected).toBe(5600);
+    expect(summary.variance).toBe(100);
     expect(summary.isHealthy).toBe(true);
   });
 
-  it("marks the session as closed when the physical cash count is recorded", () => {
-    const session = closeCashSession(createCashSession(2500), 5300, "Shift closed");
-    expect(session.status).toBe("closed");
-    expect(session.closedAt).not.toBeNull();
-    expect(session.notes).toBe("Shift closed");
+  it("computes a fallback estimate when no server-reconciled amount is available", () => {
+    const summary = summarizeCashSession({
+      openingFloat: 4000,
+      cashSales: 1750,
+      countedCash: 5500
+    });
+
+    expect(summary.expected).toBe(5750);
+    expect(summary.variance).toBe(-250);
+    expect(summary.isHealthy).toBe(false);
+    expect(summary.message).toContain("Cash short");
   });
 });

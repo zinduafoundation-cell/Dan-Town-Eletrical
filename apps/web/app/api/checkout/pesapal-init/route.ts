@@ -3,6 +3,7 @@ import { z } from "zod";
 import { verifyOrderPaymentAccessToken } from "@/lib/payments/order-payment-access";
 import { getAppUrl } from "@/lib/env";
 import { getPesapalConfig, PesapalApiError } from "@/lib/payments/pesapal";
+import { isPaymentProviderAvailable } from "@/lib/payments/payment-provider-settings";
 import { initializePesapalCheckout } from "@/lib/payments/pesapal-checkout";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
@@ -21,6 +22,9 @@ export async function POST(request: Request) {
     const parsed = initSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json({ error: "Enter a valid email address and payment session." }, { status: 400 });
+    }
+    if (!(await isPaymentProviderAvailable("online", "pesapal"))) {
+      return NextResponse.json({ error: "Pesapal website checkout is disabled or not configured." }, { status: 503 });
     }
 
     const supabase = createSupabaseServiceClient();

@@ -31,6 +31,7 @@ const businessDocumentSettingsInputSchema = z.object({
     }
   }, "Choose a valid time zone."),
   dateLocale: z.enum(["en-KE", "en-GB", "en-US"]).default("en-KE"),
+  paperSize: z.enum(["A4", "A5", "LETTER"]).default("A4"),
   branchName: z.string().trim().max(100).default(""),
   registrationNumber: z.string().trim().max(80).default(""),
   openingHours: z.object({
@@ -83,6 +84,7 @@ export const defaultBusinessDocumentSettings: BusinessDocumentSettings = {
   country: "Kenya",
   timeZone: "Africa/Nairobi",
   dateLocale: "en-KE",
+  paperSize: "A4",
   branchName: "",
   registrationNumber: "",
   openingHours: defaultBusinessHours,

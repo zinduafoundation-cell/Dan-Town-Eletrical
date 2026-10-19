@@ -8,6 +8,7 @@ import {
   BriefcaseBusiness,
   Boxes,
   ChartNoAxesCombined,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
@@ -41,9 +42,11 @@ import {
 
 export type SidebarLink = {
   label: string;
-  href: string;
+  href?: string;
   icon: string;
   badge?: string;
+  children?: SidebarLink[];
+  disabledReason?: string;
 };
 
 export type SidebarSection = {
@@ -92,11 +95,21 @@ const sidebarIcons: Record<string, LucideIcon> = {
   UserRound,
   UsersRound,
   Wrench,
+  X,
   Zap
 };
 
-export function isSidebarLinkActive(pathname: string, href: string) {
-  return pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+export function isSidebarLinkActive(pathname: string, href: string, search = "") {
+  const target = new URL(href, "https://dantown.invalid");
+  const targetPath = target.pathname;
+  const pathMatches = pathname === targetPath || (targetPath !== "/" && pathname.startsWith(`${targetPath}/`));
+  if (!pathMatches || target.searchParams.size === 0) return pathMatches;
+  const currentSearch = new URLSearchParams(search);
+  return [...target.searchParams].every(([key, value]) => currentSearch.get(key) === value);
+}
+
+export function isSidebarGroupActive(pathname: string, children: SidebarLink[], search = "") {
+  return children.some((child) => child.href && isSidebarLinkActive(pathname, child.href, search));
 }
 
 export function ResponsiveSidebar({
@@ -111,11 +124,15 @@ export function ResponsiveSidebar({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentSearch, setCurrentSearch] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const asideRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const activeHref = sections
-    .flatMap((section) => section.links)
-    .filter(({ href }) => isSidebarLinkActive(pathname, href))
+    .flatMap((section) => section.links.flatMap((link) => [link, ...(link.children ?? [])]))
+    .filter((link) => link.href)
+    .filter((link): link is SidebarLink & { href: string } => Boolean(link.href))
+    .filter(({ href }) => isSidebarLinkActive(pathname, href, currentSearch))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   const subscribeToPreference = useCallback((onChange: () => void) => {
@@ -149,6 +166,13 @@ export function ResponsiveSidebar({
     }
   }, [storageKey]);
   const collapsed = useSyncExternalStore(subscribeToPreference, getPreferenceSnapshot, () => false);
+
+  useEffect(() => {
+    const updateSearch = () => setCurrentSearch(window.location.search);
+    updateSearch();
+    window.addEventListener("popstate", updateSearch);
+    return () => window.removeEventListener("popstate", updateSearch);
+  }, [pathname]);
 
   useEffect(() => {
     const media = window.matchMedia(mobileQuery);
@@ -225,6 +249,10 @@ export function ResponsiveSidebar({
     if (isMobile) window.requestAnimationFrame(() => triggerRef.current?.focus());
   };
   const activeLink = (href: string) => href === activeHref;
+  const handleLinkClick = (href: string) => {
+    setCurrentSearch(new URL(href, window.location.origin).search);
+    closeMobile();
+  };
 
   return (
     <div className={`responsive-sidebar-shell responsive-sidebar-${variant}${collapsed ? " is-collapsed" : ""}${mobileOpen ? " is-mobile-open" : ""}`}>
@@ -288,9 +316,80 @@ export function ResponsiveSidebar({
           {sections.map((section, sectionIndex) => (
             <div className="responsive-sidebar-section" key={`${section.label ?? "navigation"}-${sectionIndex}`}>
               {section.label && <p className="responsive-sidebar-section-label">{section.label}</p>}
-              {section.links.map(({ label, href, icon, badge }) => {
+              {section.links.map(({ label, href, icon, badge, children, disabledReason }, linkIndex) => {
                 const Icon = sidebarIcons[icon] ?? CircleHelp;
-                const active = activeLink(href);
+                const active = href ? activeLink(href) : false;
+                const groupActive = children?.length ? isSidebarGroupActive(pathname, children, currentSearch) : false;
+                const groupKey = `${sectionIndex}-${linkIndex}`;
+                const submenuId = `${storageKey}-submenu-${sectionIndex}-${linkIndex}`;
+                const expanded = expandedGroups[groupKey] ?? groupActive;
+                if (children?.length) {
+                  return (
+                    <div className="responsive-sidebar-group" key={`${label}-${href ?? "group"}`}>
+                      <button
+                        className={`responsive-sidebar-link responsive-sidebar-group-toggle${groupActive ? " active" : ""}`}
+                        type="button"
+                        aria-label={label}
+                        aria-expanded={expanded}
+                        aria-controls={submenuId}
+                        data-label={label}
+                        onClick={() => setExpandedGroups((current) => ({ ...current, [groupKey]: !expanded }))}
+                        title={collapsed ? label : undefined}
+                      >
+                        <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+                        <span className="responsive-sidebar-link-label">{label}</span>
+                        <ChevronDown className="responsive-sidebar-chevron" size={16} aria-hidden="true" />
+                      </button>
+                      <div className="responsive-sidebar-submenu" id={submenuId} hidden={!expanded}>
+                        {children.map((child) => {
+                          const ChildIcon = sidebarIcons[child.icon] ?? CircleHelp;
+                          const childActive = child.href ? activeLink(child.href) : false;
+                          return child.href ? (
+                            <Link
+                              className={`responsive-sidebar-link responsive-sidebar-sublink${childActive ? " active" : ""}`}
+                              aria-current={childActive ? "page" : undefined}
+                              aria-label={child.label}
+                              data-label={child.label}
+                              href={child.href}
+                              key={`${child.label}-${child.href}`}
+                              onClick={() => child.href && handleLinkClick(child.href)}
+                              title={collapsed ? child.label : undefined}
+                            >
+                              <ChildIcon size={17} strokeWidth={1.8} aria-hidden="true" />
+                              <span className="responsive-sidebar-link-label">{child.label}</span>
+                            </Link>
+                          ) : (
+                            <span
+                              className="responsive-sidebar-link responsive-sidebar-sublink is-disabled"
+                              aria-label={`${child.label}. Not implemented. ${child.disabledReason ?? ""}`}
+                              aria-disabled="true"
+                              key={child.label}
+                              title={child.disabledReason}
+                            >
+                              <ChildIcon size={17} strokeWidth={1.8} aria-hidden="true" />
+                              <span className="responsive-sidebar-link-label">{child.label}</span>
+                              <span className="responsive-sidebar-unavailable">Not implemented</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+                if (!href) {
+                  return (
+                    <span
+                      className="responsive-sidebar-link is-disabled"
+                      aria-disabled="true"
+                      data-label={label}
+                      key={label}
+                      title={disabledReason}
+                    >
+                      <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+                      <span className="responsive-sidebar-link-label">{label}</span>
+                    </span>
+                  );
+                }
                 return (
                   <Link
                     className={`responsive-sidebar-link${active ? " active" : ""}`}
@@ -299,7 +398,7 @@ export function ResponsiveSidebar({
                     data-label={label}
                     href={href}
                     key={href}
-                    onClick={closeMobile}
+                    onClick={() => handleLinkClick(href)}
                     title={collapsed ? label : undefined}
                   >
                     <Icon size={19} strokeWidth={1.8} aria-hidden="true" />

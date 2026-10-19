@@ -55,7 +55,7 @@ export function BusinessReceipt({
 }) {
   const currency = (amount: number) => `KSh ${amount.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
-    <article className="business-receipt" style={{ "--document-accent": settings.accentColor } as CSSProperties}>
+    <article className="business-receipt" data-paper-size={settings.paperSize} style={{ "--document-accent": settings.accentColor } as CSSProperties}>
       <header className="business-receipt-header">
         {settings.logoUrl && <Image src={settings.logoUrl} alt="" width={72} height={72} unoptimized />}
         <h2>{settings.businessName}</h2>

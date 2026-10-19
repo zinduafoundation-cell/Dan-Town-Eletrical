@@ -1,5 +1,5 @@
 export { createSupabaseBrowserClient } from "./client";
-export type { BusinessCentreMetrics, BusinessDocument, BusinessDocumentAttachment, BusinessDocumentEvent, BusinessDocumentGroup, BusinessDocumentSequence, BusinessDocumentStatus, BusinessDocumentType, Database, DomainEvent, Inventory, InventoryHealth, Json, Order, OrderItem, OrderStatus, OrderStatusHistory, PaymentStatus, Product } from "./types";
+export type { BusinessCentreMetrics, BusinessDocument, BusinessDocumentAttachment, BusinessDocumentEvent, BusinessDocumentGroup, BusinessDocumentSequence, BusinessDocumentStatus, BusinessDocumentType, CashMovement, CashMovementInsert, CashMovementType, Database, DomainEvent, Inventory, InventoryHealth, Json, Order, OrderItem, OrderStatus, OrderStatusHistory, PaymentStatus, PosSession, PosTransaction, PosTransactionItem, Product, QuotationItem, QuotationItemInsert, Refund, RefundInsert } from "./types";
 
 export { adjustInventory, getInventoryHealth } from "./services/inventory";
 export { createOrder, getCustomerOrders } from "./services/orders";

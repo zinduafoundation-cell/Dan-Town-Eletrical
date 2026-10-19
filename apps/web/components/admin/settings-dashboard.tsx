@@ -43,7 +43,7 @@ export function SettingsDashboard({ permissions }: { permissions: Permission[] }
         })}
       </div> : <div className="settings-empty"><h3>No matching settings</h3><p>Try a module name such as inventory, documents, or payments.</p></div>}
       <section className="settings-ai-callout">
-        <div><p className="eyebrow">DAN T AI</p><h2>Ask about settings</h2><p>Get directions based on approved, permission-filtered information. The assistant will not claim to change a setting or create a backup.</p></div>
+        <div><p className="eyebrow">DAN T AI</p><h2>Ask about settings</h2><p>Get directions based on approved, permission-filtered information. Authorized Centre and admin users can request supported business-profile changes, which require confirmation before saving. Backups are not available through AI.</p></div>
         <button className="button button-secondary" type="button" onClick={() => window.dispatchEvent(new CustomEvent("dantown-ai-ask", { detail: "Help me find the right Dantown settings page and explain what it controls." }))}>Ask about settings</button>
       </section>
     </div>

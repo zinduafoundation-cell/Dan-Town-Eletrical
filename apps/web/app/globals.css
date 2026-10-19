@@ -7351,6 +7351,9 @@ body {
 .business-document-list-item > span, .business-document-list-item > small { color: #64748b; font-size: 12px; }
 .business-document-print-area { grid-column: 1 / -1; min-width: 0; }
 .business-document-print-area .business-receipt { max-width: 760px; }
+@page dantown-document-a4 { size: A4 portrait; margin: 12mm; }
+@page dantown-document-a5 { size: A5 portrait; margin: 10mm; }
+@page dantown-document-letter { size: letter portrait; margin: 0.5in; }
 .business-receipt-document-terms { border-bottom: 1px dashed #d8dee5; display: grid; gap: 5px; padding: 8px 0; }
 .business-receipt-document-terms p { display: flex; font-size: 12px; justify-content: space-between; margin: 0; }
 .business-receipt-document-terms strong { text-align: right; }
@@ -7364,7 +7367,10 @@ body {
   body * { visibility: hidden !important; }
   .business-document-print-area, .business-document-print-area * { visibility: visible !important; }
   .business-document-print-area { left: 0; position: absolute; top: 0; width: 100%; }
-  .business-document-print-area .business-receipt { border: 0; border-radius: 0; box-shadow: none; margin: 0 auto; max-width: 100%; }
+  .business-receipt[data-paper-size="A4"] { page: dantown-document-a4; }
+  .business-receipt[data-paper-size="A5"] { page: dantown-document-a5; }
+  .business-receipt[data-paper-size="LETTER"] { page: dantown-document-letter; }
+  .business-document-print-area .business-receipt { border: 0; border-radius: 0; box-shadow: none; margin: 0 auto; max-width: 100%; width: 100%; }
 }
 
 /* ================================================================
@@ -10053,6 +10059,21 @@ body .portal-main .settings-action-card:hover { border-color: #aac6e8; box-shado
 body .portal-main .settings-action-card span { display: grid; gap: 5px; }
 body .portal-main .settings-action-card strong { color: #10243e; font-size: 14px; }
 body .portal-main .settings-action-card small { color: #6d7c91; font-size: 11.5px; line-height: 1.5; }
+body .portal-main .payment-provider-settings { background: #fff; border: 1px solid #e3e9f1; border-radius: 16px; display: grid; gap: 16px; padding: 20px; }
+body .portal-main .payment-provider-settings-heading { align-items: flex-start; display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: space-between; }
+body .portal-main .payment-provider-settings-heading h3 { color: #10243e; font-size: 17px; margin: 0 0 6px; }
+body .portal-main .payment-provider-settings-heading p,
+body .portal-main .payment-provider-updated { color: #62738a; font-size: 12px; line-height: 1.55; margin: 0; }
+body .portal-main .payment-provider-options { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body .portal-main .payment-provider-option { align-items: flex-start; background: #f7f9fc; border: 1px solid #e3e9f1; border-radius: 12px; cursor: pointer; display: flex; gap: 12px; padding: 14px; }
+body .portal-main .payment-provider-option input { accent-color: #f26a1b; flex: 0 0 18px; height: 18px; margin: 1px 0 0; width: 18px; }
+body .portal-main .payment-provider-option span { display: grid; gap: 5px; }
+body .portal-main .payment-provider-option strong { color: #10243e; font-size: 13px; }
+body .portal-main .payment-provider-option small { color: #62738a; font-size: 11.5px; line-height: 1.5; }
+body .portal-main .payment-provider-security-note { background: #f2f7ff; border-left: 3px solid #2472c8; border-radius: 0 10px 10px 0; color: #40546f; font-size: 12px; line-height: 1.6; margin: 0; padding: 12px 14px; }
+body .portal-main .payment-provider-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+body .portal-main .payment-provider-settings .settings-save-success { color: #16794f; font-size: 13px; margin: 0; }
+body .portal-main .payment-provider-settings .settings-save-error { color: #b3283d; font-size: 13px; margin: 0; }
 body .portal-main .settings-workspace button:focus-visible,
 body .portal-main .settings-workspace a:focus-visible,
 body .portal-main .settings-category-workspace button:focus-visible,
@@ -10100,6 +10121,7 @@ body .portal-main .supplier-profile-section { background: #fff; border: 1px soli
   body .portal-main .settings-ai-callout { align-items: stretch; flex-direction: column; padding: 18px; }
   body .portal-main .settings-global-search { flex-basis: auto; width: 100%; }
   body .portal-main .settings-action-grid { grid-template-columns: 1fr; }
+  body .portal-main .payment-provider-options { grid-template-columns: 1fr; }
 }
 
 /* ===== DANTOWN REDESIGN: STEP 10 (MOBILE PASS) ===== */
@@ -11352,6 +11374,8 @@ body .portal-main .catalog-simple-fields small { color: #68788b; font-size: 10px
 .customer-receipt-panel { display: grid; gap: 14px; margin: 22px 0; }
 .customer-receipt-panel h2 { margin: 0; }
 .customer-receipt-panel > .button { justify-self: start; }
+.customer-receipt-payment-select { display: grid; gap: 6px; max-width: 460px; }
+.customer-receipt-payment-select select { border: 1px solid #ccd5e0; border-radius: 9px; font: inherit; min-height: 40px; padding: 8px 10px; }
 .business-document-editor { display: grid; gap: 22px; grid-template-columns: minmax(280px, 1fr) minmax(280px, .9fr); }
 .business-document-form { background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; display: grid; gap: 18px; padding: 20px; }
 .business-document-form section { display: grid; gap: 12px; }
