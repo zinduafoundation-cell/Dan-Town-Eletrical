@@ -4750,6 +4750,24 @@ body {
 .store-shell .account-stat small {
   color: rgba(5, 5, 5, 0.66);
 }
+
+.store-shell .account-hub {
+  position: relative;
+  z-index: 1;
+  padding-top: clamp(20px, 4vw, 36px);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.store-shell .account-hub > * {
+  position: relative;
+  z-index: 1;
+}
+
+.store-shell .account-hub::before,
+.store-shell .account-hub::after {
+  content: none;
+  display: none;
+}
 .store-shell .daily-quote {
   margin: 1.25rem 0 0;
   padding: 0.9rem 1rem;
@@ -4764,36 +4782,134 @@ body {
   color: var(--dantown-black);
   font-weight: 600;
 }
-.account-hub-heading { align-items: end; display: flex; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
-.account-hub-heading h1 { margin: 0 0 8px; text-transform: capitalize; }
-.account-hub-heading > div > p:not(.eyebrow) { color: var(--muted); margin: 0; max-width: 620px; }
-.account-hub-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
-.account-hub-sidebar, .account-hub-section, .account-hub-welcome { background: var(--white); border: 1px solid var(--line); border-radius: 22px; }
-.account-hub-sidebar { overflow: hidden; position: sticky; top: 20px; }
-.account-hub-profile { background: var(--dantown-deep-blue, #061d35); color: #fff; display: grid; gap: 6px; padding: 22px; }
-.account-hub-profile .account-avatar { align-items: center; background: var(--lime); border-radius: 50%; color: var(--dantown-black); display: flex; font-weight: 800; height: 44px; justify-content: center; width: 44px; }
+.account-hub-heading {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.account-hub-heading h1 {
+  margin: 0 0 8px;
+  text-transform: capitalize;
+}
+.account-hub-heading > div > p:not(.eyebrow) {
+  color: var(--muted);
+  margin: 0;
+  max-width: 620px;
+}
+.account-hub-layout {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+.account-hub-sidebar, .account-hub-section, .account-hub-welcome {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+.account-hub-sidebar {
+  overflow: hidden;
+  position: sticky;
+  top: 20px;
+}
+.account-hub-profile {
+  background: var(--dantown-deep-blue, #061d35);
+  color: #fff;
+  display: grid;
+  gap: 6px;
+  padding: 22px;
+}
+.account-hub-profile .account-avatar {
+  align-items: center;
+  background: var(--lime);
+  border-radius: 50%;
+  color: var(--dantown-black);
+  display: flex;
+  font-weight: 800;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
 .account-hub-profile small { color: rgba(255,255,255,.72); overflow-wrap: anywhere; }
-.account-verified { align-items: center; color: #d7f1b5; display: flex; font-size: 11px; gap: 5px; margin-top: 4px; }
+.account-verified {
+  align-items: center;
+  color: #d7f1b5;
+  display: flex;
+  font-size: 11px;
+  gap: 5px;
+  margin-top: 4px;
+}
 .account-hub-sidebar nav { display: grid; padding: 10px; }
-.account-hub-sidebar nav a { border-radius: 10px; color: var(--dantown-black); font-size: 12px; padding: 10px 12px; }
-.account-hub-sidebar nav a:hover, .account-hub-sidebar nav a.active { background: #e7f0f7; color: var(--dantown-blue); font-weight: 700; }
-.account-hub-content { display: grid; gap: 20px; min-width: 0; }
-.account-hub-welcome { align-items: center; display: flex; justify-content: space-between; padding: 28px; }
+.account-hub-sidebar nav a {
+  border-radius: 10px;
+  color: var(--dantown-black);
+  font-size: 12px;
+  padding: 10px 12px;
+}
+.account-hub-sidebar nav a:hover, .account-hub-sidebar nav a.active {
+  background: #e7f0f7;
+  color: var(--dantown-blue);
+  font-weight: 700;
+}
+.account-hub-content {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.account-hub-welcome {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 28px;
+  position: relative;
+  z-index: 1;
+}
 .account-hub-welcome h2 { margin: 0 0 8px; }
 .account-hub-welcome p:last-child { color: var(--muted); margin: 0; }
-.account-hub-stats { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); }
-.account-hub-stat { background: var(--white); border: 1px solid var(--line); border-radius: 16px; color: var(--dantown-black); display: grid; gap: 7px; padding: 16px; position: relative; }
+.account-hub-stats {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.account-hub-stat {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--dantown-black);
+  display: grid;
+  gap: 7px;
+  min-height: 150px;
+  padding: 16px;
+  position: relative;
+}
 .account-hub-stat span { align-items: center; background: #e7f0f7; border-radius: 9px; color: var(--dantown-blue); display: flex; height: 32px; justify-content: center; width: 32px; }
 .account-hub-stat small { color: var(--muted); font-size: 11px; }
 .account-hub-stat strong { font-size: 22px; }
 .account-hub-stat > svg { position: absolute; right: 14px; top: 18px; }
 .account-hub-section { padding: 24px; }
 .account-order-list { display: grid; gap: 8px; }
-.account-order-row { align-items: center; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; }
+.account-order-row {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+}
 .account-order-row div { display: grid; gap: 5px; }
 .account-order-row div:last-child { text-align: right; }
 .account-order-row small { color: var(--muted); font-size: 11px; }
-.account-quick-actions { display: grid; gap: 10px; grid-template-columns: repeat(4, 1fr); }
+.account-quick-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 .account-quick-action { align-items: center; background: #edf4f8; border-radius: 13px; color: var(--dantown-black); display: flex; gap: 8px; min-height: 52px; padding: 12px; }
 .account-quick-action span { flex: 1; font-size: 12px; font-weight: 700; }
 .account-empty { padding: 18px 0 4px; }
@@ -4836,17 +4952,28 @@ body {
   .account-hub-sidebar { position: static; }
   .account-hub-sidebar nav { display: flex; gap: 6px; overflow-x: auto; }
   .account-hub-sidebar nav a { flex: 0 0 auto; white-space: nowrap; }
-  .account-hub-stats { grid-template-columns: repeat(2, 1fr); }
-  .account-quick-actions { grid-template-columns: repeat(2, 1fr); }
+  .account-hub-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .account-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
-  .account-hub-heading { align-items: start; flex-direction: column; }
+  .account-hub-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: 8px;
+  }
   .account-hub-heading .button { width: 100%; }
-  .account-hub-welcome { padding: 22px; }
+  .account-hub-welcome {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 22px 18px;
+  }
   .account-hub-stats { grid-template-columns: 1fr 1fr; }
+  .account-hub-stat { min-height: 130px; }
   .account-hub-section { padding: 18px; }
   .account-order-row { align-items: start; flex-direction: column; }
   .account-order-row div:last-child { text-align: left; }
+  .account-quick-actions { grid-template-columns: 1fr; }
 }
 .store-shell .account-stat {
   color: var(--dantown-black);
@@ -9335,14 +9462,43 @@ body .store-shell .contact-info strong { color: #0b1b2e; font-size: 15px; }
 /* ===== DANTOWN REDESIGN: STEP 6 (CUSTOMER ACCOUNT) ===== */
 
 /* ---- hub heading ---- */
-body .store-shell .account-hub-heading { align-items: center; margin-bottom: 22px; }
-body .store-shell .account-hub-heading h1 { color: #0b1b2e; font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; text-transform: none; }
-body .store-shell .account-hub-heading > div > p:not(.eyebrow) { color: #475a73; font-size: 14px; line-height: 1.6; }
-body .store-shell .account-hub-heading .button { background: #f26a1b; box-shadow: 0 8px 20px rgba(242,106,27,.3); color: #fff; }
+body .store-shell .account-hub-heading {
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+  margin-top: 0;
+}
+body .store-shell .account-hub-heading h1 {
+  color: #0b1b2e;
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-top: 0;
+  text-transform: none;
+}
+body .store-shell .account-hub-heading > div > p:not(.eyebrow) {
+  color: #475a73;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+body .store-shell .account-hub-heading .button {
+  background: #f26a1b;
+  box-shadow: 0 8px 20px rgba(242,106,27,.3);
+  color: #fff;
+  flex-shrink: 0;
+}
 body .store-shell .account-hub-heading .button:hover { background: #d95a10; }
 
 /* ---- layout + sidebar ---- */
-body .store-shell .account-hub-layout { align-items: start; gap: 24px; grid-template-columns: 270px minmax(0, 1fr); }
+body .store-shell .account-hub-layout {
+  align-items: start;
+  gap: 24px;
+  grid-template-columns: 270px minmax(0, 1fr);
+  position: relative;
+  z-index: 1;
+}
 body .store-shell .account-hub-sidebar,
 body .store-shell .account-hub-section {
   background: #fff;
@@ -9350,7 +9506,7 @@ body .store-shell .account-hub-section {
   border-radius: 22px;
   box-shadow: 0 1px 2px rgba(7,26,51,.05), 0 2px 8px rgba(7,26,51,.05);
 }
-body .store-shell .account-hub-sidebar { top: 140px; }
+body .store-shell .account-hub-sidebar { position: sticky; top: 20px; }
 body .store-shell .account-hub-profile {
   background: linear-gradient(135deg, #071a33, #0b2a50);
   gap: 6px;
@@ -9384,21 +9540,31 @@ body .store-shell .account-hub-welcome {
   border-radius: 22px;
   box-shadow: 0 16px 40px rgba(7,26,51,.18);
   color: #fff;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
   padding: clamp(22px, 3vw, 32px);
+  position: relative;
+  z-index: 1;
 }
 body .store-shell .account-hub-welcome .eyebrow { color: #ffb98a; }
-body .store-shell .account-hub-welcome h2 { color: #fff; font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; letter-spacing: -0.025em; }
+body .store-shell .account-hub-welcome h2 { color: #fff; font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 8px; }
 body .store-shell .account-hub-welcome p:not(.eyebrow),
-body .store-shell .account-hub-welcome p:last-child { color: rgba(255,255,255,.8); font-size: 14px; font-style: italic; }
+body .store-shell .account-hub-welcome p:last-child { color: rgba(255,255,255,.8); font-size: 14px; font-style: italic; margin: 0; }
 body .store-shell .account-hub-welcome > svg { color: #f26a1b; flex: 0 0 auto; }
 
 /* ---- stat cards ---- */
-body .store-shell .account-hub-stats { gap: 14px; }
+body .store-shell .account-hub-stats {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 body .store-shell .account-hub-stat {
   background: #fff;
   border: 1px solid #e3e9f1;
   border-radius: 18px;
   box-shadow: 0 1px 2px rgba(7,26,51,.05);
+  min-height: 142px;
   padding: 18px;
   transition: transform .25s, box-shadow .25s, border-color .2s;
 }
@@ -9427,6 +9593,7 @@ body .store-shell .account-quick-action {
   border-radius: 16px;
   box-shadow: 0 1px 2px rgba(7,26,51,.05);
   color: #0b1b2e;
+  min-height: 56px;
   padding: 16px;
   transition: transform .25s, border-color .2s, box-shadow .25s;
 }
@@ -9462,15 +9629,36 @@ body .store-shell .portal-list-row small { color: #7a8aa0; }
   body .store-shell .account-hub-sidebar nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
   body .store-shell .account-hub-sidebar nav::-webkit-scrollbar { display: none; }
   body .store-shell .account-hub-sidebar nav a { flex: 0 0 auto; white-space: nowrap; }
-  body .store-shell .account-hub-stats { grid-template-columns: repeat(2, 1fr); }
-  body .store-shell .account-quick-actions { grid-template-columns: repeat(2, 1fr); }
+  body .store-shell .account-hub-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body .store-shell .account-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
-  body .store-shell .account-hub-heading { align-items: flex-start; }
+  body .store-shell .account-hub {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+  body .store-shell .account-hub-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 0;
+  }
+  body .store-shell .account-hub-heading .button {
+    width: 100%;
+  }
   body .store-shell .account-hub-section { border-radius: 18px; padding: 18px 16px; }
+  body .store-shell .account-hub-welcome {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+    padding: 22px 18px;
+  }
   body .store-shell .account-hub-welcome > svg { display: none; }
   body .store-shell .account-hub-profile { padding: 18px 16px; }
+  body .store-shell .account-hub-stats { grid-template-columns: 1fr 1fr; }
+  body .store-shell .account-hub-stat { min-height: 128px; }
   body .store-shell .account-quick-actions { grid-template-columns: 1fr 1fr; }
+  body .store-shell .account-order-row { align-items: start; flex-direction: column; }
+  body .store-shell .account-order-row div:last-child { text-align: left; }
 }
 /* ===== DANTOWN REDESIGN: STEP 6 POLISH (account loading card) ===== */
 .route-state-page .route-state-card:not(.route-state-card--loading) {
@@ -11565,7 +11753,13 @@ body .portal-main .catalog-simple-fields small { color: #68788b; font-size: 10px
 }
 @media (max-width: 760px) {
   body .store-shell main { padding-bottom: 170px; }
-  body .store-shell .mobile-bottom-nav { z-index: 2500; }
+  body .store-shell .mobile-bottom-nav {
+    z-index: 2500;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
   .floating-support-hub { display: none !important; }
   .guidance-help-button { bottom: calc(84px + env(safe-area-inset-bottom)) !important; right: 14px !important; }
   body .store-shell .dan-ai-launcher { bottom: calc(148px + env(safe-area-inset-bottom)) !important; right: 14px !important; }
