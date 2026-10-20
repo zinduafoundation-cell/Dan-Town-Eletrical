@@ -3,7 +3,7 @@ const OFFLINE_PAGE = "/centre/offline";
 
 function isPrivateNavigation(url) {
   return ["/centre", "/admin", "/pos", "/staff", "/business", "/business-center", "/login", "/logout",
-    "/register", "/forgot-password", "/reset-password", "/verify-email", "/callback-error", "/auth", "/api",
+    "/account", "/register", "/forgot-password", "/reset-password", "/verify-email", "/callback-error", "/auth", "/api",
     "/401", "/403"].some((prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`));
 }
 
@@ -49,6 +49,48 @@ self.addEventListener("activate", (event) => {
     ))
   );
   self.clients.claim();
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data?.json() ?? {};
+  } catch {
+    payload = {};
+  }
+  const title = typeof payload.title === "string" ? payload.title.slice(0, 80) : "Dantown account update";
+  const body = typeof payload.body === "string" ? payload.body.slice(0, 120) : "Sign in to see your latest update.";
+  const url = typeof payload.url === "string" ? payload.url : "/account/notifications";
+  event.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon: "/icon.svg",
+    badge: "/icon.svg",
+    tag: "dantown-customer-update",
+    data: { url },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(
+    typeof event.notification.data?.url === "string"
+      ? event.notification.data.url
+      : "/account/notifications",
+    self.location.origin,
+  );
+  if (target.origin !== self.location.origin || !target.pathname.startsWith("/")) {
+    target.pathname = "/account/notifications";
+    target.search = "";
+    target.hash = "";
+  }
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clients) => {
+    const existing = clients.find((client) => new URL(client.url).origin === self.location.origin);
+    if (existing) {
+      await existing.navigate(target.href);
+      return existing.focus();
+    }
+    return self.clients.openWindow(target.href);
+  }));
 });
 
 self.addEventListener("fetch", (event) => {

@@ -1,72 +1,72 @@
-import { Bell, CheckCircle2 } from "lucide-react";
 import { requireAuthenticated } from "../../../lib/auth/server";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
-import { PortalShell } from "../../portal-shell";
-import { NotificationActions } from "@/components/account/notification-actions";
+import { StorefrontShell } from "@/components/storefront";
+import { CustomerNotificationInbox } from "@/components/account/customer-notification-inbox";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccountNotificationsPage() {
   const context = await requireAuthenticated();
-  const supabase = await createSupabaseServerClient();
-  const { data: notificationsData } = await supabase
-    .from("notifications")
-    .select("id,type,title,body,read_at,created_at")
-    .eq("user_id", context.userId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  const notifications = notificationsData ?? []; const unreadCount = notifications.filter((notification) => !notification.read_at).length;
+  let notifications: Array<{
+    id: string;
+    type: "order" | "payment" | "delivery" | "promotion" | "product" | "back_in_stock" | "inquiry" | "quotation" | "account";
+    title: string;
+    body: string;
+    href: string;
+    related_type: string | null;
+    related_id: string | null;
+    read_at: string | null;
+    created_at: string;
+  }> = [];
+  let unreadCount = 0;
+  let inboxEnabled = true;
+  if (context.userId !== "dev-bypass-user") {
+    const supabase = await createSupabaseServerClient();
+    const { data: preferences, error: preferencesError } = await supabase
+      .from("customer_notification_preferences")
+      .select("inbox_enabled")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (preferencesError) throw new Error(`Unable to load your notification preferences: ${preferencesError.message}`);
+    inboxEnabled = preferences?.inbox_enabled ?? true;
+    if (inboxEnabled) {
+      const [{ data, error }, { count, error: countError }] = await Promise.all([
+        supabase
+          .from("customer_notifications")
+          .select("id,type,title,body,href,related_type,related_id,read_at,created_at")
+          .eq("user_id", context.userId)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(30),
+        supabase
+          .from("customer_notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", context.userId)
+          .is("read_at", null),
+      ]);
+      if (error) throw new Error(`Unable to load your notifications: ${error.message}`);
+      if (countError) throw new Error(`Unable to count your unread notifications: ${countError.message}`);
+      notifications = data ?? [];
+      unreadCount = count ?? 0;
+    }
+  }
 
   return (
-    <PortalShell
-      title="Your notifications."
-      description="Stay up to date with order, payment, quotation, and account activity."
-      roles={context.roles}
-      permissions={context.permissions}
-      links={[
-        { label: "Overview", href: "/account" },
-        { label: "Orders", href: "/account/orders" },
-        { label: "Quotes", href: "/account/quotes" },
-        { label: "Notifications", href: "/account/notifications" },
-        { label: "Wishlist", href: "/account/wishlist" },
-      ]}
-    >
-      <section className="account-notifications-panel">
-        <div className="account-notifications-heading">
-          <div>
-            <p className="eyebrow">Account updates</p>
-            <h2>{unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You are all caught up."}</h2>
-          </div>
-          <Bell size={25} />
-          <NotificationActions unreadIds={notifications.filter((notification) => !notification.read_at).map((notification) => notification.id)} />
-        </div>
-
-        {notifications.length ? (
-          <div className="account-notification-list">
-            {notifications.map((notification) => (
-              <article className={`account-notification${notification.read_at ? " is-read" : ""}`} key={notification.id}>
-                <span className="account-notification-icon">
-                  {notification.read_at ? <CheckCircle2 size={17} /> : <Bell size={17} />}
-                </span>
-                <div>
-                  <div className="account-notification-meta">
-                    <small>{notification.type}</small>
-                    <time dateTime={notification.created_at}>{new Date(notification.created_at).toLocaleString()}</time>
-                  </div>
-                  <h3>{notification.title}</h3>
-                  <p>{notification.body}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <h3>No notifications yet.</h3>
-            <p>Important updates about your Dantown activity will appear here.</p>
-          </div>
-        )}
-      </section>
-    </PortalShell>
+    <StorefrontShell>
+      <main className="page-shell account-subpage">
+        <section className="account-subpage-card account-data-card">
+          <p className="eyebrow">My Dantown Hub</p>
+          <h1 id="customer-notifications-heading">Your notifications</h1>
+          <p>{!inboxEnabled ? "Your in-dashboard inbox is turned off." : unreadCount ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You are all caught up."} Updates are private to your signed-in customer account.</p>
+        </section>
+        <CustomerNotificationInbox
+          initialNotifications={notifications ?? []}
+          initialUnreadCount={unreadCount ?? 0}
+          inboxEnabled={inboxEnabled}
+        />
+        <p className="customer-notification-settings-link"><Link href="/account/settings">Manage notification preferences</Link></p>
+      </main>
+    </StorefrontShell>
   );
 }

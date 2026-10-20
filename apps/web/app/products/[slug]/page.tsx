@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Tag } from "lucide-react";
 
 import { StorefrontShell } from "@/components/storefront";
 import { ProductCardActions } from "@/components/product-card-actions";
+import { BackInStockAlert } from "@/components/account/back-in-stock-alert";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getCatalogProductBySlug } from "@dantown/database";
 import { formatCurrency } from "@/lib/store-data";
@@ -49,6 +50,27 @@ export default async function ProductPage({
   if (!product) {
     notFound();
   }
+  const [{ data: inventoryRows, error: inventoryError }, { data: variants, error: variantsError }] = await Promise.all([
+    supabase
+      .from("inventory")
+      .select("variant_id,quantity,reserved_quantity")
+      .eq("product_id", product.id),
+    supabase
+      .from("product_variants")
+      .select("id,name")
+      .eq("product_id", product.id)
+      .eq("is_active", true)
+      .order("name"),
+  ]);
+  if (inventoryError) throw new Error(`Unable to check product availability: ${inventoryError.message}`);
+  if (variantsError) throw new Error(`Unable to check product variants: ${variantsError.message}`);
+  const availableQuantity = (inventoryRows ?? []).reduce(
+    (total, row) => total + Math.max(row.quantity - row.reserved_quantity, 0),
+    0,
+  );
+  const unavailableVariants = (variants ?? []).filter((variant) =>
+    !(inventoryRows ?? []).some((row) => row.variant_id === variant.id && row.quantity > row.reserved_quantity),
+  );
 
   const price =
     product.promotional_price ??
@@ -169,8 +191,20 @@ export default async function ProductPage({
                   primary_image: product.primary_image ?? null,
                   featured: Boolean(product.featured),
                 }}
-                stockStatus="In stock"
+                stockStatus={availableQuantity > 0 ? "In stock" : "Out of stock"}
               />
+              {availableQuantity <= 0 ? (
+                <BackInStockAlert productId={product.id} slug={product.slug} />
+              ) : null}
+              {unavailableVariants.map((variant) => (
+                <BackInStockAlert
+                  key={variant.id}
+                  productId={product.id}
+                  slug={product.slug}
+                  variantId={variant.id}
+                  variantName={variant.name}
+                />
+              ))}
             </div>
 
             <Link

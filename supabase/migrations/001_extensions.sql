@@ -15,31 +15,34 @@ $$;
 
 create or replace function public.is_staff()
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (
+begin
+  return exists (
     select 1 from public.user_roles ur
     join public.roles r on r.id = ur.role_id
     where ur.user_id = auth.uid() and r.code <> 'CUSTOMER'
   );
+end;
 $$;
 
 create or replace function public.has_permission(permission_code text)
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (
+begin
+  return exists (
     select 1
     from public.user_roles ur
     join public.role_permissions rp on rp.role_id = ur.role_id
     join public.permissions p on p.id = rp.permission_id
     where ur.user_id = auth.uid() and p.code = permission_code
   );
+end;
 $$;
-

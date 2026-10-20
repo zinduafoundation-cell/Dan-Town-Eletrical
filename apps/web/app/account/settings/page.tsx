@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Settings } from "lucide-react";
 import { StorefrontShell } from "@/components/storefront";
-import { NotificationPreferences } from "@/components/admin/notification-preferences";
+import { CustomerNotificationSettings } from "@/components/account/customer-notification-settings";
 import { requireAuthenticated } from "../../../lib/auth/server";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export default async function SettingsPage() {
           <h1>Account preferences</h1>
           <p>Choose how operational updates reach you.</p>
         </section>
-        <NotificationPreferences />
+        <CustomerNotificationSettings />
       </main>
     </StorefrontShell>
   );

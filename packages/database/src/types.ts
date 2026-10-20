@@ -50,6 +50,11 @@ export type Database = {
       domain_events: { Row: DomainEvent; Insert: DomainEventInsert; Update: Partial<DomainEventInsert>; Relationships: [] };
       notification_preferences: { Row: NotificationPreference; Insert: NotificationPreferenceInsert; Update: Partial<NotificationPreferenceInsert>; Relationships: [] };
       notifications: { Row: Notification; Insert: NotificationInsert; Update: Partial<NotificationInsert>; Relationships: [] };
+      customer_notification_preferences: { Row: CustomerNotificationPreference; Insert: CustomerNotificationPreferenceInsert; Update: Partial<CustomerNotificationPreferenceInsert>; Relationships: [] };
+      customer_notifications: { Row: CustomerNotification; Insert: CustomerNotificationInsert; Update: Pick<CustomerNotificationInsert, "read_at">; Relationships: [] };
+      customer_back_in_stock_requests: { Row: CustomerBackInStockRequest; Insert: CustomerBackInStockRequestInsert; Update: Partial<CustomerBackInStockRequestInsert>; Relationships: [] };
+      customer_push_subscriptions: { Row: CustomerPushSubscription; Insert: CustomerPushSubscriptionInsert; Update: Partial<CustomerPushSubscriptionInsert>; Relationships: [] };
+      customer_notification_deliveries: { Row: CustomerNotificationDelivery; Insert: CustomerNotificationDeliveryInsert; Update: Partial<CustomerNotificationDeliveryInsert>; Relationships: [] };
       automation_jobs: { Row: AutomationJob; Insert: AutomationJobInsert; Update: Partial<AutomationJobInsert>; Relationships: [] };
       product_matches: { Row: ProductMatch; Insert: ProductMatchInsert; Update: Partial<ProductMatchInsert>; Relationships: [] };
       landed_cost_calculations: { Row: LandedCostCalculation; Insert: LandedCostCalculationInsert; Update: Partial<LandedCostCalculationInsert>; Relationships: [] };
@@ -95,6 +100,10 @@ export type Database = {
       claim_domain_events: { Args: { worker_id: string; batch_size?: number; lease_seconds?: number }; Returns: DomainEvent[] };
       ack_domain_event: { Args: { event_id: string; worker_id: string }; Returns: boolean };
       retry_domain_event: { Args: { event_id: string; worker_id: string; failure_reason: string }; Returns: string | null };
+      claim_customer_notification_deliveries: { Args: { worker_id: string; batch_size?: number }; Returns: CustomerNotificationDelivery[] };
+      enqueue_customer_promotion_notifications_worker: { Args: Record<string, never>; Returns: number };
+      enqueue_customer_quote_expiry_notifications_worker: { Args: Record<string, never>; Returns: number };
+      claim_customer_push_test_slot: { Args: { target_user_id: string }; Returns: boolean };
     };
     Enums: { order_status: OrderStatus; payment_status: PaymentStatus; inventory_movement_type: InventoryMovementType };
     CompositeTypes: {};
@@ -459,7 +468,7 @@ export type Quotation = {
   created_at: string;
   updated_at: string;
 };
-export type QuotationInsert = Omit<Quotation, "id"> & { id?: string };
+export type QuotationInsert = Pick<Quotation, "quote_number"> & Partial<Omit<Quotation, "quote_number">> & { id?: string };
 export type QuotationItem = {
   id: string;
   quotation_id: string;
@@ -662,6 +671,17 @@ export type NotificationPreference = { user_id: string; email: boolean; sms: boo
 export type NotificationPreferenceInsert = Omit<NotificationPreference, "updated_at"> & { updated_at?: string };
 export type Notification = { id: string; user_id: string; type: "ORDER" | "PAYMENT" | "DELIVERY" | "LOW_STOCK" | "QUOTE" | "SYSTEM" | "PROMOTION"; title: string; body: string; data: Json; read_at: string | null; created_at: string };
 export type NotificationInsert = Omit<Notification, "id" | "created_at"> & { id?: string; created_at?: string };
+export type CustomerNotificationType = "order" | "payment" | "delivery" | "promotion" | "product" | "back_in_stock" | "inquiry" | "quotation" | "account";
+export type CustomerNotification = { id: string; user_id: string; type: CustomerNotificationType; title: string; body: string; href: string; related_type: "order" | "quotation" | "inquiry" | "product" | "promotion" | null; related_id: string | null; event_key: string; read_at: string | null; created_at: string };
+export type CustomerNotificationInsert = Omit<CustomerNotification, "id" | "created_at" | "read_at"> & { id?: string; created_at?: string; read_at?: string | null };
+export type CustomerNotificationPreference = { user_id: string; inbox_enabled: boolean; transactional_email: boolean; marketing_email: boolean; push_enabled: boolean; push_marketing: boolean; promotions_opt_in: boolean; products_opt_in: boolean; back_in_stock_enabled: boolean; quiet_start: string | null; quiet_end: string | null; timezone: string; promotions_consent_at: string | null; promotions_consent_source: string | null; products_consent_at: string | null; products_consent_source: string | null; push_test_last_requested_at: string | null; updated_at: string };
+export type CustomerNotificationPreferenceInsert = Pick<CustomerNotificationPreference, "user_id"> & Partial<Omit<CustomerNotificationPreference, "user_id">>;
+export type CustomerBackInStockRequest = { id: string; user_id: string; product_id: string; variant_id: string | null; status: "ACTIVE" | "NOTIFIED"; created_at: string; notified_at: string | null };
+export type CustomerBackInStockRequestInsert = Pick<CustomerBackInStockRequest, "user_id" | "product_id"> & { id?: string; variant_id?: string | null; status?: CustomerBackInStockRequest["status"]; created_at?: string; notified_at?: string | null };
+export type CustomerPushSubscription = { id: string; user_id: string; endpoint_hash: string; endpoint_ciphertext: string; p256dh_ciphertext: string; auth_ciphertext: string; device_label: string; active: boolean; failure_count: number; last_success_at: string | null; revoked_at: string | null; created_at: string; updated_at: string };
+export type CustomerPushSubscriptionInsert = Omit<CustomerPushSubscription, "id" | "created_at" | "updated_at" | "failure_count" | "last_success_at" | "revoked_at"> & { id?: string; created_at?: string; updated_at?: string; failure_count?: number; last_success_at?: string | null; revoked_at?: string | null };
+export type CustomerNotificationDelivery = { id: string; notification_id: string; user_id: string; channel: "email" | "push"; subscription_id: string | null; idempotency_key: string; status: "PENDING" | "PROCESSING" | "SENT" | "RETRY" | "FAILED" | "SKIPPED"; attempts: number; available_at: string; claimed_by: string | null; claimed_at: string | null; sent_at: string | null; provider_reference: string | null; last_error: string | null; created_at: string; updated_at: string };
+export type CustomerNotificationDeliveryInsert = Omit<CustomerNotificationDelivery, "id" | "attempts" | "created_at" | "updated_at" | "claimed_by" | "claimed_at" | "sent_at" | "provider_reference" | "last_error"> & { id?: string; attempts?: number; created_at?: string; updated_at?: string; claimed_by?: string | null; claimed_at?: string | null; sent_at?: string | null; provider_reference?: string | null; last_error?: string | null };
 export type AutomationJob = { id: string; workflow_name: string; status: "RECEIVED" | "PROCESSING" | "COMPLETED" | "PROCESSING_FAILED" | "REQUIRES_REVIEW"; source: string; source_reference: string | null; payload: Json; error_message: string | null; retry_count: number; next_retry_at: string | null; dead_letter: boolean; created_at: string; updated_at: string; completed_at: string | null };
 export type AutomationJobInsert = {
   id?: string;

@@ -1,4 +1,21 @@
 import type { Metadata } from "next";
-import { StorefrontShell } from "@/components/storefront";export const metadata : Metadata = {title: "Request a quote",description : "Share your project requirements and receive a tailored quote from Dantown."
-};export default function RequestQuotePage() {return (<StorefrontShell><section className="page-shell quote-page-shell"><div className="page-hero compact"><div><p className="eyebrow">Request a quote</p><h1>Tell us about your project.</h1></div></div><form className="quote-form"><div className="field-grid"><label><span>Name</span><input type="text" placeholder="Full name" /></label><label><span>Phone</span><input type="tel" placeholder="+254 ..." /></label><label><span>Email</span><input type="email" placeholder="name@example.com" /></label><label><span>Company</span><input type="text" placeholder="Optional" /></label></div><label><span>Project requirements</span><textarea rows={6} placeholder="Tell us about the scope, quantities and timeline." /></label><button type="submit" className="button button-primary">Submit request</button></form></section></StorefrontShell>);
+import { StorefrontShell } from "@/components/storefront";
+import { RequestQuoteForm } from "@/components/account/request-quote-form";
+
+export const metadata: Metadata = {
+  title: "Request a quote",
+  description: "Share your project requirements and receive a tailored quote from Dantown.",
+};
+
+export default function RequestQuotePage() {
+  return (
+    <StorefrontShell>
+      <section className="page-shell quote-page-shell">
+        <div className="page-hero compact">
+          <div><p className="eyebrow">Request a quote</p><h1>Tell us about your project.</h1></div>
+        </div>
+        <RequestQuoteForm />
+      </section>
+    </StorefrontShell>
+  );
 }

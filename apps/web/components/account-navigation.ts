@@ -7,6 +7,7 @@ export const defaultAccountLinks: AccountNavLink[] = [
   { label: "Overview", href: "/account" },
   { label: "My purchases", href: "/account/orders" },
   { label: "Quotes", href: "/account/quotes" },
+  { label: "Notifications", href: "/account/notifications" },
   { label: "Receipts & documents", href: "/account/warranty" },
   { label: "Wishlist", href: "/account/wishlist" },
   { label: "Support", href: "/account/support" },

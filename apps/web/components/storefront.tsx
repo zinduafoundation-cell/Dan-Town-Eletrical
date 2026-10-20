@@ -12,6 +12,7 @@ import { CartCountBadge } from "@/components/cart/cart-count-badge";
 import { ProductCardActions } from "@/components/product-card-actions";
 import { DanTAI } from "@/components/dan-t-ai";
 import { AccountMenu } from "@/components/account-menu";
+import { CustomerNotificationBell } from "@/components/account/customer-notification-bell";
 import type { CatalogProduct } from "@dantown/database";
 import { SearchForm } from "@/components/search-form";
 import { PublicGuidance } from "@/components/public-guidance";
@@ -66,6 +67,8 @@ export function StorefrontShell({
 
           <div className="marketplace-actions">
             <AccountMenu accountLabel={accountLabel} accountLinks={accountLinks} />
+
+            <CustomerNotificationBell />
 
             <Link href="/cart" className="icon-button cart-button" aria-label="Cart">
               <ShoppingBag size={18} />
