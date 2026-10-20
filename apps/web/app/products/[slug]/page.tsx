@@ -123,7 +123,7 @@ export default async function ProductPage({
               {product.brand && (
                 <>
                   <span>•</span>
-                  <span>{product.brand.name}</span>
+                  <Link href={`/brands/${product.brand.slug}`}>{product.brand.name}</Link>
                 </>
               )}
             </div>

@@ -316,7 +316,9 @@ export async function getCatalogProducts(
     // Keep storefront reads authoritative: demo data must never mask a catalog outage.
     let query = client
       .from("products")
-      .select(PRODUCT_LIST_SELECT);
+      .select(PRODUCT_LIST_SELECT)
+      .eq("is_active", true)
+      .eq("status", "ACTIVE");
 
     if (categoryIds) {
       query = query.in("category_id", categoryIds);
@@ -443,7 +445,9 @@ export async function getCatalogProductCount(
 
     let query = client
       .from("products")
-      .select("id", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .eq("status", "ACTIVE");
 
     if (options.search?.trim()) {
       const searchTerm = options.search.trim();

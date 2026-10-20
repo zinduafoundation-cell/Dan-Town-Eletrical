@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(14);
+select extensions.plan(15);
 
 create temporary table notification_test_users (
   id uuid primary key,
@@ -116,6 +116,11 @@ select extensions.ok(
 select extensions.ok(
   (select relrowsecurity from pg_class where oid = 'public.customer_notification_preferences'::regclass),
   'customer preferences table has row-level security enabled'
+);
+select extensions.is(
+  (select count(*)::integer from public.brands where logo_url is not null),
+  39,
+  'uploaded brand logos are registered on active brand records'
 );
 select extensions.ok(
   has_column_privilege('authenticated', 'public.customer_notifications', 'read_at', 'UPDATE')
