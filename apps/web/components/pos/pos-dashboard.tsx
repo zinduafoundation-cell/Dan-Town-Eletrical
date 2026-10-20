@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -73,6 +73,46 @@ const money = (value: number) =>
 const number = (value: number) =>
   Number(value || 0).toLocaleString("en-KE");
 
+function subscribeToNetworkStatus(callback: () => void) {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+
+function getNetworkStatus() {
+  return navigator.onLine;
+}
+
+function POSLocalClock() {
+  const [clock, setClock] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const updateClock = () => setClock(new Date());
+    const startupTimeout = window.setTimeout(updateClock, 0);
+    const clockInterval = window.setInterval(updateClock, 1000);
+
+    return () => {
+      window.clearTimeout(startupTimeout);
+      window.clearInterval(clockInterval);
+    };
+  }, []);
+
+  const formattedTime = clock
+    ? clock.toLocaleTimeString("en-KE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    : "--:--:--";
+
+  return <>Local system time · {formattedTime}</>;
+}
+
 function MetricCard({
   icon: Icon,
   label,
@@ -126,9 +166,13 @@ export function POSDashboard() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+  const metricsRequestInFlight = useRef(false);
+  const isOnline = useSyncExternalStore(
+    subscribeToNetworkStatus,
+    getNetworkStatus,
+    () => true,
+  );
   const [apiError, setApiError] = useState(false);
-  const [clock, setClock] = useState<Date | null>(null);
 
   const refreshQueue = useCallback(async () => {
     try {
@@ -151,8 +195,14 @@ export function POSDashboard() {
   }, []);
 
   const fetchMetrics = useCallback(async (manual = false) => {
-    if (manual) setRefreshing(true);
+    if (metricsRequestInFlight.current) return;
+    if (!navigator.onLine) {
+      if (manual) setApiError(true);
+      return;
+    }
 
+    metricsRequestInFlight.current = true;
+    setRefreshing(true);
     try {
       const response = await fetch("/api/pos/dashboard", {
         method: "GET",
@@ -182,38 +232,36 @@ export function POSDashboard() {
       console.error("Failed to fetch POS dashboard metrics:", error);
       setApiError(true);
     } finally {
+      metricsRequestInFlight.current = false;
       setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    setIsOnline(navigator.onLine);
-    setClock(new Date());
+    const refreshWhenActive = () => {
+      if (document.visibilityState !== "visible" || !navigator.onLine) return;
+      void fetchMetrics();
+      void refreshQueue();
+    };
 
-    const updateOnline = () => setIsOnline(navigator.onLine);
-    const updateClock = () => setClock(new Date());
-
-    window.addEventListener("online", updateOnline);
-    window.addEventListener("offline", updateOnline);
-
-    const clockInterval = window.setInterval(updateClock, 1000);
-    const metricsInterval = window.setInterval(
-      () => void fetchMetrics(),
-      30000
-    );
+    const metricsInterval = window.setInterval(refreshWhenActive, 30000);
 
     const syncListener = () => void refreshQueue();
 
     window.addEventListener("dantown-pos-sync", syncListener);
-
-    void fetchMetrics();
-    void refreshQueue();
+    window.addEventListener("online", refreshWhenActive);
+    window.addEventListener("focus", refreshWhenActive);
+    document.addEventListener("visibilitychange", refreshWhenActive);
+    const startupTimeout = window.setTimeout(() => {
+      refreshWhenActive();
+    }, 0);
 
     return () => {
-      window.removeEventListener("online", updateOnline);
-      window.removeEventListener("offline", updateOnline);
+      window.clearTimeout(startupTimeout);
       window.removeEventListener("dantown-pos-sync", syncListener);
-      window.clearInterval(clockInterval);
+      window.removeEventListener("online", refreshWhenActive);
+      window.removeEventListener("focus", refreshWhenActive);
+      document.removeEventListener("visibilitychange", refreshWhenActive);
       window.clearInterval(metricsInterval);
     };
   }, [fetchMetrics, refreshQueue]);
@@ -319,15 +367,6 @@ export function POSDashboard() {
     },
   ];
 
-  const formattedTime = clock
-    ? clock.toLocaleTimeString("en-KE", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      })
-    : "--:--:--";
-
   return (
     <main className="pos-dashboard pm-monitor">
       <div className="pm-atmosphere" aria-hidden="true">
@@ -396,7 +435,9 @@ export function POSDashboard() {
             </span>
             <div>
               <strong>Operations board</strong>
-              <span>Local system time · {formattedTime}</span>
+              <span>
+                <POSLocalClock />
+              </span>
             </div>
           </div>
 

@@ -36,7 +36,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 					<HistoryNavigation />
 					<ReceiptEffect />
 				</Providers>
-				<SpeedInsights />
+				{process.env.NODE_ENV === "production" && process.env.VERCEL === "1" ? (
+					<SpeedInsights />
+				) : null}
 			</body>
 		</html>
 	);

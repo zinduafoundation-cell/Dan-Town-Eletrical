@@ -11752,7 +11752,7 @@ body .portal-main .catalog-simple-fields small { color: #68788b; font-size: 10px
   body .store-shell .account-hub-section { position: relative; z-index: 1; }
 }
 @media (max-width: 760px) {
-  body .store-shell main { padding-bottom: 170px; }
+  body .store-shell { padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px)); }
   body .store-shell .mobile-bottom-nav {
     z-index: 2500;
     position: fixed;

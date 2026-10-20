@@ -118,7 +118,7 @@ body .portal-sidebar a.active,
 body .portal-sidebar a.active span { background: #f26a1b !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
 body .portal-sidebar a svg { color: inherit !important; }
 body .portal-sidebar-label { color: #ffb98a !important; -webkit-text-fill-color: #ffb98a !important; }
-body .portal-sidebar-group { color: rgba(11, 0, 0, 0.6) !important; -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important; }
+body .portal-sidebar-group { color: rgba(255, 255, 255, 0.6) !important; -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important; }
 body .portal-header { background: linear-gradient(180deg, #071a33, #0a2342) !important; }
 body .portal-header .brand,
 body .portal-header .brand b { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
@@ -152,24 +152,3 @@ body .portal-main .eyebrow { color: #f26a1b !important; -webkit-text-fill-color:
 body .portal-main .workspace-quick-actions,
 body .portal-main .workspace-quick-actions * { color: #334b65; }
 body .portal-main .workspace-quick-actions { background: #ffffff !important; border: 1px solid #044eb0e0 !important; }
-
-/* ---------- 5. Account page on phones and small screens ---------- */
-@media (max-width: 1024px) {
-  body .account-hub-layout { display: block !important; }
-  body .account-hub-sidebar,
-  body .account-hub-sidebar nav {
-    margin-bottom: 18px !important;
-    max-height: none !important;
-    overflow: visible !important;
-    position: static !important;
-    top: auto !important;
-    transform: none !important;
-  }
-  body .account-hub-sidebar { z-index: auto !important; }
-  body .account-hub-profile,
-  body .account-hub-welcome,
-  body .account-hub-stats,
-  body .account-hub-section { position: relative !important; z-index: auto !important; }
-  body .account-hub-sidebar nav { display: flex !important; gap: 6px !important; overflow-x: auto !important; padding: 10px !important; }
-  body .account-hub-sidebar nav a { flex: 0 0 auto !important; white-space: nowrap !important; }
-}
