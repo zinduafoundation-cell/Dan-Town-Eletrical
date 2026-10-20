@@ -19,13 +19,13 @@ Apply `20261018175809_persistent_pos_cash_sessions.sql` before deploying the per
 
 Apply `20261018183556_verified_pos_cash_refunds.sql` before enabling POS refunds. It replaces the legacy direct-refund path with an atomic cash-only workflow that validates remaining refundable balance, records the cash movement, and corrects inventory only for a fully refunded order. It does not issue refunds through electronic providers.
 
-Apply `20261018185848_verified_payment_receipt_register.sql` to persist one sequential `REC` business-document record for each successful payment. Receipt creation is idempotent per payment and never runs for pending or failed payments. The customer receipt endpoint can issue a missing historical receipt when requested.
+The applied migration `20261018185848_verified_payment_receipt_register.sql` persists one sequential `REC` business-document record for each successful payment. Receipt creation is idempotent per payment and never runs for pending or failed payments. The customer receipt endpoint can issue a missing historical receipt when requested.
 
-Apply `20261018191812_fix_pesapal_sql_type_errors.sql` to repair two remotely linted SQL errors in the existing Pesapal POS order and payment-completion functions. Until it is deployed, those Pesapal database paths can fail despite successful provider verification.
+The applied migration `20261018191812_fix_pesapal_sql_type_errors.sql` repairs two SQL errors in the existing Pesapal POS order and payment-completion functions.
 
-To apply pending migrations to the linked Supabase project, run `supabase db push --linked` from the repository root. The Supabase CLI needs the project database password in its local environment; do not commit or share that password. A dry run is available with `supabase db push --linked --dry-run`.
+To review or apply migrations for the linked Supabase project, run `supabase db push --linked --dry-run` and `supabase db push --linked` from the repository root. The Supabase CLI needs the correct project database password; do not commit or share that password.
 
-The linked project has five migrations pending: `20261018175809_persistent_pos_cash_sessions.sql`, `20261018183556_verified_pos_cash_refunds.sql`, `20261018185848_verified_payment_receipt_register.sql`, `20261018191812_fix_pesapal_sql_type_errors.sql`, and `20261019052839_business_document_draft_content_edits.sql`. A CLI dry run confirms these are the migrations that would be pushed. They have not been applied because this environment does not have authorized direct database credentials. The actual push requires the project database password, and remote database lint still reports the two Pesapal SQL errors fixed by the pending migration. Do not treat these database changes as live; apply them through the Supabase CLI and verify migration history and remote database lint before relying on the corresponding workflows.
+The linked project records these five migrations as applied: `20261018175809_persistent_pos_cash_sessions.sql`, `20261018183556_verified_pos_cash_refunds.sql`, `20261018185848_verified_payment_receipt_register.sql`, `20261018191812_fix_pesapal_sql_type_errors.sql`, and `20261019052839_business_document_draft_content_edits.sql`. This was checked on 2026-10-20 with `supabase migration list --linked` and `supabase db push --linked --dry-run`, which reported that the remote database is up to date. The linked database advisor check reported no issues at error severity. Re-run these checks after future migration changes.
 
 ## Website checkout behavior
 
@@ -37,7 +37,7 @@ The linked project has five migrations pending: `20261018175809_persistent_pos_c
 
 ## Testing and current limits
 
-Use sandbox merchant accounts and test transactions before enabling a provider. The local checkout environment inspected for this change has no Pesapal or Paystack server credentials, so a real gateway round trip could not be performed here.
+Use sandbox merchant accounts and test transactions before enabling a provider. A live gateway round trip has not been verified in this development environment. Complete the provider-specific server credentials and webhook/IPN setup, then test initiation, provider-side verification, duplicate callback handling, and the resulting payment/receipt records using a sandbox order before enabling a provider for customers. Never test with a real customer's order or live payment credentials.
 
 POS supports server-verified Pesapal checkout and an online cash sale path. Cash receipts are issued only after an authorized cashier submits the collection; the database checks the tender against the server-calculated total and records the sale, stock movements, and cash/change audit entry atomically. Cash sales also require an open persistent staff session; opening float, each verified cash sale, and the closing count are recorded in the cash movement ledger and audit log. The expected drawer balance is derived from that ledger. The offline cash queue is separate and still awaits synchronization to the server before it becomes an authoritative sale.
 
