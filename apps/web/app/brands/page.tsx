@@ -21,7 +21,11 @@ export default async function BrandsPage() {
     .eq("status", "ACTIVE");
   if (productRowsError) throw new Error("Brand product counts could not be loaded.");
   const productCounts = new Map<string, number>();
-  for (const product of productRows ?? []) if (product.brand_id) productCounts.set(product.brand_id, (productCounts.get(product.brand_id) ?? 0) + 1);
+  for (const product of productRows ?? []) {
+    if (product.brand_id) {
+      productCounts.set(product.brand_id, (productCounts.get(product.brand_id) ?? 0) + 1);
+    }
+  }
   const brandsWithCounts = brands.map((brand) => ({ ...brand, productCount: productCounts.get(brand.id) ?? 0 }));
 
   return (
