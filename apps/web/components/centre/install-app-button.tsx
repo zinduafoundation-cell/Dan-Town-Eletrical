@@ -47,6 +47,7 @@ export function InstallCentreApp() {
     () => false,
   );
   const [help, setHelp] = useState(false);
+  const [installMessage, setInstallMessage] = useState("");
 
   useEffect(() => {
     const onPrompt = (event: Event) => {
@@ -63,25 +64,47 @@ export function InstallCentreApp() {
 
   async function install() {
     if (promptEvent) {
-      await promptEvent.prompt();
-      await promptEvent.userChoice;
-      setPromptEvent(null);
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        setPromptEvent(null);
+        setInstallMessage(
+          choice.outcome === "accepted"
+            ? "Dantown app added to your device."
+            : "Install was cancelled. You can install later from your browser menu.",
+        );
+      } catch (error) {
+        console.error("Unable to open the Centre app install prompt.", error);
+        setInstallMessage(
+          "Open your browser menu and choose Install app or Add to Home Screen.",
+        );
+      }
+      setHelp(true);
       return;
     }
+    setInstallMessage(
+      ios
+        ? "Tap the Share button, then choose Add to Home Screen."
+        : "Open your browser menu and choose Install app or Add to Home Screen.",
+    );
     setHelp((open) => !open);
   }
 
   return (
     <span className="centre-install-wrap">
-      <button type="button" className="centre-install-button" onClick={install}>
+      <button
+        type="button"
+        className="centre-install-button"
+        onClick={install}
+        aria-expanded={help}
+        aria-controls="centre-install-help"
+      >
         <Download size={16} aria-hidden="true" />
-        <span>Install Centre app</span>
+        <span>Download app</span>
       </button>
       {help ? (
         <span className="centre-install-help" id="centre-install-help" role="status">
-          {ios
-            ? "Tap the Share button, then choose Add to Home Screen."
-            : "Open your browser menu and choose Install app or Add to Home Screen."}
+          {installMessage}
         </span>
       ) : null}
     </span>

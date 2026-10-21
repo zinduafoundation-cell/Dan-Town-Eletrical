@@ -26,7 +26,9 @@ export default async function BrandsPage() {
       productCounts.set(product.brand_id, (productCounts.get(product.brand_id) ?? 0) + 1);
     }
   }
-  const brandsWithCounts = brands.map((brand) => ({ ...brand, productCount: productCounts.get(brand.id) ?? 0 }));
+  const brandsWithCounts = brands
+    .map((brand) => ({ ...brand, productCount: productCounts.get(brand.id) ?? 0 }))
+    .sort((left, right) => right.productCount - left.productCount || left.name.localeCompare(right.name));
 
   return (
     <StorefrontShell>

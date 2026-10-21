@@ -35,10 +35,7 @@ export function BrandsBrowser({ brands }: { brands: Brand[] }) {
                 : <span aria-hidden="true">{brand.name.charAt(0)}</span>}
             </div>
             <div className="brand-card-heading">
-              <div>
-                <p className="eyebrow">Brand partner</p>
-                <h3>{brand.name}</h3>
-              </div>
+              <h3>{brand.name}</h3>
               <span className="brand-card-arrow" aria-hidden="true"><ArrowUpRight size={18} strokeWidth={2.2} /></span>
             </div>
             <p className="brand-card-description">{brand.description || "Explore products from this trusted electrical maker."}</p>
