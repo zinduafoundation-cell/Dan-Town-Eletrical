@@ -31,7 +31,7 @@ The application can send customer email through Resend when both `RESEND_API_KEY
 
 ## Worker and scheduling
 
-The Vercel cron invokes `/api/internal/customer-notifications/dispatch` every minute. Vercel must support the configured cron frequency. The handler requires the existing server-only `CRON_SECRET`; Vercel sends it as a bearer token. The worker enqueues promotion and quotation-expiry reminders, claims deliveries safely, honors channel opt-outs and quiet hours for nonessential push, and retries transient failures.
+The Vercel cron invokes `/api/internal/customer-notifications/dispatch` daily at 03:00 UTC so the deployment is compatible with Vercel Hobby. Inbox notifications are recorded independently, but push and email delivery by this worker may be delayed until its next run. Use Vercel Pro or an external scheduler calling the same protected endpoint if channel delivery needs to run more frequently. The handler requires the existing server-only `CRON_SECRET`; Vercel sends it as a bearer token. The worker enqueues promotion and quotation-expiry reminders, claims deliveries safely, honors channel opt-outs and quiet hours for nonessential push, and retries transient failures.
 
 To invoke the worker manually, send an authenticated `POST` using a bearer token read from `CRON_SECRET`, with an optional JSON body such as `{"limit":50}`. Never expose `CRON_SECRET`, VAPID private keys, Resend credentials, or the subscription encryption key in client code or public environment variables.
 
