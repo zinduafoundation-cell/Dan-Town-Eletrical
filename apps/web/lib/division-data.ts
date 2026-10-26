@@ -6,20 +6,58 @@ export type DivisionCategory = { name: string; description: string; slug: string
 type CategorySeed = { terms: string[]; name: string; description: string };
 
 export async function getDivisionCategories(client: SupabaseClient<Database>, seeds: CategorySeed[]) {
-  const [{ data: categories }, { data: products }] = await Promise.all([
-    client.from("categories").select("id,name,slug,image_url,is_active").eq("is_active", true),
-    client.from("products").select("category_id")
-  ]);
-  const productCounts = new Map<string, number>();
-  for (const product of products ?? []) if (product.category_id) productCounts.set(product.category_id, (productCounts.get(product.category_id) ?? 0) + 1);
-  const normalized = (value: string) => value.toLowerCase().replace(/[&/]/g, " ").replace(/\s+/g, " ").trim();
-  const result: DivisionCategory[] = [];
-  for (const seed of seeds) {
-    const category = (categories ?? []).find((candidate) => seed.terms.some((term) => normalized(candidate.name).includes(normalized(term))));
-    if (!category) continue;
-    result.push({ name: seed.name, description: seed.description, slug: category.slug, imageUrl: category.image_url, productCount: productCounts.get(category.id) ?? 0 });
+  const { data: categories, error: categoriesError } = await client
+    .from("categories")
+    .select("id,name,slug,image_url,is_active,parent_id")
+    .eq("is_active", true);
+  if (categoriesError) {
+    console.error("Unable to load division categories:", categoriesError.message);
+    throw new Error("Product categories are temporarily unavailable.");
   }
-  return result;
+
+  const normalized = (value: string) => value.toLowerCase().replace(/[&/]/g, " ").replace(/\s+/g, " ").trim();
+  const matched = seeds.flatMap((seed) => {
+    const category = (categories ?? []).find((candidate) =>
+      seed.terms.some((term) => normalized(candidate.name).includes(normalized(term))),
+    );
+    return category ? [{ seed, category }] : [];
+  });
+  const childrenByParent = new Map<string, string[]>();
+  for (const category of categories ?? []) {
+    if (!category.parent_id) continue;
+    const children = childrenByParent.get(category.parent_id) ?? [];
+    children.push(category.id);
+    childrenByParent.set(category.parent_id, children);
+  }
+  const productCountResults = await Promise.all(matched.map(({ category }) =>
+    {
+      const categoryIds = [category.id];
+      for (let index = 0; index < categoryIds.length; index += 1) {
+        for (const childId of childrenByParent.get(categoryIds[index]) ?? []) {
+          if (!categoryIds.includes(childId)) categoryIds.push(childId);
+        }
+      }
+      return client
+        .from("products")
+        .select("category_id", { count: "exact", head: true })
+        .in("category_id", categoryIds)
+        .eq("is_active", true)
+        .eq("status", "ACTIVE");
+    },
+  ));
+  const failingCount = productCountResults.find((result) => result.error)?.error;
+  if (failingCount) {
+    console.error("Unable to count live division products:", failingCount.message);
+    throw new Error("Live product counts are temporarily unavailable.");
+  }
+
+  return matched.map(({ seed, category }, index) => ({
+    name: seed.name,
+    description: seed.description,
+    slug: category.slug,
+    imageUrl: category.image_url,
+    productCount: productCountResults[index].count ?? 0,
+  }));
 }
 
 export const solarCategorySeeds: CategorySeed[] = [

@@ -3729,6 +3729,31 @@ img.catalog-product-art {
 .division-heading { align-items: end; display: flex; justify-content: space-between; gap: 20px; }.division-heading h2 { font-size: clamp(28px, 4vw, 48px); margin: 0; }.division-heading > span { color: var(--muted); font-size: 11px; }.division-category-grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }.division-category-card { background: var(--white); border: 1px solid var(--line); display: grid; gap: 16px; overflow: hidden; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }.division-category-card:hover { border-color: var(--green); box-shadow: 0 18px 38px rgba(23,72,60,.08); transform: translateY(-3px); }.division-category-image { background-position: center; background-size: cover; min-height: 150px; }.division-category-placeholder { align-items: center; background: #e7f1dc; color: var(--green); display: flex; justify-content: center; }.division-electrical .division-category-placeholder { background: #e1edf0; color: #376a79; }.division-category-card > div:last-child { display: grid; gap: 10px; padding: 0 20px 22px; }.division-category-card h3 { font-family: var(--display); font-size: 21px; margin: 0; }.division-category-card p { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0; }.division-category-card small { align-items: center; color: var(--green); display: inline-flex; font-size: 11px; font-weight: 800; gap: 8px; }
 @media (max-width: 900px) { .division-category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .division-page { padding-top: 28px; }.division-hero { align-items: flex-start; flex-direction: column; gap: 28px; }.division-hero-icon { height: 86px; width: 86px; }.division-heading { align-items: flex-start; flex-direction: column; }.division-category-grid { grid-template-columns: 1fr; } }
+.division-solar { gap: clamp(26px, 4vw, 46px); }
+.division-solar .solar-division-hero { background: radial-gradient(ellipse at 85% 20%, rgba(242,106,27,.22), transparent 35%), linear-gradient(125deg, #071a33, #0d3566); border: 1px solid rgba(7,26,51,.12); border-radius: 26px; box-shadow: 0 18px 48px rgba(7,26,51,.15); min-height: 390px; }
+.division-solar .solar-division-hero h1 { max-width: 760px; }
+.division-solar .solar-division-hero > div > p:not(.eyebrow) { color: #d5e2f0; }
+.division-solar .solar-division-hero .division-hero-icon { background: rgba(242,106,27,.16); border-color: rgba(255,138,61,.42); border-radius: 50%; color: #ff8a3d; flex: 0 0 142px; height: 142px; width: 142px; }
+.division-solar .solar-journey { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.division-solar .solar-journey-card { align-items: start; background: #fff; border: 1px solid #dfe7f0; border-radius: 17px; color: #0b1b2e; display: grid; gap: 10px; grid-template-columns: 40px minmax(0, 1fr) 18px; padding: 18px; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.division-solar .solar-journey-card:hover { border-color: #f26a1b; box-shadow: 0 12px 28px rgba(7,26,51,.08); transform: translateY(-2px); }
+.division-solar .solar-journey-card:focus-visible, .division-solar .division-category-card:focus-visible { outline: 3px solid rgba(242,106,27,.48); outline-offset: 3px; }
+.division-solar .solar-journey-card > span { align-items: center; background: #fff0e6; border-radius: 12px; color: #d95a10; display: inline-flex; grid-row: span 2; height: 40px; justify-content: center; width: 40px; }
+.division-solar .solar-journey-card strong { align-self: end; font-size: 14px; }
+.division-solar .solar-journey-card small { color: #607187; font-size: 11px; grid-column: 2; line-height: 1.5; }
+.division-solar .solar-journey-card > svg { color: #d95a10; grid-column: 3; grid-row: 1 / span 2; margin-top: 3px; }
+.division-solar .solar-catalogue-section { display: grid; gap: 20px; scroll-margin-top: 24px; }
+.division-solar .division-category-card { border-color: #e1e8f0; border-radius: 18px; }
+.division-solar .division-category-image { min-height: 180px; }
+.division-solar .division-category-placeholder { background: linear-gradient(145deg, #eef4fb, #dfeaf7); color: #0d5dab; }
+.division-solar .division-category-card small { color: #d95a10; }
+.division-solar .solar-catalogue-empty { align-items: center; background: #fff; border: 1px dashed #cbd8e5; border-radius: 18px; display: flex; gap: 16px; padding: 22px; }
+.division-solar .solar-catalogue-empty > span { align-items: center; background: #eef4fb; border-radius: 14px; color: #0d5dab; display: inline-flex; flex: 0 0 48px; height: 48px; justify-content: center; }
+.division-solar .solar-catalogue-empty h3 { font-size: 16px; margin: 0 0 6px; }
+.division-solar .solar-catalogue-empty p { color: #607187; font-size: 12px; line-height: 1.5; margin: 0; }
+.division-solar .solar-catalogue-empty .button { align-items: center; display: inline-flex; flex: 0 0 auto; gap: 8px; margin-left: auto; }
+@media (max-width: 900px) { .division-solar .solar-journey { grid-template-columns: 1fr; }.division-solar .solar-journey-card { grid-template-columns: 40px minmax(0, 1fr) 18px; } }
+@media (max-width: 560px) { .division-solar .solar-division-hero { border-radius: 20px; min-height: auto; }.division-solar .solar-division-hero .division-hero-icon { align-self: flex-end; flex-basis: 82px; height: 82px; width: 82px; }.division-solar .solar-division-hero .hero-actions { align-items: stretch; flex-direction: column; }.division-solar .solar-division-hero .hero-actions .button { justify-content: center; }.division-solar .solar-catalogue-empty { align-items: stretch; flex-direction: column; }.division-solar .solar-catalogue-empty .button { margin-left: 0; width: 100%; } }
 
 .empty-state {
   background: white;
