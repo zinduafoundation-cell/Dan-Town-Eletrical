@@ -81,6 +81,12 @@ export default function CentreOfflinePage() {
   }
 
   const pendingSales = queue.PENDING + queue.SYNCING + queue.FAILED + queue.CONFLICT;
+  const queueStatuses = [
+    { label: "Waiting to sync", value: queue.PENDING, state: "pending" },
+    { label: "Syncing now", value: queue.SYNCING, state: "syncing" },
+    { label: "Failed", value: queue.FAILED, state: "failed" },
+    { label: "Needs review", value: queue.CONFLICT, state: "conflict" },
+  ];
   if (!access.centreAuthorized) {
     return (
       <main className="centre-offline-page">
@@ -126,9 +132,13 @@ export default function CentreOfflinePage() {
           <small>{new Date(order.createdAt).toLocaleString()}</small>
         </li>)}</ul>
       </section> : null}
-      <section className="centre-offline-card">
-        <h2>Offline sales</h2>
-        <p>{pendingSales ? `${pendingSales} sale${pendingSales === 1 ? "" : "s"} waiting for review or sync.` : "No pending offline sales."} Pending sales are kept on this device until they can be synchronized.</p>
+      <section className="centre-offline-card centre-offline-queue-card" aria-labelledby="offline-queue-heading">
+        <div className="centre-offline-queue-heading"><div><p className="eyebrow">Saved on this device</p><h2 id="offline-queue-heading">Offline sales and sync status</h2></div><strong>{pendingSales} unsynced</strong></div>
+        <div className="centre-offline-queue-grid" aria-label="Offline sales by sync status">
+          {queueStatuses.map(({ label, value, state }) => <div className={`centre-offline-queue-status is-${state}`} key={state}><small>{label}</small><strong>{value.toLocaleString()}</strong></div>)}
+        </div>
+        <p>Pending sales are stored on this device until they can be synchronized. Keep this device data intact until pending sales have synced.</p>
+        {(queue.FAILED > 0 || queue.CONFLICT > 0) && <p className="centre-offline-queue-alert" role="status">Some sales could not sync automatically. Reconnect to the internet and review them before clearing browser data.</p>}
         {access.permissions.includes("orders.create") && <button type="button" onClick={() => setSaleView(true)}>Open offline cash POS</button>}
       </section>
       <footer><Link href="/centre/login">Sign in again when connected</Link></footer>

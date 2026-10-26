@@ -18,6 +18,16 @@
 .centre-offline-metrics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); margin: 0 auto 16px; max-width: 1100px; }
 .centre-offline-metrics .centre-offline-card { display: grid; gap: 8px; margin: 0; }
 .centre-offline-metrics strong { font-size: 22px; }
+.centre-offline-queue-heading { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
+.centre-offline-queue-heading .eyebrow { color: #ff8a3d; font-size: 10px; font-weight: 800; letter-spacing: .1em; margin: 0 0 6px; text-transform: uppercase; }
+.centre-offline-queue-heading h2 { margin: 0 0 16px; }
+.centre-offline-queue-heading > strong { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); border-radius: 999px; font-size: 12px; padding: 8px 12px; white-space: nowrap; }
+.centre-offline-queue-grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.centre-offline-queue-status { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 13px; display: flex; flex-direction: column-reverse; gap: 6px; min-width: 0; padding: 13px; }
+.centre-offline-queue-status small { color: #c2d3e5; font-size: 10px; }
+.centre-offline-queue-status strong { font-size: 21px; }
+.centre-offline-queue-status.is-failed strong,.centre-offline-queue-status.is-conflict strong { color: #ffb4a8; }
+.centre-offline-queue-alert { background: rgba(242,106,27,.12); border: 1px solid rgba(255,138,61,.4); border-radius: 11px; color: #ffd1b8 !important; padding: 12px; }
 .centre-offline-page > footer { margin: 18px auto; max-width: 1100px; }
 .centre-offline-page .px-register { margin: 0 auto; max-width: 1400px; }
 .centre-offline-page .px-toast { top: 20px; }
@@ -26,6 +36,9 @@
   .centre-offline-page { padding: 14px; }
   .centre-offline-setup { align-items: flex-start; flex-direction: column; }
   .centre-offline-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .centre-offline-queue-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .centre-offline-queue-heading { align-items: flex-start; flex-direction: column; }
+  .centre-offline-queue-heading h2 { margin-bottom: 10px; }
 }
 .centre-install-wrap { position: relative; display: inline-flex; }
 .centre-install-button {
