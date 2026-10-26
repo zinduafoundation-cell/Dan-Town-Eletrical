@@ -11269,6 +11269,54 @@ lters button { background:#f1f5fa; }
   }
 }
 
+/* Solar appliance controls sit on light cards within the dark storefront theme. */
+.solar-calculator-page .solar-calculator-card {
+  color: #071a33;
+}
+
+.solar-calculator-page .solar-calculator-card-heading > div {
+  color: #0d3566;
+}
+
+.solar-calculator-page .solar-load-row {
+  background: linear-gradient(145deg, #f8fbff, #eef4fb);
+  border-color: #dbe6f2;
+  box-shadow: 0 4px 12px rgba(7, 26, 51, .04);
+}
+
+.solar-calculator-page .solar-load-row > input,
+.solar-calculator-page .solar-load-row label {
+  color: #334b65;
+  font-size: 11px;
+  letter-spacing: .045em;
+}
+
+.solar-calculator-page .solar-load-row input {
+  background: #fff;
+  border-color: #cbd8e6;
+  color: #071a33;
+  color-scheme: light;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 46px;
+}
+
+.solar-calculator-page .solar-load-row input::placeholder {
+  color: #718198;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.solar-calculator-page .solar-load-row input:focus-visible {
+  border-color: #0251b0;
+  box-shadow: 0 0 0 3px rgba(2, 81, 176, .14);
+  outline: none;
+}
+
+.solar-calculator-page .solar-empty-loads {
+  color: #526174;
+}
+
 .centre-install-wrap {
   display: inline-flex;
   flex: 0 0 auto;
