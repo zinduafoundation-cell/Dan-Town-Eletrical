@@ -15,7 +15,7 @@ create or replace function public.complete_pos_offline_cash_sale(
 )
 returns public.orders
 language plpgsql
-security definer
+security invoker
 set search_path = pg_catalog, public
 as $$
 declare
