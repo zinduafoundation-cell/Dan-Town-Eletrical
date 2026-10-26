@@ -12,7 +12,13 @@ const promotionFields = z.object({
   description: z.string().trim().max(600).default(""),
   badge: z.string().trim().min(1).max(48).default("Special offer"),
   imageUrl: z.string().url().nullable().default(null),
-  destinationUrl: z.string().trim().max(500).default("/deals").refine((value) => value.startsWith("/") && !value.startsWith("//"), "Use a site-relative destination."),
+  mobileImageUrl: z.string().url().nullable().default(null),
+  ctaLabel: z.string().trim().min(1).max(48).default("Shop now"),
+  showOnHomepage: z.boolean().default(false),
+  destinationUrl: z.string().trim().max(500).default("/deals").refine(
+    (value) => value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") && !/%2f|%5c/i.test(value),
+    "Use a safe, site-relative destination."
+  ),
   startsAt: z.string().datetime().nullable().default(null),
   endsAt: z.string().datetime().nullable().default(null),
   isActive: z.boolean().default(true),
@@ -21,9 +27,52 @@ const promotionFields = z.object({
   if (promotion.startsAt && promotion.endsAt && promotion.endsAt < promotion.startsAt) {
     context.addIssue({ code: "custom", path: ["endsAt"], message: "End date must be on or after the start date." });
   }
+  if (promotion.showOnHomepage && !promotion.imageUrl) {
+    context.addIssue({ code: "custom", path: ["imageUrl"], message: "Upload a desktop banner image before showing this campaign on the homepage." });
+  }
 });
 
 const idSchema = z.string().uuid();
+const storefrontRoutes = new Set([
+  "/",
+  "/about",
+  "/account",
+  "/brands",
+  "/cart",
+  "/categories",
+  "/contact",
+  "/deals",
+  "/delivery",
+  "/electrical",
+  "/policies/delivery",
+  "/policies/returns-refunds",
+  "/request-quote",
+  "/returns",
+  "/search",
+  "/services",
+  "/shop",
+  "/shop/deals",
+  "/solar",
+  "/solar-calculator",
+  "/warranty",
+]);
+
+async function destinationExists(destinationUrl: string, supabase: ReturnType<typeof createSupabaseServiceClient>) {
+  const pathname = new URL(destinationUrl, "https://storefront.invalid").pathname;
+  if (storefrontRoutes.has(pathname)) return true;
+  const target = pathname.match(/^\/(products|categories|brands)\/([a-z0-9]+(?:-[a-z0-9]+)*)$/);
+  if (!target) return false;
+  const [, type, slug] = target;
+  if (type === "products") {
+    const { data, error } = await supabase.from("products").select("id").eq("slug", slug).eq("is_active", true).eq("status", "ACTIVE").maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+  const table = type === "categories" ? "categories" : "brands";
+  const { data, error } = await supabase.from(table).select("id").eq("slug", slug).eq("is_active", true).maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
 
 export async function GET() {
   try {
@@ -32,7 +81,7 @@ export async function GET() {
     const supabase = createSupabaseServiceClient();
     const { data, error } = await supabase
       .from("storefront_promotions")
-      .select("id,title,description,badge,image_url,destination_url,starts_at,ends_at,is_active,sort_order,created_at,updated_at")
+      .select("id,title,description,badge,image_url,mobile_image_url,cta_label,show_on_homepage,destination_url,starts_at,ends_at,is_active,sort_order,created_at,updated_at")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(100);
@@ -52,11 +101,17 @@ export async function POST(request: Request) {
     const supabase = createSupabaseServiceClient();
     const parsed = promotionFields.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Check the promotion fields." }, { status: 400 });
+    if (!await destinationExists(parsed.data.destinationUrl, supabase)) {
+      return NextResponse.json({ error: "Choose a destination that exists on the storefront." }, { status: 400 });
+    }
     const insert: Database["public"]["Tables"]["storefront_promotions"]["Insert"] = {
       title: parsed.data.title,
       description: parsed.data.description,
       badge: parsed.data.badge,
       image_url: parsed.data.imageUrl,
+      mobile_image_url: parsed.data.mobileImageUrl,
+      cta_label: parsed.data.ctaLabel,
+      show_on_homepage: parsed.data.showOnHomepage,
       destination_url: parsed.data.destinationUrl,
       starts_at: parsed.data.startsAt,
       ends_at: parsed.data.endsAt,
@@ -84,11 +139,17 @@ export async function PATCH(request: Request) {
     if (!parsedId.success || !parsedFields.success) {
       return NextResponse.json({ error: parsedFields.success ? "Choose a valid promotion." : parsedFields.error.issues[0]?.message ?? "Check the promotion fields." }, { status: 400 });
     }
+    if (!await destinationExists(parsedFields.data.destinationUrl, supabase)) {
+      return NextResponse.json({ error: "Choose a destination that exists on the storefront." }, { status: 400 });
+    }
     const { data, error } = await supabase.from("storefront_promotions").update({
       title: parsedFields.data.title,
       description: parsedFields.data.description,
       badge: parsedFields.data.badge,
       image_url: parsedFields.data.imageUrl,
+      mobile_image_url: parsedFields.data.mobileImageUrl,
+      cta_label: parsedFields.data.ctaLabel,
+      show_on_homepage: parsedFields.data.showOnHomepage,
       destination_url: parsedFields.data.destinationUrl,
       starts_at: parsedFields.data.startsAt,
       ends_at: parsedFields.data.endsAt,

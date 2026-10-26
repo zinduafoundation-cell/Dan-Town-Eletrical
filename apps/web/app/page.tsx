@@ -1,557 +1,282 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, ShieldCheck, Boxes, Wrench, Sun } from "lucide-react";
-import { buttonClassName } from "@dantown/ui";
+import { ArrowRight, BadgeCheck, Bolt, ChevronRight, ShieldCheck, SunMedium, Truck, Wrench, Zap } from "lucide-react";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
-import { HeroCarousel } from "@/components/hero-carousel";
-import { FeatureStrip } from "@/components/feature-strip";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
-import { getCatalogProducts } from "@dantown/database";
+import { getCatalogCategories, getCatalogProducts } from "@dantown/database";
 
 export const dynamic = "force-dynamic";
 
-const categories = [
-  {
-    name: "Solar",
-    description: "Panels, batteries, inverters & backup",
-    products: "120+ products",
-    slug: "solar-renewable-energy",
-    href: "/categories/solar-renewable-energy",
-    image: "/images/categories/solar.jpg",
-  },
-  {
-    name: "Electrical",
-    description: "Cables, switches, sockets & protection",
-    products: "250+ products",
-    slug: "electrical-installation",
-    href: "/categories/electrical-installation",
-    image: "/images/categories/electrical.jpg",
-  },
-  {
-    name: "Lighting",
-    description: "LED, flood, indoor & outdoor lighting",
-    products: "180+ products",
-    slug: "lighting",
-    href: "/categories/lighting",
-    image: "/images/categories/lighting.jpg",
-  },
-  {
-    name: "Tools",
-    description: "Hand tools, power tools & equipment",
-    products: "90+ products",
-    slug: "tools-equipment",
-    href: "/categories/tools-equipment",
-    image: "/images/categories/tools.jpg",
-  },
-  {
-    name: "Power & Backup",
-    description: "Generators, batteries, UPS & backup",
-    products: "70+ products",
-    slug: "power-backup-energy-storage",
-    href: "/categories/power-backup-energy-storage",
-    image: "/images/categories/power-backup.jpg",
-  },
-  {
-    name: "Kits",
-    description: "Solar kits & complete electrical solutions",
-    products: "45+ products",
-    slug: "solar-renewable-energy",
-    href: "/categories/solar-renewable-energy",
-    image: "/images/categories/kits.jpg",
-  },
-  {
-    name: "Accessories",
-    description: "Connectors, fittings, cables & accessories",
-    products: "110+ products",
-    slug: "electrical-installation-materials",
-    href: "/categories/electrical-installation-materials",
-    image: "/images/categories/accessories.jpg",
-  },
-  {
-    name: "Services",
-    description: "Installation, repairs & maintenance",
-    products: "8+ services",
-    href: "/services",
-    image: "/images/categories/services.jpg",
-  },
-];
+type HomeCampaign = {
+  id: string;
+  title: string;
+  description: string;
+  badge: string;
+  image_url: string | null;
+  mobile_image_url: string | null;
+  cta_label: string;
+  destination_url: string;
+};
 
-const heroPromos = [
-  {
-    kicker: "Deals",
-    title: "Weekend savings",
-    description: "Smart price drops on essentials for the home and site.",
-    href: "/deals",
-    image: "/images/categories/electrical.jpg",
-  },
-  {
-    kicker: "Gifts",
-    title: "Gift ideas",
-    description: "Practical picks for family, clients, and new beginnings.",
-    href: "/categories/accessories",
-    image: "/images/categories/accessories.jpg",
-  },
-  {
-    kicker: "More",
-    title: "Everything else",
-    description: "Lighting, tools, kits, and service support in one place.",
-    href: "/shop",
-    image: "/images/categories/services.jpg",
-  },
-];
+function categoryHeroImage(name: string) {
+  if (/solar|battery|backup|power/i.test(name)) return "/images/categories/solar.jpg";
+  if (/lighting|led|flood/i.test(name)) return "/images/categories/lighting.jpg";
+  if (/tools|equipment|repair/i.test(name)) return "/images/categories/tools.jpg";
+  if (/cable|switch|socket|electrical|conduit|panel/i.test(name)) return "/images/categories/electrical.jpg";
+  return "/images/categories/accessories.jpg";
+}
+
+async function getHomepageCampaigns(supabase: ReturnType<typeof createSupabaseServiceClient>): Promise<HomeCampaign[]> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("storefront_promotions")
+    .select("id,title,description,badge,image_url,mobile_image_url,cta_label,destination_url")
+    .eq("is_active", true)
+    .eq("show_on_homepage", true)
+    .or(`starts_at.is.null,starts_at.lte.${now}`)
+    .or(`ends_at.is.null,ends_at.gte.${now}`)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  if (error) {
+    console.error("Unable to load homepage campaigns:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    badge: item.badge,
+    image_url: item.image_url ?? null,
+    mobile_image_url: item.mobile_image_url ?? item.image_url ?? null,
+    cta_label: item.cta_label || "Shop now",
+    destination_url: item.destination_url,
+  }));
+}
 
 export default async function HomePage() {
   const supabase = createSupabaseServiceClient();
-  const catalogProducts = await getCatalogProducts(supabase, {
-    sort: "featured",
-    allowFallback: true
-  });
+  const currentTimestamp = new Date().getTime();
+  const [catalogProducts, categoriesData, campaigns, newArrivals, flashSaleProducts] = await Promise.all([
+    getCatalogProducts(supabase, { sort: "featured", pageSize: 8, allowFallback: true }),
+    getCatalogCategories(supabase),
+    getHomepageCampaigns(supabase),
+    getCatalogProducts(supabase, { sort: "newest", pageSize: 8, allowFallback: true }),
+    getCatalogProducts(supabase, { activePromotionOnly: true, pageSize: 8, allowFallback: true }),
+  ]);
+
+  const popularCategories = categoriesData
+    .slice(0, 6)
+    .map((category) => ({
+      ...category,
+      image: category.image_url ?? categoryHeroImage(category.name),
+      href: `/categories/${category.slug}`,
+      productCount: 0,
+    }));
+
   const featuredProducts = catalogProducts.slice(0, 8);
+  const homepageCampaign = campaigns[0] ?? null;
+  let bestSellerResponse: { data: { product_id: string }[] | null } = { data: [] };
+  try {
+    bestSellerResponse = await supabase.rpc("get_storefront_best_sellers", { p_limit: 8 });
+  } catch {
+    bestSellerResponse = { data: [] };
+  }
+  const bestSellerIds = (bestSellerResponse.data ?? []).map((entry) => entry.product_id).filter(Boolean);
+  const bestSellerProducts = bestSellerIds.length
+    ? await getCatalogProducts(supabase, { productIds: bestSellerIds, allowFallback: true })
+    : featuredProducts.slice(0, 4);
+
+  const solarCategory = categoriesData.find((category) => /solar|battery|inverter|backup|power/i.test(`${category.name} ${category.slug}`)) ?? categoriesData[0];
+  const solarProducts = solarCategory
+    ? await getCatalogProducts(supabase, { category: solarCategory.slug, pageSize: 6, allowFallback: true })
+    : featuredProducts.slice(0, 4);
+
+  const electricalProducts = catalogProducts.filter((product) => /cable|switch|socket|bulb|light|fuse|breaker|box|conduit|panel/i.test(`${product.name} ${product.category?.name ?? ""}`)).slice(0, 4);
+  const serviceHighlights = [
+    { title: "Site visits", copy: "On-site assessments for homes, offices, and commercial installations.", icon: Wrench },
+    { title: "Solar design", copy: "System sizing, inverter matching, battery recommendations and installation planning.", icon: SunMedium },
+    { title: "Power support", copy: "Repairs, maintenance and electrical upgrades for active property and business sites.", icon: Bolt },
+  ];
 
   return (
     <StorefrontShell>
+      <div className="dantown-marketplace-home">
+        {homepageCampaign ? (
+          <section className="dantown-home-hero">
+            <div className="dantown-home-hero-copy">
+              <p className="eyebrow">{homepageCampaign.badge}</p>
+              <h1>{homepageCampaign.title}</h1>
+              <p>{homepageCampaign.description}</p>
+              <div className="dantown-home-hero-actions">
+                <Link href={homepageCampaign.destination_url} className="button button-primary">
+                  {homepageCampaign.cta_label} <ArrowRight size={15} />
+                </Link>
+                <Link href="/shop" className="text-link">Browse catalogue <ChevronRight size={15} /></Link>
+              </div>
+              <div className="dantown-home-hero-proof">
+                <ShieldCheck size={16} />
+                <span>Trusted electrical and solar supply in Kenya</span>
+              </div>
+            </div>
 
-      <HeroCarousel products={featuredProducts} />
-      <FeatureStrip />
+            <div className="dantown-home-hero-visual">
+              <Image
+                src={homepageCampaign.mobile_image_url || homepageCampaign.image_url || "/images/categories/electrical.jpg"}
+                alt={homepageCampaign.title}
+                fill
+                sizes="(max-width: 900px) 100vw, 50vw"
+                priority
+                unoptimized
+              />
+            </div>
+          </section>
+        ) : null}
 
-      {/* =========================
-          HERO
-      ========================== */}
-      {false && (<section className="dantown-hero" id="top">
-        <div className="dantown-hero-copy">
-
-          <p className="eyebrow">
-            Kitale&apos;s electrical marketplace
-          </p>
-
-          <h1>
-            Power your world.
-            <br />
-            <span>Build what&apos;s next.</span>
-          </h1>
-
-          <p className="hero-text">
-            Electrical, solar and lighting products for homes,
-            businesses and the professionals who keep Kenya moving.
-          </p>
-
-          <div className="hero-actions">
-
-            <Link
-              className={buttonClassName()}
-              href="/shop"
-            >
-              Shop products
-              <ArrowRight size={17} />
-            </Link>
-
-            <Link
-              className="hero-outline-link"
-              href="/solar-calculator"
-            >
-              Find your solar system
-              <Sun size={16} />
-            </Link>
-
+        <section className="dantown-section">
+          <div className="dantown-section-heading">
+            <div>
+              <p className="eyebrow">Browse by need</p>
+              <h2>Shop by category</h2>
+            </div>
+            <Link className="text-link" href="/categories">See all <ArrowRight size={15} /></Link>
           </div>
 
-          <div className="hero-proof">
-            <ShieldCheck size={18} />
-
-            <span>
-              Trusted supply and practical advice from Kitale
-            </span>
-          </div>
-
-          <div className="hero-promo-grid" aria-label="Featured promotions">
-            {heroPromos.map((promo) => (
-              <Link key={promo.title} href={promo.href} className="hero-promo-card">
-                <div className="hero-promo-image">
-                  <Image
-                    src={promo.image}
-                    alt={promo.title}
-                    fill
-                    sizes="(max-width: 640px) 80vw, 25vw"
-                    className="hero-promo-img"
-                  />
+          <div className="dantown-category-grid">
+            {popularCategories.map((category) => (
+              <Link key={category.id} href={category.href} className="dantown-category-card">
+                <div className="dantown-category-image">
+                  <Image src={category.image} alt={category.name} fill sizes="(max-width: 700px) 80vw, 20vw" unoptimized />
+                  <div className="dantown-category-image-overlay" />
                 </div>
-
-                <div className="hero-promo-copy">
-                  <small>{promo.kicker}</small>
-                  <strong>{promo.title}</strong>
-                  <span>{promo.description}</span>
+                <div className="dantown-category-content">
+                  <div>
+                    <h3>{category.name}</h3>
+                    <p>{category.description || "Essential electrical and solar products"}</p>
+                    <small>{category.productCount ? `${category.productCount} products` : "Popular picks"}</small>
+                  </div>
+                  <span className="dantown-category-arrow"><ChevronRight size={18} /></span>
                 </div>
               </Link>
             ))}
           </div>
+        </section>
 
-        </div>
-
-
-        {/* HERO VISUAL */}
-
-        <div
-          className="hero-showcase"
-          aria-label="Solar power system"
-        >
-
-          <div
-            className="hero-visual-art"
-            aria-hidden="true"
-          >
-
-            <svg
-              viewBox="0 0 720 520"
-              role="presentation"
-            >
-
-              <defs>
-
-                <linearGradient
-                  id="hero-sky"
-                  x1="0"
-                  x2="1"
-                  y1="0"
-                  y2="1"
-                >
-
-                  <stop
-                    offset="0"
-                    stopColor="#011d38"
-                  />
-
-                  <stop
-                    offset="1"
-                    stopColor="#01162d"
-                  />
-
-                </linearGradient>
-
-                <linearGradient
-                  id="hero-ground"
-                  x1="0"
-                  x2="1"
-                >
-
-                  <stop
-                    offset="0"
-                    stopColor="#0b1c30"
-                  />
-
-                  <stop
-                    offset="1"
-                    stopColor="#0251B0"
-                  />
-
-                </linearGradient>
-
-              </defs>
-
-
-              <rect
-                width="720"
-                height="520"
-                fill="url(#hero-sky)"
-              />
-
-              <circle
-                cx="565"
-                cy="105"
-                r="62"
-                fill="#D1FF42"
-                opacity=".95"
-              />
-
-              <path
-                d="M0 360 190 230l160 88 150-100 220 126v176H0Z"
-                fill="url(#hero-ground)"
-              />
-
-              <path
-                d="m70 372 240-120 188 91-244 123Z"
-                fill="#071526"
-                stroke="#D1FF42"
-                strokeWidth="5"
-              />
-
-              <path
-                d="m101 366 202-101 145 70-202 101Z"
-                fill="#0e3761"
-              />
-
-              <path
-                d="m151 339 10 5m41-30 10 5m41-30 10 5m41-30 10 5M126 378l10 5m41-30 10 5m41-30 10 5m41-30 10 5"
-                stroke="#9bc4ef"
-                strokeWidth="4"
-              />
-
-              <path
-                d="M514 226v165m-58 0h116"
-                stroke="#071526"
-                strokeWidth="9"
-              />
-
-              <rect
-                x="492"
-                y="267"
-                width="47"
-                height="64"
-                rx="5"
-                fill="#D1FF42"
-                stroke="#071526"
-                strokeWidth="7"
-              />
-
-              <path
-                d="m519 277-14 24h12l-8 18 18-25h-12Z"
-                fill="#0251B0"
-              />
-
-              <path
-                d="M0 425c120-26 210 30 333 0 110-27 225-22 387 12v83H0Z"
-                fill="#071526"
-                opacity=".86"
-              />
-
-            </svg>
-
+        <section className="dantown-section product-section">
+          <div className="dantown-section-heading">
+            <div>
+              <p className="eyebrow">Fresh arrivals</p>
+              <h2>New in the catalogue</h2>
+            </div>
+            <Link className="text-link" href="/shop">Shop everything <ArrowRight size={15} /></Link>
           </div>
-
-
-          <div className="hero-showcase-card">
-
-            <Sun size={28} />
-
-            <small>
-              Own your energy
-            </small>
-
-            <strong>
-              Explore solar.
-            </strong>
-
-            <Link href="/solar">
-              Explore Solar
-              <ChevronRight size={15} />
-            </Link>
-
+          <div className="product-grid">
+            {newArrivals.map((product) => <ProductCard product={product} key={product.id} currentTimestamp={currentTimestamp} />)}
           </div>
+        </section>
 
-        </div>
-
-      </section>)}
-
-
-      {/* ======================================
-          SHOP BY CATEGORY — IMAGE MARKETPLACE
-      ======================================= */}
-
-      <section
-        className="dantown-section dantown-category-section"
-        id="shop"
-      >
-
-        <div className="dantown-section-heading">
-
-          <div>
-
-            <p className="eyebrow">
-              Explore Dantown
-            </p>
-
-            <h2>
-              Shop by Category
-            </h2>
-
-          </div>
-
-
-          <Link
-            className="text-link"
-            href="/categories"
-          >
-            View all categories
-            <ArrowRight size={16} />
-          </Link>
-
-        </div>
-
-
-        {/* CATEGORY GRID */}
-
-        <div className="dantown-category-grid">
-
-          {categories.map((category) => (
-
-            <Link
-              key={category.name}
-              href={category.href ?? `/categories/${category.slug}`}
-              className="dantown-category-card"
-            >
-
-              {/* IMAGE */}
-
-              <div className="dantown-category-image">
-
-                <Image
-                  src={category.image}
-                  alt={category.name}
-                  fill
-                  sizes="
-                    (max-width: 640px) 75vw,
-                    (max-width: 1024px) 30vw,
-                    16vw
-                  "
-                  className="dantown-category-img"
-                />
-
-                {/* IMAGE OVERLAY */}
-
-                <div className="dantown-category-image-overlay" />
-
+        {flashSaleProducts.length > 0 ? (
+          <section className="dantown-section product-section">
+            <div className="dantown-section-heading">
+              <div>
+                <p className="eyebrow">Limited time</p>
+                <h2>Flash sale</h2>
               </div>
+              <Link className="text-link" href="/deals">View deals <ArrowRight size={15} /></Link>
+            </div>
+            <div className="product-grid">
+              {flashSaleProducts.map((product) => <ProductCard product={product} key={product.id} currentTimestamp={currentTimestamp} />)}
+            </div>
+          </section>
+        ) : null}
 
+        <section className="dantown-section product-section">
+          <div className="dantown-section-heading">
+            <div>
+              <p className="eyebrow">Top performers</p>
+              <h2>Best sellers</h2>
+            </div>
+            <Link className="text-link" href="/shop">Explore more <ArrowRight size={15} /></Link>
+          </div>
+          <div className="product-grid">
+            {bestSellerProducts.map((product) => <ProductCard product={product} key={product.id} currentTimestamp={currentTimestamp} />)}
+          </div>
+        </section>
 
-              {/* CONTENT */}
+        <section className="dantown-section product-section">
+          <div className="dantown-section-heading">
+            <div>
+              <p className="eyebrow">Renewable energy</p>
+              <h2>Solar deals</h2>
+            </div>
+            <Link className="text-link" href={solarCategory ? `/categories/${solarCategory.slug}` : "/solar"}>See all solar <ArrowRight size={15} /></Link>
+          </div>
+          <div className="product-grid">
+            {solarProducts.map((product) => <ProductCard product={product} key={product.id} currentTimestamp={currentTimestamp} />)}
+          </div>
+        </section>
 
-              <div className="dantown-category-content">
+        <section className="dantown-section product-section">
+          <div className="dantown-section-heading">
+            <div>
+              <p className="eyebrow">Household and site essentials</p>
+              <h2>Electrical essentials</h2>
+            </div>
+            <Link className="text-link" href="/electrical">Browse electrical <ArrowRight size={15} /></Link>
+          </div>
+          <div className="product-grid">
+            {electricalProducts.map((product) => <ProductCard product={product} key={product.id} currentTimestamp={currentTimestamp} />)}
+          </div>
+        </section>
 
-                <div>
-
-                  <h3>
-                    {category.name}
-                  </h3>
-
-                  <p>
-                    {category.description}
-                  </p>
-
-                  <small>
-                    {category.products}
-                  </small>
-
-                </div>
-
-
-                <span className="dantown-category-arrow">
-                  <ChevronRight size={18} />
-                </span>
-
-              </div>
-
-            </Link>
-
-          ))}
-
-        </div>
-
-      </section>
-
-
-      {/* =========================
-          FEATURED PRODUCTS
-      ========================== */}
-
-      <section
-        className="dantown-section product-section"
-        id="featured"
-      >
-
-        <div className="dantown-section-heading">
-
-          <div>
-
-            <p className="eyebrow">
-              Dantown featured
-            </p>
-
-            <h2>
-              Built for the work ahead.
-            </h2>
-
+        <section className="dantown-section dantown-services-section">
+          <div className="dantown-section-heading">
+            <div>
+              <p className="eyebrow">Installation support</p>
+              <h2>Services & projects</h2>
+            </div>
+            <Link className="text-link" href="/services">Book a service <ArrowRight size={15} /></Link>
           </div>
 
+          <div className="dantown-service-grid">
+            {serviceHighlights.map(({ title, copy, icon: Icon }) => (
+              <div className="dantown-service-card" key={title}>
+                <div className="dantown-service-icon"><Icon size={18} /></div>
+                <strong>{title}</strong>
+                <p>{copy}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-          <Link
-            className="text-link"
-            href="/shop"
-          >
-            Shop everything
-            <ArrowRight size={16} />
-          </Link>
-
-        </div>
-
-
-        <div className="product-grid">
-
-          {featuredProducts.map((product) => (
-
-            <ProductCard
-              product={product}
-              key={product.id}
-            />
-
-          ))}
-
-        </div>
-
-      </section>
-
-
-      {/* =========================
-          COMPLETE SOLUTION
-      ========================== */}
-
-      <section className="dantown-feature-band">
-
-        <div>
-
-          <p className="eyebrow">
-            Need a complete solution?
-          </p>
-
-          <h2>
-            From a single socket to a full solar system.
-          </h2>
-
-        </div>
-
-
-        <Link
-          className={buttonClassName("secondary")}
-          href="/request-quote"
-        >
-          Talk to an expert
-          <ArrowRight size={17} />
-        </Link>
-
-      </section>
-
-
-      {/* =========================
-          TRUST
-      ========================== */}
-
-      <section className="dantown-trust">
-
-        <span>
-          <ShieldCheck size={20} />
-          Genuine products
-        </span>
-
-        <span>
-          <Boxes size={20} />
-          Local stock coordination
-        </span>
-
-        <span>
-          <Wrench size={20} />
-          Advice that works
-        </span>
-
-      </section>
-
+        <section className="dantown-section dantown-trust-section">
+          <div className="dantown-section-heading">
+            <div>
+              <p className="eyebrow">Why customers return</p>
+              <h2>Trusted delivery, support & service</h2>
+            </div>
+          </div>
+          <div className="dantown-trust-grid">
+            <div className="dantown-trust-card">
+              <Truck size={18} />
+              <strong>Fast delivery</strong>
+              <p>Nationwide order support with reliable delivery updates and clear dispatch tracking.</p>
+            </div>
+            <div className="dantown-trust-card">
+              <BadgeCheck size={18} />
+              <strong>Secure payments</strong>
+              <p>Multiple payment options with buyer protection and transparent order status checks.</p>
+            </div>
+            <div className="dantown-trust-card">
+              <Zap size={18} />
+              <strong>WhatsApp support</strong>
+              <p>Talk to the team quickly for quotations, stock checks, and service planning.</p>
+            </div>
+          </div>
+        </section>
+      </div>
     </StorefrontShell>
   );
 }

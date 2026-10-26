@@ -14,7 +14,10 @@ type CatalogProductRow = Pick<
   | "wholesale_price"
   | "dealer_price"
   | "promotional_price"
+  | "promotion_starts_at"
+  | "promotion_ends_at"
   | "featured"
+  | "created_at"
   | "category_id"
   | "brand_id"
 > & { promotion_label?: Product["promotion_label"] };
@@ -56,6 +59,9 @@ function mapCatalogProduct(
     dealer_price: toNumberOrNull(product.dealer_price),
     promotional_price: toNumberOrNull(product.promotional_price),
     promotion_label: product.promotion_label,
+    promotion_starts_at: product.promotion_starts_at,
+    promotion_ends_at: product.promotion_ends_at,
+    created_at: product.created_at,
     featured: product.featured,
     category: product.category_id ? categoriesMap.get(product.category_id) ?? null : null,
     brand: product.brand_id ? brandsMap.get(product.brand_id) ?? null : null,
@@ -92,6 +98,10 @@ export type CatalogProduct = {
   dealer_price: number | null;
   promotional_price: number | null;
   promotion_label?: string | null;
+  promotion_starts_at?: string | null;
+  promotion_ends_at?: string | null;
+  created_at?: string;
+  available_quantity?: number | null;
   featured: boolean;
   category: CatalogCategory | null;
   brand: CatalogBrand | null;
@@ -225,7 +235,7 @@ function getFilteredProducts(options: {
   search?: string;
   category?: string;
   brand?: string;
-  sort?: "featured" | "low" | "high";
+  sort?: "featured" | "low" | "high" | "newest";
 }): CatalogProduct[] {
   let products = [...MOCK_PRODUCTS];
 
@@ -256,6 +266,8 @@ function getFilteredProducts(options: {
     products.sort((a, b) => a.retail_price - b.retail_price);
   } else if (options.sort === "high") {
     products.sort((a, b) => b.retail_price - a.retail_price);
+  } else if (options.sort === "newest") {
+    products.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
   } else {
     // Featured sort
     products.sort((a, b) => {
@@ -270,7 +282,7 @@ function getFilteredProducts(options: {
 }
 
 const PRODUCT_LIST_SELECT =
-  "id, sku, name, slug, short_description, description, retail_price, contractor_price, wholesale_price, dealer_price, promotional_price, featured, category_id, brand_id";
+  "id, sku, name, slug, short_description, description, retail_price, contractor_price, wholesale_price, dealer_price, promotional_price, promotion_label, promotion_starts_at, promotion_ends_at, featured, created_at, category_id, brand_id";
 
 export async function getCatalogProducts(
   client: SupabaseClient<Database>,
@@ -279,7 +291,8 @@ export async function getCatalogProducts(
     category?: string;
     brand?: string;
     productIds?: string[];
-    sort?: "featured" | "low" | "high";
+    sort?: "featured" | "low" | "high" | "newest";
+    activePromotionOnly?: boolean;
     page?: number;
     pageSize?: number;
     allowFallback?: boolean;
@@ -340,9 +353,19 @@ export async function getCatalogProducts(
       query = query.order("retail_price", { ascending: true });
     } else if (options.sort === "high") {
       query = query.order("retail_price", { ascending: false });
+    } else if (options.sort === "newest") {
+      query = query.order("created_at", { ascending: false });
     } else {
       // Featured sort: featured products first, then by name
       query = query.order("featured", { ascending: false }).order("name", { ascending: true });
+    }
+
+    const now = new Date().toISOString();
+    if (options.activePromotionOnly) {
+      query = query
+        .not("promotional_price", "is", null)
+        .gte("promotion_ends_at", now)
+        .or(`promotion_starts_at.is.null,promotion_starts_at.lte.${now}`)
     }
 
     const page = Math.max(1, options.page ?? 1);
@@ -357,7 +380,7 @@ export async function getCatalogProducts(
     if (!data || data.length === 0) return [];
 
     // These lookups are independent; run them together to keep navigation responsive.
-    const [categoriesResult, brandsResult, imagesResult] = await Promise.all([
+    const [categoriesResult, brandsResult, imagesResult, warehousesResult] = await Promise.all([
       client
         .from("categories")
         .select("id, name, slug, description, image_url")
@@ -371,7 +394,11 @@ export async function getCatalogProducts(
         .select("product_id, image_url, is_primary, sort_order")
         .in("product_id", data.map((product) => product.id))
         .order("is_primary", { ascending: false })
-        .order("sort_order", { ascending: true })
+        .order("sort_order", { ascending: true }),
+      client
+        .from("warehouses")
+        .select("id")
+        .eq("is_active", true)
     ]);
 
     if (categoriesResult.error) throw categoriesResult.error;
@@ -381,6 +408,31 @@ export async function getCatalogProducts(
     const categoriesData = categoriesResult.data;
     const brandsData = brandsResult.data;
     const imagesData = imagesResult.data;
+    let stockByProduct: Map<string, number> | null = null;
+    if (warehousesResult.error) {
+      console.error("Unable to load storefront stock:", warehousesResult.error.message);
+    } else {
+      const warehouseIds = (warehousesResult.data ?? []).map((warehouse) => warehouse.id);
+      if (warehouseIds.length) {
+        const { data: inventoryData, error: inventoryError } = await client
+          .from("inventory")
+          .select("product_id,quantity,reserved_quantity")
+          .in("product_id", data.map((product) => product.id))
+          .in("warehouse_id", warehouseIds);
+        if (inventoryError) {
+          console.error("Unable to load storefront stock:", inventoryError.message);
+        } else {
+          stockByProduct = new Map(data.map((product) => [product.id, 0]));
+          for (const inventory of inventoryData ?? []) {
+            stockByProduct.set(
+              inventory.product_id,
+              (stockByProduct.get(inventory.product_id) ?? 0) +
+                Math.max(0, inventory.quantity - inventory.reserved_quantity)
+            );
+          }
+        }
+      }
+    }
 
     const categoriesMap = new Map((categoriesData ?? []).map((category) => [category.id, category]));
     const brandsMap = new Map((brandsData ?? []).map((brand) => [brand.id, brand]));
@@ -390,12 +442,23 @@ export async function getCatalogProducts(
     }
 
     // Map database results to CatalogProduct type
-    let products = data.map((product) => mapCatalogProduct(product, categoriesMap, brandsMap, imagesMap));
+    let products = data.map((product) => ({
+      ...mapCatalogProduct(product, categoriesMap, brandsMap, imagesMap),
+      available_quantity: stockByProduct?.get(product.id) ?? null,
+    }));
 
     // Apply brand filter if provided (client-side since DB joins aren't working)
     if (options.brand?.trim()) {
       const brandSlug = options.brand.trim();
       products = products.filter(p => p.brand?.slug === brandSlug);
+    }
+
+    if (options.activePromotionOnly) {
+      products = products.filter((product) =>
+        product.promotional_price !== null &&
+        product.promotional_price > 0 &&
+        product.promotional_price < product.retail_price
+      );
     }
 
     return products;

@@ -72,6 +72,7 @@ export type Database = {
     Views: { inventory_health: { Row: InventoryHealth; Relationships: [] } };
     Functions: {
       archive_and_delete_order: { Args: { p_order_id: string; p_actor_user_id: string | null; p_action: string; p_metadata?: Json }; Returns: undefined };
+      get_storefront_best_sellers: { Args: { p_limit?: number }; Returns: { product_id: string; units_sold: number }[] };
       adjust_inventory: { Args: { target_product_id: string; target_warehouse_id: string; delta: number; target_movement_type: InventoryMovementType; target_reference_type?: string; target_reference_id?: string }; Returns: Inventory };
       receive_purchase_order_item: { Args: { target_purchase_order_id: string; target_item_id: string; target_received_quantity: number; target_reference_id: string }; Returns: Json };
       transfer_inventory: { Args: { target_product_id: string; target_source_warehouse_id: string; target_destination_warehouse_id: string; target_quantity: number; target_reference_id: string }; Returns: Json };
@@ -709,7 +710,7 @@ export type PriceHistory = { id: string; product_id: string; price_type: string;
 export type PriceHistoryInsert = Omit<PriceHistory, "id"> & { id?: string };
 export type BusinessDocumentSettings = { id: "dantown"; template: Json; updated_at: string; updated_by: string | null };
 export type BusinessDocumentSettingsInsert = { id?: "dantown"; template: Json; updated_at?: string; updated_by?: string | null };
-export type StorefrontPromotion = { id: string; title: string; description: string; badge: string; image_url: string | null; destination_url: string; starts_at: string | null; ends_at: string | null; is_active: boolean; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
+export type StorefrontPromotion = { id: string; title: string; description: string; badge: string; image_url: string | null; mobile_image_url: string | null; cta_label: string; show_on_homepage: boolean; destination_url: string; starts_at: string | null; ends_at: string | null; is_active: boolean; sort_order: number; created_by: string | null; created_at: string; updated_at: string };
 export type StorefrontPromotionInsert = Omit<StorefrontPromotion, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
 export type BusinessDocumentType =
   | "QUOTATION" | "SALES_ORDER" | "PROFORMA_INVOICE" | "INVOICE" | "RECEIPT"

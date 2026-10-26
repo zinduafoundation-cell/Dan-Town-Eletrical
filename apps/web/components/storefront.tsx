@@ -19,6 +19,7 @@ import { PublicGuidance } from "@/components/public-guidance";
 import { WelcomeEntry } from "@/components/welcome-entry";
 import { FloatingSupportHub } from "@/components/floating-support-hub";
 import { defaultAccountLinks, storefrontPrimaryLinks } from "./account-navigation";
+import { ProductCardImage } from "@/components/product-card-image";
 
 type StorefrontShellProps = {
   children: ReactNode;
@@ -261,18 +262,27 @@ export function SectionHeading({ kicker, title, link, linkText }: { kicker: stri
 type ProductCardData = StoreProduct | CatalogProduct;
 
 export function ProductCard({
-  product
+  product,
+  currentTimestamp = 0
 }: {
   product: ProductCardData;
+  currentTimestamp?: number;
 }) {
   const isCatalogProduct = "retail_price" in product;
 
+  const promotionIsCurrent = isCatalogProduct &&
+    product.promotional_price !== null &&
+    product.promotional_price > 0 &&
+    product.promotional_price < product.retail_price &&
+    (!product.promotion_starts_at || new Date(product.promotion_starts_at).getTime() <= currentTimestamp) &&
+    (!product.promotion_ends_at || new Date(product.promotion_ends_at).getTime() >= currentTimestamp);
+
   const price = isCatalogProduct
-    ? product.promotional_price ?? product.retail_price
+    ? promotionIsCurrent ? product.promotional_price! : product.retail_price
     : product.price;
 
   const previousPrice = isCatalogProduct
-    ? product.promotional_price ? product.retail_price : undefined
+    ? promotionIsCurrent ? product.retail_price : undefined
     : product.previousPrice;
 
   const categoryName = isCatalogProduct
@@ -291,33 +301,29 @@ export function ProductCard({
           ? "#d87961"
           : "#d8e0c5";
 
-  const stockStatus = isCatalogProduct
-    ? "In stock"
+  const stockStatus: "In stock" | "Low stock" | "Out of stock" | "Available on order" = isCatalogProduct
+    ? product.available_quantity === null || product.available_quantity === undefined
+      ? "Available on order"
+      : product.available_quantity === 0
+        ? "Out of stock"
+        : product.available_quantity < 5
+          ? "Low stock"
+          : "In stock"
     : product.stockStatus;
 
   return (
     <article className="store-product-card">
-      <div
-        className="product-art"
-        style={{
-          backgroundImage:
-            isCatalogProduct && product.primary_image
-              ? `url(${product.primary_image})`
-              : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundColor: categoryColor
-        }}
-      >
+      <div className="product-art" style={{ backgroundColor: categoryColor }}>
+        {isCatalogProduct && <ProductCardImage src={product.primary_image} alt={`${product.name} product image`} />}
         {!isCatalogProduct && product.badge && (
           <span className="product-tag">{product.badge}</span>
         )}
 
-        {isCatalogProduct && (product.promotion_label || product.featured) && (
-          <span className="product-tag">{product.promotion_label ?? "Featured"}</span>
+        {isCatalogProduct && (promotionIsCurrent ? product.promotion_label : product.featured) && (
+          <span className="product-tag">{promotionIsCurrent ? product.promotion_label : "Featured"}</span>
         )}
 
-        {!(isCatalogProduct && product.primary_image) && (
+        {!isCatalogProduct && (
           <div className="product-shape" />
         )}
       </div>
@@ -359,7 +365,7 @@ export function ProductCard({
             primary_image: isCatalogProduct ? product.primary_image : null,
             featured: isCatalogProduct ? Boolean(product.featured) : false
           }}
-          stockStatus={(stockStatus as "In stock" | "Low stock" | "Out of stock" | "Available on order")}
+          stockStatus={stockStatus}
         />
       </div>
     </article>

@@ -8,7 +8,7 @@ export async function GET() {
   const now = new Date().toISOString();
   const { data, error } = await createSupabaseServiceClient()
     .from("storefront_promotions")
-    .select("id,title,description,badge,image_url,destination_url,starts_at,ends_at")
+    .select("id,title,description,badge,image_url,mobile_image_url,cta_label,show_on_homepage,destination_url,starts_at,ends_at")
     .eq("is_active", true)
     .or(`starts_at.is.null,starts_at.lte.${now}`)
     .or(`ends_at.is.null,ends_at.gte.${now}`)

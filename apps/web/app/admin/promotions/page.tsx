@@ -9,7 +9,7 @@ export default async function PromotionsPage() {
   const context = await requireAuthorizedPermission("products.update");
   const { data, error } = await createSupabaseServiceClient()
     .from("storefront_promotions")
-    .select("id,title,description,badge,image_url,destination_url,starts_at,ends_at,is_active,sort_order,created_at")
+    .select("id,title,description,badge,image_url,mobile_image_url,cta_label,show_on_homepage,destination_url,starts_at,ends_at,is_active,sort_order,created_at")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(100);
