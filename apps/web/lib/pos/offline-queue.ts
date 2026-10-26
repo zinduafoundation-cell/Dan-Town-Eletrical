@@ -1,7 +1,7 @@
 import { emit } from "../core/events";
 import { getCentreOfflineAccess } from "../centre/offline-storage";
 
-export type OfflineSalePayload = { customerId: string | null; customerName: string; subtotal: number; vat: number; total: number; paymentMethod: "cash"; items: Array<{ productId: string; quantity: number }> };
+export type OfflineSalePayload = { customerId: string | null; customerName: string; cashReceived: number; subtotal: number; vat: number; total: number; paymentMethod: "cash"; items: Array<{ productId: string; quantity: number }> };
 export type OfflineSyncStatus = "PENDING" | "SYNCING" | "SYNCED" | "FAILED" | "CONFLICT";
 type QueuedSale = { id: string; deviceId: string; staffUserId: string | null; createdAt: string; status: OfflineSyncStatus; retryCount: number; lastError: string | null; nextAttemptAt: string | null; payload: OfflineSalePayload };
 const databaseName = "dantown-pos";
@@ -105,7 +105,7 @@ export async function flushQueuedSales() {
     if (!belongsToStaff(sale.staffUserId, access.userId)) continue;
     await updateSale(sale.id, { status: "SYNCING", lastError: null, nextAttemptAt: null });
     try {
-      const response = await fetch("/api/pos/checkout", { method: "POST", headers: { "Content-Type": "application/json", "X-Offline-Transaction-Id": sale.id, "X-Offline-Device-Id": sale.deviceId, "X-Offline-Staff-Id": sale.staffUserId }, body: JSON.stringify(sale.payload) });
+      const response = await fetch("/api/pos/checkout", { method: "POST", headers: { "Content-Type": "application/json", "X-Offline-Transaction-Id": sale.id, "X-Offline-Device-Id": sale.deviceId, "X-Offline-Staff-Id": sale.staffUserId }, body: JSON.stringify({ ...sale.payload, requestId: sale.id }) });
       const result = await response.json().catch(() => null) as { error?: string; receipt?: { orderId: string } } | null;
       if (!response.ok || !result?.receipt?.orderId) {
         const retryCount = sale.retryCount + 1;

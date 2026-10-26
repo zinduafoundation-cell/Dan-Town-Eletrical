@@ -7,9 +7,9 @@ import { z } from "zod";
 import { APP_CURRENCY } from "@dantown/shared";
 import { CameraBarcodeScanner } from "@/components/pos/camera-barcode-scanner";
 import { CashSessionPanel } from "@/components/pos/cash-session";
-import { getQueuedProductQuantities } from "@/lib/pos/offline-queue";
+import { enqueueSale, getQueuedProductQuantities } from "@/lib/pos/offline-queue";
 import { matchesPOSProduct } from "@/lib/pos/product-search";
-import { getOfflinePOSProducts, type OfflinePOSProduct } from "@/lib/centre/offline-storage";
+import { getCentreOfflineAccess, getOfflinePOSProducts, type OfflinePOSProduct } from "@/lib/centre/offline-storage";
 import { createHeldSale, getHeldSales, removeHeldSale, upsertHeldSale, type HeldSale } from "@/lib/pos/held-sales";
 import { showPOSReceiptEffect } from "@/lib/pos/receipt-effect";
 import { boughtTogether, money, parseSmartLine, topPicks } from "@/lib/pos/smart";
@@ -90,9 +90,10 @@ export default function NewSalePage() {
       const online = navigator.onLine;
       setIsOnline(online);
       if (!online) {
-        setCustomerName("Walk-in Customer");
-        setCustomerSearch("");
-        setSelectedCustomer(null);
+          setTenderMethod("CASH");
+          setCustomerName("Walk-in Customer");
+          setCustomerSearch("");
+          setSelectedCustomer(null);
         setCustomers([]);
       }
     };
@@ -257,11 +258,14 @@ export default function NewSalePage() {
 
   const completeSale = async () => {
     if (!cart.length) return setMessage("Cart is empty.");
-    if (!navigator.onLine) return setMessage("Connect to the internet to record this sale securely.");
-    if (tenderMethod === "CASH" && !cashSessionId) return setMessage("Open a cash session before accepting cash.");
+    if (!isOnline && tenderMethod !== "CASH") return setMessage("Only cash sales can be queued while offline.");
+    if (isOnline && tenderMethod === "CASH" && !cashSessionId) return setMessage("Open a cash session before accepting cash.");
     const cashAmount = Number(cashReceived);
     if (tenderMethod === "CASH" && (!Number.isFinite(cashAmount) || cashAmount < total)) {
       return setMessage("Enter the cash amount received; it must cover the current sale total.");
+    }
+    if (tenderMethod === "CASH" && Math.round(cashAmount * 100) !== cashAmount * 100) {
+      return setMessage("Cash received must use no more than two decimal places.");
     }
     if (tenderMethod === "PESAPAL" && !paymentEmail.trim()) return setMessage("Enter the customer email required for Pesapal checkout.");
     const requestId = checkoutRequestId.current ?? window.crypto.randomUUID();
@@ -277,6 +281,25 @@ export default function NewSalePage() {
     try {
       setProcessing(true); setMessage(null);
       if (tenderMethod === "CASH") {
+        if (!isOnline) {
+          const access = await getCentreOfflineAccess();
+          if (!access?.userId || !access.permissions.includes("orders.create")) {
+            throw new Error("This device has no saved staff access for offline cash sales. Connect and sign in to Centre first.");
+          }
+          await enqueueSale({
+            customerId: null,
+            customerName: "Walk-in Customer",
+            cashReceived: cashAmount,
+            subtotal,
+            vat,
+            total,
+            paymentMethod: "cash",
+            items: cart.map((item) => ({ productId: item.id, quantity: item.cartQty })),
+          }, access.userId);
+          clearSale();
+          setMessage("Cash sale saved on this device. It will sync when connected and a cash session is open.");
+          return;
+        }
         const response = await fetch("/api/pos/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -337,7 +360,7 @@ export default function NewSalePage() {
 
   return <div className="px-register">
     {message && <div className="px-toast" role="status"><AlertCircle size={18} /><span>{message}</span><button type="button" onClick={() => setMessage(null)} aria-label="Dismiss">×</button></div>}
-    {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: browsing the saved catalogue is available, but recording a new cash or Pesapal sale requires an internet connection.</span></div>}
+    {!isOnline && <div className="px-toast" role="status"><AlertCircle size={18} /><span>Offline mode: saved catalogue browsing and cash-sale queueing are available. Pesapal checkout requires internet.</span></div>}
 
     <section className="px-catalog">
       <div className="px-search">
@@ -357,7 +380,7 @@ export default function NewSalePage() {
         {cart.length > 0 && <><button type="button" className="px-ghost" onClick={holdSale}><Pause size={14} /> Hold</button><button type="button" className="px-ghost" onClick={clearSale}>Clear</button></>}
       </div></div>
       <div className="px-checkout">
-        <CashSessionPanel onSessionChange={setCashSessionId} />
+        {isOnline ? <CashSessionPanel onSessionChange={setCashSessionId} /> : <p className="px-offline-note">Offline cash sales are saved on this device. Open a cash session after reconnecting to sync them.</p>}
       </div>
 
       <div className="px-lines">{cart.length === 0 ? <p className="px-empty"><ShoppingCart size={26} /><br />Scan or search to start a sale</p> : cart.map((item) => <div key={item.id} className="px-line">
@@ -372,7 +395,7 @@ export default function NewSalePage() {
         <div className="px-field"><input value={customerSearch || customerName} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerName(event.target.value || "Walk-in Customer"); setSelectedCustomer(null); setPaymentEmail(""); }} placeholder={isOnline ? "Customer (optional)" : "Walk-in only while offline"} aria-label="Customer" disabled={!isOnline} />
           {customers.length > 0 && <div className="px-dropdown">{customers.map((customer) => <button type="button" key={customer.id} onClick={() => { setSelectedCustomer(customer); setCustomerName(customer.name); setCustomerSearch(customer.name); setPaymentEmail(customer.email ?? ""); setCustomers([]); }}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</button>)}</div>}</div>
         <div className="px-tenders" aria-label="Payment method">
-          <button type="button" className={tenderMethod === "CASH" ? "active" : ""} onClick={() => setTenderMethod("CASH")} disabled={!isOnline}>
+          <button type="button" className={tenderMethod === "CASH" ? "active" : ""} onClick={() => setTenderMethod("CASH")}>
             <Banknote size={18} /> Cash
           </button>
           <button type="button" className={tenderMethod === "PESAPAL" ? "active" : ""} onClick={() => setTenderMethod("PESAPAL")} disabled={!isOnline}>
@@ -391,7 +414,6 @@ export default function NewSalePage() {
               placeholder={`Cash received (at least ${money(total)})`}
               aria-label="Cash received from customer"
               required
-              disabled={!isOnline}
             />
             {Number(cashReceived) >= total && <small>Change due: {money(Number(cashReceived) - total)}</small>}
           </label>
@@ -414,7 +436,7 @@ export default function NewSalePage() {
           type="button"
           className="px-pay"
           onClick={completeSale}
-          disabled={processing || !isOnline || (tenderMethod === "CASH" ? !cashSessionId || Number(cashReceived) < total : !paymentEmail.trim())}
+          disabled={processing || (!isOnline && tenderMethod !== "CASH") || (tenderMethod === "CASH" ? (isOnline && !cashSessionId) || Number(cashReceived) < total : !paymentEmail.trim())}
         >
           <span>{processing
             ? tenderMethod === "CASH" ? "Recording cash sale…" : "Connecting to Pesapal…"

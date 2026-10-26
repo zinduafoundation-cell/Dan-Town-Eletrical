@@ -32,6 +32,10 @@
 .centre-offline-page .px-register { margin: 0 auto; max-width: 1400px; }
 .centre-offline-page .px-toast { top: 20px; }
 .centre-offline-page :is(button, a, input, select, textarea):focus-visible { outline: 3px solid #ff8a3d; outline-offset: 2px; }
+@media (max-width: 1000px) {
+  .centre-offline-page .px-register { padding-bottom: 76px; }
+  .centre-offline-page .px-mobile-cart { bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
 @media (max-width: 600px) {
   .centre-offline-page { padding: 14px; }
   .centre-offline-setup { align-items: flex-start; flex-direction: column; }

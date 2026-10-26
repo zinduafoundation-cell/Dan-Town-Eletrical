@@ -79,6 +79,7 @@
 .px-totals p{display:flex;justify-content:space-between;margin:0 0 6px;font-size:13px;color:#334b65}
 .px-pay{display:flex;justify-content:space-between;align-items:center;min-height:62px;border:0;border-radius:16px;padding:0 22px;background:linear-gradient(135deg,var(--px-blue),#0a3b80);color:#fff;font-size:15px;font-weight:800;box-shadow:0 10px 26px rgba(2,81,176,.35)}
 .px-pay strong{font-size:22px;color:var(--px-lime)}.px-pay:disabled{opacity:.6}
+.px-offline-note{margin:0;border-radius:10px;background:#fff2dc;color:#81520b;padding:10px;font-size:12px;line-height:1.45}
 .px-empty{text-align:center;color:#62748a;font-size:13px;padding:36px 10px;grid-column:1/-1}
 .px-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:6000;display:flex;align-items:center;gap:10px;background:var(--px-navy);color:#fff;border-left:4px solid var(--px-lime);border-radius:12px;padding:12px 16px;font-size:13px;box-shadow:0 14px 36px rgba(7,26,51,.3);max-width:92vw}
 .px-toast button{background:transparent;border:0;color:#fff;font-size:18px}
