@@ -56,17 +56,22 @@ async function getCustomerRoleId() {
 export async function ensureCustomerProvisioning(user: ProvisioningUser) {
   const adminClient = createSupabaseAdminClient();
   const customer = buildCustomerProvisioningInput(user);
-  const roleId = await getCustomerRoleId();
-
-  const { data: linkedCustomer, error: linkedCustomerError } = await adminClient
-    .from("customers")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const [roleId, linkedCustomerResult, roleAssignmentsResult] = await Promise.all([
+    getCustomerRoleId(),
+    adminClient.from("customers").select("id").eq("user_id", user.id).maybeSingle(),
+    adminClient.from("user_roles").select("role_id").eq("user_id", user.id),
+  ]);
+  const { data: linkedCustomer, error: linkedCustomerError } = linkedCustomerResult;
+  const { data: roleAssignments, error: roleAssignmentsError } = roleAssignmentsResult;
 
   if (linkedCustomerError) {
     throw new CustomerProvisioningError("Could not look up the customer's existing record.", linkedCustomerError);
   }
+  if (roleAssignmentsError) {
+    throw new CustomerProvisioningError("Could not look up the customer's existing roles.", roleAssignmentsError);
+  }
+
+  if (linkedCustomer && roleAssignments?.some((assignment) => assignment.role_id === roleId)) return;
 
   if (!linkedCustomer) {
     let legacyCustomer: { id: string } | null = null;

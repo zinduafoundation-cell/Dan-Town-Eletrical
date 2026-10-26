@@ -21,7 +21,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [checkingSession, setCheckingSession] = useState(true);
   const [staffSignIn, setStaffSignIn] = useState(false);
 
   useEffect(() => {
@@ -34,11 +33,9 @@ export default function LoginPage() {
     void createAuthClient().auth.getSession()
       .then(({ data: { session } }) => {
         if (active && session) window.location.assign(completePath());
-        else if (active) setCheckingSession(false);
       })
       .catch((sessionError: unknown) => {
         console.error("EXISTING SESSION CHECK ERROR", sessionError);
-        if (active) setCheckingSession(false);
       });
 
     return () => {
@@ -114,33 +111,31 @@ export default function LoginPage() {
           <span>DANTOWN <b>ELECTRICAL</b></span>
         </a>
         <h1>Welcome back.</h1>
-        <p className="auth-lead">
-          {checkingSession ? "Checking for a saved sign-in..." : "Sign in to manage your account and orders."}
-        </p>
+        <p className="auth-lead">Sign in to manage your account and orders.</p>
         {error && <p className="auth-error" role="alert" aria-live="assertive">{error}</p>}
-        <button type="button" className="google-sign-in" onClick={signInWithGoogle} disabled={loading || checkingSession}>
+        <button type="button" className="google-sign-in" onClick={signInWithGoogle} disabled={loading}>
           <span className="google-mark">G</span>
           {loading ? "Connecting..." : "Continue with Google"}
         </button>
         {staffSignIn ? <BiometricSignIn next={requestedNextPath()} /> : null}
         <div className="auth-divider"><span>or use email</span></div>
         <form className="auth-form" onSubmit={submit}>
-          <label>Email<input name="email" type="email" autoComplete="email" required disabled={checkingSession} /></label>
-          <label>Password<input name="password" type="password" autoComplete="current-password" required disabled={checkingSession} /></label>
+          <label>Email<input name="email" type="email" autoComplete="email" required disabled={loading} /></label>
+          <label>Password<input name="password" type="password" autoComplete="current-password" required disabled={loading} /></label>
           <label className="auth-remember">
             <input
               name="rememberMe"
               type="checkbox"
               checked={rememberMe}
               onChange={(event) => setRememberMe(event.currentTarget.checked)}
-              disabled={checkingSession}
+              disabled={loading}
             />
             <span>Remember me on this device for 30 days</span>
           </label>
           <p className="auth-remember-note">This device stays signed in for up to 30 days. Signing out ends the session. Your password is never saved.</p>
           <Link className="text-link" href="/forgot-password">Forgot password</Link>
-          <button className={buttonClassName()} disabled={loading || checkingSession}>
-            {checkingSession ? "Checking session..." : loading ? "Signing in..." : "Sign in"}
+          <button className={buttonClassName()} disabled={loading}>
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
         <p className="auth-switch">New to Dantown <Link href="/register">Create an account</Link></p>

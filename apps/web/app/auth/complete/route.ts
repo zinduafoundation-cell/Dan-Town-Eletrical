@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // Covers legacy accounts and provider logins that were created before the
     // customer record and CUSTOMER role existed.
     await ensureCustomerProvisioning(user);
-    const context = await getAuthorizationContext();
+    const context = await getAuthorizationContext(user);
     return NextResponse.redirect(new URL(resolvePostLoginPath(context, requestedNext), request.url));
   } catch (error) {
     console.error("POST-LOGIN SETUP ERROR", error);

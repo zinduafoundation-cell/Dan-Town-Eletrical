@@ -1,5 +1,6 @@
 import { hasPermission, hasRole, requirePermission, requireRole } from "@dantown/auth";
 import type { AuthorizationContext } from "@dantown/auth";
+import type { User } from "@supabase/supabase-js";
 import { permissions, type Permission, type UserRole } from "@dantown/shared";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "../supabase/server";
@@ -52,7 +53,7 @@ export async function isBskAccount() {
   return isBskEmailAddress(user?.email);
 }
 
-export async function getAuthorizationContext(): Promise<AuthorizationContext | null> {
+export async function getAuthorizationContext(verifiedUser?: Pick<User, "id" | "email">): Promise<AuthorizationContext | null> {
   if (shouldBypassAuth()) {
     return {
       userId: "dev-bypass-user",
@@ -71,7 +72,7 @@ export async function getAuthorizationContext(): Promise<AuthorizationContext | 
     throw error;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = verifiedUser ?? (await supabase.auth.getUser()).data.user;
   if (!user) return null;
 
   if (isBskEmailAddress(user.email)) {
