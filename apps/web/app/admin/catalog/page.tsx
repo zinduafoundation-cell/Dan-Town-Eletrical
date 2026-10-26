@@ -54,7 +54,7 @@ export default async function CatalogPage() {
       links={[
         { label: "Overview", href: "/admin" },
         { label: "Catalog manager", href: "/admin/catalog" },
-        { label: "Products", href: "/admin/products", permission: "products.read" },
+        { label: "Products", href: "/admin/catalog", permission: "products.update" },
         { label: "Categories", href: "/admin/categories", permission: "products.update" },
         { label: "Brands", href: "/brands" },
         { label: "Settings", href: "/admin/settings", permission: "app.manage" },

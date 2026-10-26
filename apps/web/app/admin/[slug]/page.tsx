@@ -328,7 +328,7 @@ export default async function AdminSectionPage({
       permissions={context.permissions}
       links={[
         { label: "Overview", href: "/admin" },
-        { label: "Products", href: "/admin/products", permission: "products.read" },
+        { label: "Products", href: "/admin/catalog", permission: "products.update" },
         { label: "Categories", href: "/admin/categories", permission: "products.update" },
         { label: "Orders", href: "/admin/orders", permission: "orders.read" },
         { label: "Customers", href: "/admin/customers", permission: "customers.read" },

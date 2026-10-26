@@ -28,6 +28,7 @@
 .catalog-manager-form .button { margin-top: 22px; }
 .catalog-fields-grid { display: grid; gap: 0 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .catalog-manager-list { background: rgba(255,255,255,.5); border-top: 1px solid var(--line); margin-top: 42px; padding-top: 28px; }
+.catalog-manager > .catalog-manager-list:first-of-type { margin-top: 12px; }
 .catalog-manager-list .section-heading { align-items: end; display: flex; justify-content: space-between; margin: 0 0 18px; }
 .catalog-manager-list .section-heading h2 { font-size: 34px; }
 .catalog-manager-list .section-heading strong { color: var(--muted); font-size: 11px; }
@@ -589,6 +590,11 @@
 .portal-gateway b { background: var(--dantown-lime, #d1ff42); border-radius: 4px; color: var(--dantown-deep-blue, #071a33); font-size: 9px; letter-spacing: .08em; padding: 4px 5px; }
 .portal-gateway:hover { background: var(--dantown-deep-blue, #071a33); color: var(--dantown-lime, #d1ff42); }
 .centre-dashboard { display: grid; gap: 20px; }
+.centre-welcome { align-items: center; background: linear-gradient(120deg, #071a33, #0d3566); border: 1px solid rgba(7,26,51,.12); border-radius: 20px; color: #fff; display: flex; gap: 20px; justify-content: space-between; padding: clamp(20px, 4vw, 30px); }
+.centre-welcome .eyebrow { color: #ff8a3d; font-size: 11px; font-weight: 800; letter-spacing: .12em; margin: 0 0 8px; text-transform: uppercase; }
+.centre-welcome h2 { color: #fff; font-size: clamp(22px, 3vw, 30px); margin: 0 0 8px; }
+.centre-welcome p:last-child { color: #d5e2f0; font-size: 13px; line-height: 1.55; margin: 0; max-width: 620px; }
+.centre-welcome .button { align-items: center; display: inline-flex; flex: 0 0 auto; gap: 8px; justify-content: center; }
 .centre-metrics { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .centre-metric { align-items: center; background: var(--white); border: 1px solid var(--line); border-radius: 8px; display: flex; gap: 12px; min-height: 94px; padding: 16px; }
 .centre-metric.is-alert { border-color: rgba(223,117,91,.55); }
@@ -866,6 +872,7 @@
 .centre-unconfigured strong { color: var(--ink); font-family: inherit; font-size: 13px; margin: 0; }
 .centre-unconfigured p { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
 @media (max-width: 900px) { .centre-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .centre-panels { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .centre-welcome { align-items: stretch; flex-direction: column; }.centre-welcome .button { width: 100%; } }
 @media (max-width: 560px) { .centre-metrics { grid-template-columns: 1fr; } .centre-status-grid { grid-template-columns: 1fr; } .centre-order-row { align-items: start; flex-direction: column; } .centre-order-row > div:last-child { text-align: left; } .centre-panel-heading { align-items: start; flex-direction: column; gap: 12px; } }
 .pos-cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .pos-cart-header h2 { font-size: 16px; margin: 0; }

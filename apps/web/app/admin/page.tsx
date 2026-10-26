@@ -77,7 +77,7 @@ export default async function AdminPage() {
   const links: Array<{ label: string; href: string; permission?: Permission; roles?: UserRole[] }> = [
     { label: "Overview", href: "/admin" },
     { label: "Catalog manager", href: "/admin/catalog", permission: "products.update" as const },
-    { label: "Products", href: "/admin/products", permission: "products.read" as const },
+    { label: "Products", href: "/admin/catalog", permission: "products.update" as const },
     { label: "Inventory", href: "/admin/inventory", permission: "inventory.read" as const },
     { label: "Suppliers", href: "/admin/suppliers", permission: "products.read" as const },
     { label: "Purchases", href: "/admin/purchases", permission: "inventory.read" as const },

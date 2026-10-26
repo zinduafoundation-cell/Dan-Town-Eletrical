@@ -22,7 +22,7 @@ const centreLinks = [
   { label: "Orders", href: "/admin/orders", permission: "orders.read" as Permission },
   { label: "Sales", href: "/admin/reports", permission: "reports.read" as Permission },
   { label: "POS Monitor", href: "/pos", permission: "orders.read" as Permission },
-  { label: "Products", href: "/admin/products", permission: "products.read" as Permission },
+  { label: "Products", href: "/admin/catalog", permission: "products.update" as Permission },
   { label: "Promotions", href: "/admin/promotions", permission: "products.update" as Permission },
   { label: "Business documents", href: "/admin/documents", permission: "settings.manage" as Permission },
   { label: "Inventory", href: "/admin/inventory", permission: "inventory.read" as Permission },
@@ -73,9 +73,19 @@ export default async function CentrePage() {
   const offlineMetrics = Object.fromEntries(
     Object.entries(metrics).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
   );
+  const nairobiHour = Number(new Intl.DateTimeFormat("en-KE", {
+    hour: "numeric",
+    hourCycle: "h23",
+    timeZone: "Africa/Nairobi",
+  }).format(new Date()));
+  const greeting = nairobiHour < 12 ? "Good morning" : nairobiHour < 17 ? "Good afternoon" : "Good evening";
 
   return <PortalShell title="Dantown Centre" description="One live view of orders, revenue, inventory, customers, and operations." roles={context!.roles} permissions={context!.permissions} links={centreLinks}>
     <div className="centre-dashboard">
+      <section className="centre-welcome">
+        <div><p className="eyebrow">Your operations hub</p><h2>{greeting}, {staffIdentity.name}.</h2><p>Here&apos;s your live view of today. Search and update products directly from the catalog workspace.</p></div>
+        <Link className="button button-primary" href="/admin/catalog"><Boxes size={17} /> Find or edit a product <ArrowRight size={15} /></Link>
+      </section>
       <CommandCentreBar />
       {staffIdentity.userId && <CentreOfflineSetup
         userId={staffIdentity.userId}
