@@ -8,6 +8,7 @@ import { z } from "zod";
 type Department = { id: string; name: string; slug: string; icon: string | null; sort_order: number };
 type Category = { id: string; name: string; slug: string; parent_id: string | null; department_id: string | null; image_url: string | null };
 type Brand = { id: string; name: string; slug: string; logo_url: string | null };
+type Warehouse = { id: string; name: string };
 const nullableNumberSchema = z.preprocess(
   (value) => value === null || value === "" ? null : value,
   z.coerce.number().nullable(),
@@ -54,7 +55,7 @@ const productSchema = z.object({
 });
 type Product = z.infer<typeof productSchema>;
 
-type Props = { departments: Department[]; categories: Category[]; brands: Brand[]; products: Product[]; productCount: number };
+type Props = { departments: Department[]; categories: Category[]; brands: Brand[]; warehouses: Warehouse[]; products: Product[]; productCount: number };
 
 function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
 function optionalNumber(form: FormData, name: string) {
@@ -139,12 +140,13 @@ async function uploadCategoryImage(categoryId: string, file: File) {
   return parsedResponse.data.data.imageUrl;
 }
 
-function ProductFields({ product, categories, brands }: { product?: Product; categories: Category[]; brands: Brand[] }) {
+function ProductFields({ product, categories, brands, warehouses }: { product?: Product; categories: Category[]; brands: Brand[]; warehouses: Warehouse[] }) {
   return (
     <div className="catalog-product-fields">
       <section className="catalog-product-section">
         <div className="catalog-product-section-heading"><span>01</span><div><h3>Product details</h3><p>Give the item a clear name and identify it for your team.</p></div></div>
         <div className="catalog-fields-grid">
+          {!product && <><label>Initial stock quantity<input name="initialQuantity" type="number" min="0" max="100000" step="1" defaultValue="50" required /></label><label>Stock warehouse<select name="warehouseId" required defaultValue={warehouses.length === 1 ? warehouses[0].id : ""}><option value="" disabled>Select warehouse</option>{warehouses.map((warehouse) => <option value={warehouse.id} key={warehouse.id}>{warehouse.name}</option>)}</select></label></>}
           <label className="catalog-field-wide">Product name<input name="name" defaultValue={product?.name} placeholder="24W LED Panel Light" required /></label>
           <label>SKU<input name="sku" defaultValue={product?.sku} placeholder="LGT-PNL-24W" required /></label>
           <label>Barcode<input name="barcode" defaultValue={product?.barcode ?? ""} /></label>
@@ -200,7 +202,7 @@ function ProductFields({ product, categories, brands }: { product?: Product; cat
   );
 }
 
-export default function CatalogManager({ departments, categories: initialCategories, brands: initialBrands, products: initialProducts, productCount: initialProductCount }: Props) {
+export default function CatalogManager({ departments, categories: initialCategories, brands: initialBrands, warehouses, products: initialProducts, productCount: initialProductCount }: Props) {
   const [categories, setCategories] = useState(initialCategories);
   const [brands, setBrands] = useState(initialBrands);
   const [products, setProducts] = useState(initialProducts);
@@ -254,7 +256,7 @@ export default function CatalogManager({ departments, categories: initialCategor
       ? { type, name, slug: slugify(name), description: String(form.get("description") ?? ""), parentId: String(form.get("parentId") ?? "") || null, departmentId: String(form.get("departmentId") ?? "") || null, imageUrl: categoryImage ? null : String(form.get("imageUrl") ?? "") || null }
       : type === "brand"
         ? { type, name, slug: slugify(name), description: String(form.get("description") ?? ""), logoUrl: String(form.get("logoUrl") ?? "") || null }
-        : { type, ...productFormPayload(form), imageUrl: productImage ? null : String(form.get("imageUrl") ?? "") || null };
+        : { type, ...productFormPayload(form), initialQuantity: Number(form.get("initialQuantity") ?? 50), warehouseId: String(form.get("warehouseId") ?? ""), imageUrl: productImage ? null : String(form.get("imageUrl") ?? "") || null };
 
     try {
       const response = await fetch("/api/admin/catalog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -380,7 +382,7 @@ export default function CatalogManager({ departments, categories: initialCategor
       <div className="catalog-product-list" aria-live="polite">{products.length ? products.map((product) => <div className="catalog-product-row" key={product.id}>{product.image_url ? <img className="catalog-product-art" src={product.image_url} alt="" /> : <div className="catalog-product-art">{product.name.charAt(0)}</div>}<div><strong>{product.name}</strong><small>{product.sku} · {product.status}{product.is_active ? " · Website and POS" : " · Hidden from sales"}</small></div><span>KSh {Number(product.retail_price).toLocaleString()}</span><button type="button" className="button button-quiet catalog-edit-button" onClick={() => setEditingProduct(product)}>Edit details</button><a className="button button-quiet catalog-edit-button" href={`/admin/inventory?q=${encodeURIComponent(product.sku)}`}>Store stock</a></div>) : <p>{loadingProducts ? "Searching the product master…" : "No products match this search."}</p>}</div>
       <div className="catalog-pagination" aria-label="Product pages"><button type="button" className="button button-quiet" onClick={() => void searchProducts(page - 1)} disabled={loadingProducts || page <= 1}>Previous</button><span>Page {page} of {Math.max(1, Math.ceil(productCount / 30))}</span><button type="button" className="button button-quiet" onClick={() => void searchProducts(page + 1)} disabled={loadingProducts || page * 30 >= productCount}>Next</button></div>
     </section>
-    {editingProduct && <form className="catalog-manager-form catalog-manager-form-wide catalog-edit-form" onSubmit={updateProduct}><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><p className="eyebrow">Edit any product</p><h2>{editingProduct.name}</h2><ProductFields product={editingProduct} categories={categories} brands={brands} /><label className="catalog-product-image-field"><span>Replace primary product photo</span>{editingProduct.image_url && <img src={editingProduct.image_url} alt={`${editingProduct.name} current product photo`} />}<input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>Choose a new JPG, PNG or WEBP image, up to 6 MB. It will update storefront and POS.</small></label><div className="catalog-edit-actions"><a className="button button-secondary" href={`/admin/inventory?q=${encodeURIComponent(editingProduct.sku)}`}><ArrowLeftRight size={15} /> Manage stock by store</a><button type="button" className="button button-quiet" onClick={() => setEditingProduct(null)}>Cancel</button><button className="button button-primary" disabled={saving}>{saving ? "Saving..." : "Save product"}</button></div></form>}
+    {editingProduct && <form className="catalog-manager-form catalog-manager-form-wide catalog-edit-form" onSubmit={updateProduct}><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><p className="eyebrow">Edit any product</p><h2>{editingProduct.name}</h2><ProductFields product={editingProduct} categories={categories} brands={brands} warehouses={warehouses} /><label className="catalog-product-image-field"><span>Replace primary product photo</span>{editingProduct.image_url && <img src={editingProduct.image_url} alt={`${editingProduct.name} current product photo`} />}<input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>Choose a new JPG, PNG or WEBP image, up to 6 MB. It will update storefront and POS.</small></label><div className="catalog-edit-actions"><a className="button button-secondary" href={`/admin/inventory?q=${encodeURIComponent(editingProduct.sku)}`}><ArrowLeftRight size={15} /> Manage stock by store</a><button type="button" className="button button-quiet" onClick={() => setEditingProduct(null)}>Cancel</button><button className="button button-primary" disabled={saving}>{saving ? "Saving..." : "Save product"}</button></div></form>}
     <div className="catalog-composer-switcher" role="tablist" aria-label="Catalog creation tools">
       <button type="button" role="tab" aria-selected={activeComposer === "product"} className={activeComposer === "product" ? "is-active" : undefined} onClick={() => setActiveComposer("product")}>Add product</button>
       <button type="button" role="tab" aria-selected={activeComposer === "category"} className={activeComposer === "category" ? "is-active" : undefined} onClick={() => setActiveComposer("category")}>Add family</button>
@@ -425,7 +427,7 @@ export default function CatalogManager({ departments, categories: initialCategor
         </section>
         <div className="catalog-simple-form-footer"><p>Brand details make product discovery clearer for customers.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding brand..." : "Add brand"}</button></div>
       </form>}
-      {activeComposer === "product" && <form className="catalog-manager-form catalog-manager-form-wide catalog-product-form" onSubmit={(event) => submit(event, "product")}><div className="catalog-product-form-heading"><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><div><p className="eyebrow">New inventory item</p><h2>Add a product</h2><p>Complete the essentials first. Optional details can be added as needed.</p></div></div><ProductFields categories={categories} brands={brands} /><section className="catalog-product-section catalog-product-media"><div className="catalog-product-section-heading"><span>05</span><div><h3>Product image</h3><p>Add a photo for the storefront and POS, or paste an image URL.</p></div></div><div className="catalog-product-media-fields"><label className="catalog-product-image-field"><span>Upload product photo</span><input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>JPG, PNG or WEBP · up to 6 MB. Used across the storefront and POS.</small></label><label>Or use an existing image URL<input name="imageUrl" type="url" placeholder="https://example.com/product.jpg" /></label></div></section><div className="catalog-product-submit"><p>Products marked active and available will appear in sales channels.</p><button className="button button-primary" disabled={saving}><Plus size={16} /> {saving ? "Adding product..." : "Add product"}</button></div></form>}
+      {activeComposer === "product" && <form className="catalog-manager-form catalog-manager-form-wide catalog-product-form" onSubmit={(event) => submit(event, "product")}><div className="catalog-product-form-heading"><div className="catalog-form-icon catalog-form-icon-ochre"><PackagePlus size={18} /></div><div><p className="eyebrow">New inventory item</p><h2>Add a product</h2><p>Complete the essentials first. Optional details can be added as needed.</p></div></div><ProductFields categories={categories} brands={brands} warehouses={warehouses} /><section className="catalog-product-section catalog-product-media"><div className="catalog-product-section-heading"><span>05</span><div><h3>Product image</h3><p>Add a photo for the storefront and POS, or paste an image URL.</p></div></div><div className="catalog-product-media-fields"><label className="catalog-product-image-field"><span>Upload product photo</span><input name="productImage" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" /><small>JPG, PNG or WEBP · up to 6 MB. Used across the storefront and POS.</small></label><label>Or use an existing image URL<input name="imageUrl" type="url" placeholder="https://example.com/product.jpg" /></label></div></section><div className="catalog-product-submit"><p>New products start with their entered quantity as an audited stock adjustment.</p><button className="button button-primary" disabled={saving || warehouses.length === 0}><Plus size={16} /> {saving ? "Adding product..." : "Add product"}</button></div></form>}
     </div>
     {activeComposer === "category" && <section className="catalog-manager-list">
       <div className="section-heading"><div><p className="eyebrow">Public category pages</p><h2>Subcategory pictures</h2></div><strong>{categories.length} categories</strong></div>

@@ -323,6 +323,36 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!hasPermission(context, "inventory.adjust")) {
+      return NextResponse.json(
+        { error: "Inventory adjustment permission is required to initialize new product stock." },
+        { status: 403 },
+      );
+    }
+
+    const requestedInitialQuantity = product.quantity ?? 50;
+    if (!Number.isInteger(requestedInitialQuantity) || requestedInitialQuantity < 0 || requestedInitialQuantity > 100_000) {
+      return NextResponse.json(
+        { error: "Initial stock must be a whole number between 0 and 100000." },
+        { status: 422 },
+      );
+    }
+
+    const {
+      data: activeWarehouses,
+      error: warehouseError,
+    } = await supabase
+      .from("warehouses")
+      .select("id")
+      .eq("is_active", true);
+    if (warehouseError) throw warehouseError;
+    if (activeWarehouses?.length !== 1) {
+      return NextResponse.json(
+        { error: "A new product can be approved only when exactly one active warehouse is configured." },
+        { status: 409 },
+      );
+    }
+
     const { data: created, error: createError } =
       await supabase
         .from("products")
@@ -374,6 +404,24 @@ export async function POST(request: Request) {
       throw (
         createError ??
         new Error("Product was not created.")
+      );
+    }
+
+    const { error: stockError } = await supabase.rpc(
+      "initialize_catalog_product_stock",
+      {
+        target_product_id: created.id,
+        target_warehouse_id: activeWarehouses[0].id,
+        target_quantity: requestedInitialQuantity,
+        target_user_id:
+          context.userId === "dev-bypass-user" ? null : context.userId,
+      },
+    );
+    if (stockError) {
+      console.error("APPROVED PRODUCT INITIAL STOCK ERROR", stockError.message);
+      return NextResponse.json(
+        { error: "Product was created as a draft, but initial stock was not recorded. Do not activate it until stock is initialized." },
+        { status: 500 },
       );
     }
 

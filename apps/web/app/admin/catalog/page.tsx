@@ -18,13 +18,15 @@ export default async function CatalogPage() {
     { data: categories, error: categoriesError },
     { data: brands, error: brandsError },
     { data: products, count: productCount, error: productsError },
+    { data: warehouses, error: warehousesError },
   ] = await Promise.all([
     supabase.from("departments").select("id,name,slug,icon,sort_order").eq("is_active", true).order("sort_order", { ascending: true }),
     supabase.from("categories").select("id,name,slug,parent_id,department_id,image_url").order("sort_order", { ascending: true }),
     supabase.from("brands").select("id,name,slug,logo_url").eq("is_active", true).order("name", { ascending: true }),
     supabase.from("products").select("id,name,sku,barcode,slug,short_description,description,category_id,brand_id,cost_price,retail_price,contractor_price,wholesale_price,dealer_price,promotional_price,promotion_label,vat_rate,status,is_active,featured,weight,length,width,height,warranty_period,seo_title,seo_description,product_type,internal_code,manufacturer_part_number,tags,unit_of_measure,minimum_selling_price,maximum_suggested_price,tax_inclusive,updated_at", { count: "exact" }).order("updated_at", { ascending: false }).range(0, 29),
+    supabase.from("warehouses").select("id,name").eq("is_active", true).order("name", { ascending: true }),
   ]);
-  const catalogError = departmentsError ?? categoriesError ?? brandsError ?? productsError;
+  const catalogError = departmentsError ?? categoriesError ?? brandsError ?? productsError ?? warehousesError;
   if (catalogError) {
     console.error("Unable to load Dantown catalog workspace:", catalogError.message);
     throw new Error("The product catalog could not be loaded. Refresh the page or contact an administrator.");
@@ -64,6 +66,7 @@ export default async function CatalogPage() {
         departments={departments ?? []}
         categories={categories ?? []}
         brands={brands ?? []}
+        warehouses={warehouses ?? []}
         products={productsWithImages}
         productCount={productCount ?? 0}
       />

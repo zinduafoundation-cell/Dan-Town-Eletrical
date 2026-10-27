@@ -43,6 +43,7 @@ export default function CatalogWorkspace({
   departments,
   categories,
   brands,
+  warehouses,
   products,
   productCount,
 }: CatalogWorkspaceProps) {
@@ -123,6 +124,7 @@ export default function CatalogWorkspace({
             brands={brands}
             categories={categories}
             departments={departments}
+            warehouses={warehouses}
             products={products}
             productCount={productCount}
           />

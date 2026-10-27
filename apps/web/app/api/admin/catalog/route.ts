@@ -51,6 +51,8 @@ const catalogSchema = z.discriminatedUnion("type", [
       .enum(["New", "Best seller", "Discounted", "Hot", "Featured"])
       .nullable()
       .optional(),
+    initialQuantity: z.number().int().min(0).max(100_000).default(50),
+    warehouseId: z.string().uuid().optional(),
     featured: z.boolean().optional(),
     isActive: z.boolean().optional(),
     status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
@@ -219,7 +221,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const [
-      { requireAuthorizedPermission },
+      { getPermissionGuard, requireAuthorizedPermission },
       { createSupabaseServiceClient },
     ] = await Promise.all([
       import("../../../../lib/auth/server"),
@@ -299,6 +301,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ data });
     }
 
+    const inventoryGuard = await getPermissionGuard("inventory.adjust");
+    if (!inventoryGuard.ok) {
+      return NextResponse.json(
+        { error: inventoryGuard.message },
+        { status: inventoryGuard.status },
+      );
+    }
+
+    const { data: activeWarehouses, error: warehouseError } = await supabase
+      .from("warehouses")
+      .select("id")
+      .eq("is_active", true);
+    if (warehouseError) throw warehouseError;
+    const selectedWarehouseId = parsed.data.warehouseId
+      ?? (activeWarehouses?.length === 1 ? activeWarehouses[0].id : null);
+    if (!selectedWarehouseId || !activeWarehouses?.some((warehouse) => warehouse.id === selectedWarehouseId)) {
+      return NextResponse.json({ error: "Choose one active stock warehouse for this product." }, { status: 400 });
+    }
+
     const now = new Date().toISOString();
 
     const insert: ProductInsert = {
@@ -323,9 +344,9 @@ export async function POST(request: Request) {
       width: parsed.data.width ?? null,
       height: parsed.data.height ?? null,
       warranty_period: parsed.data.warrantyPeriod ?? null,
-      status: parsed.data.status ?? "DRAFT",
+      status: "DRAFT",
       featured: parsed.data.featured ?? false,
-      is_active: parsed.data.isActive ?? false,
+      is_active: false,
       seo_title: parsed.data.seoTitle ?? null,
       seo_description: parsed.data.seoDescription ?? null,
       created_by:
@@ -353,6 +374,42 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    const { data: stockResult, error: stockError } = await supabase.rpc(
+      "initialize_catalog_product_stock",
+      {
+        target_product_id: data.id,
+        target_warehouse_id: selectedWarehouseId,
+        target_quantity: parsed.data.initialQuantity,
+        target_user_id:
+          context.userId === "dev-bypass-user" ? null : context.userId,
+      },
+    );
+    if (stockError) {
+      console.error("CATALOG INITIAL STOCK ERROR", stockError.message);
+      return NextResponse.json(
+        { error: "Product was created as a draft, but initial stock was not recorded. Do not activate it until stock is initialized." },
+        { status: 500 },
+      );
+    }
+
+    const requestedStatus = parsed.data.status ?? "DRAFT";
+    const { data: activatedProduct, error: activationError } = await supabase
+      .from("products")
+      .update({
+        status: requestedStatus,
+        is_active: parsed.data.isActive === true && requestedStatus === "ACTIVE",
+      })
+      .eq("id", data.id)
+      .select(catalogProductFields)
+      .single();
+    if (activationError) {
+      console.error("CATALOG PRODUCT ACTIVATION ERROR", activationError.message);
+      return NextResponse.json(
+        { error: "Stock was recorded, but product status could not be updated. The product remains a draft." },
+        { status: 500 },
+      );
+    }
+
     if (parsed.data.imageUrl) {
       const image: ProductImageInsert = {
         product_id: data.id,
@@ -373,7 +430,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: activatedProduct, initialStock: stockResult });
   } catch (error) {
     console.error("CATALOG CREATE ERROR", error);
 
