@@ -3,6 +3,7 @@
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createCustomerNotificationPoller } from "@/lib/customer-notification-polling";
 
 export function CustomerNotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -10,33 +11,32 @@ export function CustomerNotificationBell() {
 
   useEffect(() => {
     let active = true;
-    const refresh = async () => {
-      try {
+    const poller = createCustomerNotificationPoller({
+      request: async () => {
         const response = await fetch("/api/account/customer-notifications?limit=1", {
           cache: "no-store",
         });
-        if (response.status === 401) {
-          if (active) setSignedIn(false);
-          return;
-        }
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Unable to load notifications.");
+        return response;
+      },
+      onUnreadCount: (count) => {
         if (active) {
           setSignedIn(true);
-          setUnreadCount(Number(result.unreadCount) || 0);
+          setUnreadCount(count);
         }
-      } catch (error) {
-        console.error("Customer notification badge could not refresh.", error);
-      }
-    };
+      },
+      onUnauthorized: () => {
+        if (active) setSignedIn(false);
+      },
+      onError: (error) => console.error("Customer notification badge could not refresh.", error),
+    });
 
-    void refresh();
-    const interval = window.setInterval(refresh, 120_000);
-    window.addEventListener("focus", refresh);
+    const refreshOnFocus = () => poller.refreshNow();
+    poller.start();
+    window.addEventListener("focus", refreshOnFocus);
     return () => {
       active = false;
-      window.clearInterval(interval);
-      window.removeEventListener("focus", refresh);
+      poller.stop();
+      window.removeEventListener("focus", refreshOnFocus);
     };
   }, []);
 

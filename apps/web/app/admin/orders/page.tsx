@@ -27,22 +27,54 @@ export default async function OrdersPage({
   const orderRows = orders ?? [];
   const customerIds = [...new Set(orderRows.map((order) => order.customer_id).filter((id): id is string => Boolean(id)))];
   const orderIds = orderRows.map((order) => order.id);
-  const [{ data: customers, error: customersError }, { data: items, error: itemsError }] = await Promise.all([
+  const [
+    { data: customers, error: customersError },
+    { data: items, error: itemsError },
+    { data: warehouses, error: warehousesError },
+  ] = await Promise.all([
     customerIds.length
       ? supabase.from("customers").select("id,name,phone,email").in("id", customerIds)
       : Promise.resolve({ data: [], error: null }),
     orderIds.length
-      ? supabase.from("order_items").select("id,order_id,product_name_snapshot,sku_snapshot,quantity,unit_price,line_total").in("order_id", orderIds)
-      : Promise.resolve({ data: [], error: null })
+      ? supabase.from("order_items").select("id,order_id,source_warehouse_id,product_name_snapshot,sku_snapshot,quantity,unit_price,line_total").in("order_id", orderIds)
+      : Promise.resolve({ data: [], error: null }),
+    supabase.from("warehouses").select("id,name").eq("is_active", true)
   ]);
   if (customersError) throw customersError;
-  if (itemsError) throw itemsError;
+  if (warehousesError) throw warehousesError;
+
+  type OrderItemWithWarehouse = {
+    id: string;
+    order_id: string;
+    source_warehouse_id: string | null;
+    product_name_snapshot: string;
+    sku_snapshot: string;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+  };
+  let orderItems: OrderItemWithWarehouse[] = items ?? [];
+  const missingWarehouseColumn = itemsError
+    && ["42703", "PGRST204"].includes(itemsError.code ?? "")
+    && itemsError.message.includes("source_warehouse_id");
+  if (itemsError && !missingWarehouseColumn) throw itemsError;
+  if (missingWarehouseColumn && orderIds.length) {
+    console.warn("Order warehouse allocation migration is not available; showing legacy order items without warehouse locations.");
+    const { data: legacyItems, error: legacyItemsError } = await supabase
+      .from("order_items")
+      .select("id,order_id,product_name_snapshot,sku_snapshot,quantity,unit_price,line_total")
+      .in("order_id", orderIds);
+    if (legacyItemsError) throw legacyItemsError;
+    orderItems = (legacyItems ?? []).map((item) => ({ ...item, source_warehouse_id: null }));
+  }
 
   const customerMap = new Map((customers ?? []).map((customer) => [customer.id, customer]));
   const itemsByOrder = new Map<string, NonNullable<typeof items>>();
-  for (const item of items ?? []) {
+  for (const item of orderItems) {
     itemsByOrder.set(item.order_id, [...(itemsByOrder.get(item.order_id) ?? []), item]);
   }
+
+  const warehouseNames = new Map((warehouses ?? []).map((warehouse) => [warehouse.id, warehouse.name]));
 
   const proofPaths = [...new Set(orderRows.map((order) => order.delivery_proof_path).filter((path): path is string => Boolean(path)))];
   const proofUrls = new Map<string, string>();
@@ -83,7 +115,8 @@ export default async function OrdersPage({
         sku: item.sku_snapshot,
         quantity: item.quantity,
         unitPrice: Number(item.unit_price),
-        lineTotal: Number(item.line_total)
+        lineTotal: Number(item.line_total),
+        sourceWarehouse: item.source_warehouse_id ? warehouseNames.get(item.source_warehouse_id) ?? null : null,
       }))
     }));
 
@@ -102,7 +135,12 @@ export default async function OrdersPage({
         { label: "Payments", href: "/admin/payments", permission: "payments.read" }
       ]}
     >
-      <OnlineOrdersWorkspace key={initialView} orders={viewRows} isAdmin={context.permissions.includes("orders.update")} initialView={initialView} />
+      <OnlineOrdersWorkspace
+        key={initialView}
+        orders={viewRows}
+        isAdmin={context.permissions.includes("orders.update")}
+        initialView={initialView}
+      />
     </PortalShell>
   );
 }

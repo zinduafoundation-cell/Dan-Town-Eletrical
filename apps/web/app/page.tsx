@@ -59,12 +59,20 @@ async function getHomepageCampaigns(supabase: ReturnType<typeof createSupabaseSe
 export default async function HomePage() {
   const supabase = createSupabaseServiceClient();
   const currentTimestamp = new Date().getTime();
-  const [catalogProducts, categoriesData, campaigns, newArrivals, flashSaleProducts] = await Promise.all([
+  const bestSellerRequest = (async () => {
+    try {
+      return await supabase.rpc("get_storefront_best_sellers", { p_limit: 8 });
+    } catch {
+      return { data: [] };
+    }
+  })();
+  const [catalogProducts, categoriesData, campaigns, newArrivals, flashSaleProducts, bestSellerResponse] = await Promise.all([
     getCatalogProducts(supabase, { sort: "featured", pageSize: 8, allowFallback: true }),
     getCatalogCategories(supabase),
     getHomepageCampaigns(supabase),
     getCatalogProducts(supabase, { sort: "newest", pageSize: 8, allowFallback: true }),
     getCatalogProducts(supabase, { activePromotionOnly: true, pageSize: 8, allowFallback: true }),
+    bestSellerRequest,
   ]);
 
   const popularCategories = categoriesData
@@ -78,21 +86,16 @@ export default async function HomePage() {
 
   const featuredProducts = catalogProducts.slice(0, 8);
   const homepageCampaign = campaigns[0] ?? null;
-  let bestSellerResponse: { data: { product_id: string }[] | null } = { data: [] };
-  try {
-    bestSellerResponse = await supabase.rpc("get_storefront_best_sellers", { p_limit: 8 });
-  } catch {
-    bestSellerResponse = { data: [] };
-  }
   const bestSellerIds = (bestSellerResponse.data ?? []).map((entry) => entry.product_id).filter(Boolean);
-  const bestSellerProducts = bestSellerIds.length
-    ? await getCatalogProducts(supabase, { productIds: bestSellerIds, allowFallback: true })
-    : featuredProducts.slice(0, 4);
-
   const solarCategory = categoriesData.find((category) => /solar|battery|inverter|backup|power/i.test(`${category.name} ${category.slug}`)) ?? categoriesData[0];
-  const solarProducts = solarCategory
-    ? await getCatalogProducts(supabase, { category: solarCategory.slug, pageSize: 6, allowFallback: true })
-    : featuredProducts.slice(0, 4);
+  const [bestSellerProducts, solarProducts] = await Promise.all([
+    bestSellerIds.length
+      ? getCatalogProducts(supabase, { productIds: bestSellerIds, allowFallback: true })
+      : Promise.resolve(featuredProducts.slice(0, 4)),
+    solarCategory
+      ? getCatalogProducts(supabase, { category: solarCategory.slug, pageSize: 6, allowFallback: true })
+      : Promise.resolve(featuredProducts.slice(0, 4)),
+  ]);
 
   const electricalProducts = catalogProducts.filter((product) => /cable|switch|socket|bulb|light|fuse|breaker|box|conduit|panel/i.test(`${product.name} ${product.category?.name ?? ""}`)).slice(0, 4);
   const serviceHighlights = [

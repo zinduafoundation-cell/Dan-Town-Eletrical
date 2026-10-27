@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthorizationContext } from "@/lib/auth/server";
+import { getAuthenticatedUserId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const querySchema = z.object({
@@ -15,20 +15,20 @@ const querySchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    const context = await getAuthorizationContext();
-    if (!context) return NextResponse.json({ error: "Sign in to view your notifications." }, { status: 401 });
-    if (context.userId === "dev-bypass-user") {
+    const supabase = await createSupabaseServerClient();
+    const userId = await getAuthenticatedUserId(supabase);
+    if (!userId) return NextResponse.json({ error: "Sign in to view your notifications." }, { status: 401 });
+    if (userId === "dev-bypass-user") {
       return NextResponse.json({ notifications: [], unreadCount: 0, persisted: false });
     }
 
     const parsed = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
     if (!parsed.success) return NextResponse.json({ error: "Choose valid notification filters." }, { status: 400 });
 
-    const supabase = await createSupabaseServerClient();
     const { data: preferences, error: preferencesError } = await supabase
       .from("customer_notification_preferences")
       .select("inbox_enabled")
-      .eq("user_id", context.userId)
+      .eq("user_id", userId)
       .maybeSingle();
     if (preferencesError) throw preferencesError;
     if (preferences && !preferences.inbox_enabled) {
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from("customer_notifications")
       .select("id,type,title,body,href,related_type,related_id,read_at,created_at")
-      .eq("user_id", context.userId)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .range(parsed.data.offset, parsed.data.offset + parsed.data.limit - 1);
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       supabase
         .from("customer_notifications")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", context.userId)
+        .eq("user_id", userId)
         .is("read_at", null),
     ]);
     if (error) throw error;
@@ -64,9 +64,10 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const context = await getAuthorizationContext();
-    if (!context) return NextResponse.json({ error: "Sign in to update your notifications." }, { status: 401 });
-    if (context.userId === "dev-bypass-user") return NextResponse.json({ updated: 0, persisted: false });
+    const supabase = await createSupabaseServerClient();
+    const userId = await getAuthenticatedUserId(supabase);
+    if (!userId) return NextResponse.json({ error: "Sign in to update your notifications." }, { status: 401 });
+    if (userId === "dev-bypass-user") return NextResponse.json({ updated: 0, persisted: false });
 
     const schema = z.union([
       z.object({ all: z.literal(true) }).strict(),
@@ -81,11 +82,10 @@ export async function PATCH(request: Request) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Choose a valid notification action." }, { status: 400 });
 
-    const supabase = await createSupabaseServerClient();
     let query = supabase
       .from("customer_notifications")
       .update({ read_at: new Date().toISOString() })
-      .eq("user_id", context.userId)
+      .eq("user_id", userId)
       .is("read_at", null);
     if ("id" in parsed.data) query = query.eq("id", parsed.data.id);
     const { data, error } = await query.select("id");

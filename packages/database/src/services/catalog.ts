@@ -369,7 +369,7 @@ export async function getCatalogProducts(
     }
 
     const page = Math.max(1, options.page ?? 1);
-    const pageSize = Math.min(60, Math.max(12, options.pageSize ?? 48));
+    const pageSize = Math.min(60, Math.max(1, options.pageSize ?? 48));
     const { data, error } = await query.range(
       (page - 1) * pageSize,
       page * pageSize - 1

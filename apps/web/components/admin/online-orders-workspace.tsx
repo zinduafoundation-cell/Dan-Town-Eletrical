@@ -26,7 +26,7 @@ export type OnlineOrder = {
   deliveryConfirmedAt: string | null;
   deliveryProofUrl: string | null;
   createdAt: string;
-  items: Array<{ id: string; name: string; sku: string; quantity: number; unitPrice: number; lineTotal: number }>;
+  items: Array<{ id: string; name: string; sku: string; quantity: number; unitPrice: number; lineTotal: number; sourceWarehouse: string | null }>;
 };
 
 const statusLabels: Record<string, string> = {
@@ -48,7 +48,15 @@ function money(value: number) {
   return `KSh ${value.toLocaleString()}`;
 }
 
-export function OnlineOrdersWorkspace({ orders, isAdmin = false, initialView = "all" }: { orders: OnlineOrder[]; isAdmin?: boolean; initialView?: OrderView }) {
+export function OnlineOrdersWorkspace({
+  orders,
+  isAdmin = false,
+  initialView = "all",
+}: {
+  orders: OnlineOrder[];
+  isAdmin?: boolean;
+  initialView?: OrderView;
+}) {
   const [view, setView] = useState<OrderView>(initialView);
   const [query, setQuery] = useState("");
 
@@ -105,7 +113,13 @@ export function OnlineOrdersWorkspace({ orders, isAdmin = false, initialView = "
 
       <div className="online-orders-list">
         {filteredOrders.length ? (
-          filteredOrders.map((order) => <OnlineOrderCard key={order.id} order={order} isAdmin={isAdmin} />)
+          filteredOrders.map((order) => (
+            <OnlineOrderCard
+              key={order.id}
+              order={order}
+              isAdmin={isAdmin}
+            />
+          ))
         ) : (
           <div className="online-orders-empty">
             <Package size={24} />
@@ -118,7 +132,13 @@ export function OnlineOrdersWorkspace({ orders, isAdmin = false, initialView = "
   );
 }
 
-function OnlineOrderCard({ order, isAdmin }: { order: OnlineOrder; isAdmin: boolean }) {
+function OnlineOrderCard({
+  order,
+  isAdmin,
+}: {
+  order: OnlineOrder;
+  isAdmin: boolean;
+}) {
   const customerName = order.customer?.name || "Guest customer";
   const address = order.shippingAddress;
 
@@ -158,6 +178,7 @@ function OnlineOrderCard({ order, isAdmin }: { order: OnlineOrder; isAdmin: bool
                 <span>
                   <strong>{item.quantity} × {item.name}</strong>
                   <small>{item.sku} · {money(item.unitPrice)} each</small>
+                  <small>Reserved at: {item.sourceWarehouse ?? "Not recorded for this order"}</small>
                 </span>
                 <b>{money(item.lineTotal)}</b>
               </li>

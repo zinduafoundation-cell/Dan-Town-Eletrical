@@ -19,7 +19,7 @@ export default async function InventoryPage({
   const context = await requireAuthorizedPermission("inventory.read");
   const supabase = createSupabaseServiceClient();
   const [{ data: inventory }, { data: products }, { data: warehouses }, { data: categories }, { data: brands }] = await Promise.all([
-    supabase.from("inventory").select("id,product_id,warehouse_id,quantity,reserved_quantity,reorder_level"),
+    supabase.from("inventory").select("id,product_id,variant_id,location_id,warehouse_id,quantity,reserved_quantity,reorder_level"),
     supabase.from("products").select("id,name,sku,barcode,category_id,brand_id,cost_price,retail_price,status,is_active"),
     supabase.from("warehouses").select("id,name").eq("is_active", true).order("name"),
     supabase.from("categories").select("id,name"),
@@ -48,7 +48,7 @@ export default async function InventoryPage({
   const trackedRows = (inventory ?? []).flatMap((stock) => {
     const product = productMap.get(stock.product_id);
     if (!product) return [];
-    return [{ id: stock.id, productId: stock.product_id, name: product.name, sku: product.sku, barcode: product.barcode, category: categoryMap.get(product.category_id ?? "") ?? "Uncategorized", hasCategory: !!product.category_id, brand: brandMap.get(product.brand_id ?? "") ?? "No brand", imageUrl: imageByProduct.get(product.id) ?? null, warehouseId: stock.warehouse_id, warehouse: warehouseMap.get(stock.warehouse_id) ?? "Unknown warehouse", quantity: stock.quantity, reserved: stock.reserved_quantity, reorderLevel: stock.reorder_level, costPrice: Number(product.cost_price || 0), retailPrice: Number(product.retail_price || 0), status: product.status, tracked: true, published: product.status === "ACTIVE" && product.is_active, posAvailable: product.status === "ACTIVE" && product.is_active }];
+    return [{ id: stock.id, productId: stock.product_id, variantId: stock.variant_id, locationId: stock.location_id, name: product.name, sku: product.sku, barcode: product.barcode, category: categoryMap.get(product.category_id ?? "") ?? "Uncategorized", hasCategory: !!product.category_id, brand: brandMap.get(product.brand_id ?? "") ?? "No brand", imageUrl: imageByProduct.get(product.id) ?? null, warehouseId: stock.warehouse_id, warehouse: warehouseMap.get(stock.warehouse_id) ?? "Unknown warehouse", quantity: stock.quantity, reserved: stock.reserved_quantity, reorderLevel: stock.reorder_level, costPrice: Number(product.cost_price || 0), retailPrice: Number(product.retail_price || 0), status: product.status, tracked: true, published: product.status === "ACTIVE" && product.is_active, posAvailable: product.status === "ACTIVE" && product.is_active }];
   });
   const productsWithInventory = new Set(trackedRows.map((row) => row.productId));
   const untrackedRows = (products ?? [])
@@ -56,6 +56,8 @@ export default async function InventoryPage({
     .map((product) => ({
       id: `untracked-${product.id}`,
       productId: product.id,
+      variantId: null,
+      locationId: null,
       name: product.name,
       sku: product.sku,
       barcode: product.barcode,

@@ -7,7 +7,12 @@ export async function GET(request: Request) {
   if (term.length < 2) return NextResponse.json({ products: [] });
 
   const safeTerm = term.replace(/[%,()]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
-  const products = await getCatalogProducts(createSupabaseServiceClient(), { search: safeTerm, sort: "featured" });
+  if (safeTerm.length < 2) return NextResponse.json({ products: [] });
+  const products = await getCatalogProducts(createSupabaseServiceClient(), {
+    search: safeTerm,
+    sort: "featured",
+    pageSize: 8,
+  });
 
   return NextResponse.json({
     products: products.slice(0, 8).map((product) => ({

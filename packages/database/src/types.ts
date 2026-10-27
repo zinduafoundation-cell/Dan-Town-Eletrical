@@ -365,6 +365,7 @@ export type OrderItem = {
   order_id: string; 
   product_id: string | null; 
   variant_id: string | null;
+  source_warehouse_id: string | null;
   product_name_snapshot: string; 
   sku_snapshot: string; 
   unit_price: number; 

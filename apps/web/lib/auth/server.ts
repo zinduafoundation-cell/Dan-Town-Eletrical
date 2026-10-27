@@ -46,6 +46,32 @@ export function getBskOwnerAuthorizationContext(userId: string): AuthorizationCo
   };
 }
 
+export async function getAuthenticatedUserId(
+  supabase?: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+) {
+  if (shouldBypassAuth()) return "dev-bypass-user";
+
+  let client = supabase;
+  try {
+    client ??= await createSupabaseServerClient();
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.includes("request scope")
+    ) {
+      return null;
+    }
+    throw error;
+  }
+
+  const { data: { user }, error } = await client.auth.getUser();
+  if (error && error.status !== 400 && error.status !== 401) throw error;
+  return error ? null : user?.id ?? null;
+}
+
 export async function isBskAccount() {
   if (shouldBypassAuth()) return true;
   const supabase = await createSupabaseServerClient();
