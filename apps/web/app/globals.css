@@ -12916,3 +12916,60 @@ body .portal-main .catalog-simple-fields small { color: #68788b; font-size: 10px
     bottom: calc(140px + env(safe-area-inset-bottom));
   }
 }
+
+body .portal-main .import-centre {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  padding: clamp(18px, 3vw, 30px);
+}
+body .portal-main .import-centre h2 { font-size: clamp(24px, 3vw, 32px); margin: 0; }
+body .portal-main .import-centre .eyebrow { color: #d95a10; margin: 0; }
+body .portal-main .import-centre-copy { color: #52627a; font-size: 13px; line-height: 1.65; }
+body .portal-main .import-centre-icon { background: #fff1e8; border-radius: 14px; color: #d95a10; }
+body .portal-main .import-dropzone {
+  background: #f8fafc;
+  border: 1px dashed #aebed0;
+  border-radius: 14px;
+  color: #344a63;
+  flex-wrap: wrap;
+  min-height: 64px;
+  overflow-wrap: anywhere;
+}
+body .portal-main .import-dropzone:focus-within { border-color: #0251b0; box-shadow: 0 0 0 3px rgba(2,81,176,.12); }
+body .portal-main .import-dropzone svg { color: #0251b0; flex: 0 0 auto; }
+body .portal-main .import-dropzone span { color: #344a63; line-height: 1.5; }
+body .portal-main .import-preview,
+body .portal-main .catalogue-import-preview { background: #f7f9fc; border: 1px solid #e3e9f1; border-radius: 14px; color: #344a63; display: grid; gap: 14px; min-width: 0; padding: 16px; }
+body .portal-main .import-preview strong { color: #0753a8; }
+body .portal-main .import-preview span { color: #52627a; }
+body .portal-main .catalogue-import-preview > p { color: #52627a; font-size: 12px; line-height: 1.65; margin: 0; }
+body .portal-main .catalogue-import-summary { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+body .portal-main .catalogue-import-summary strong,
+body .portal-main .catalogue-import-summary span { background: #fff; border: 1px solid #e3e9f1; border-radius: 999px; color: #40546f; font-size: 11px; font-weight: 650; padding: 7px 10px; }
+body .portal-main .catalogue-import-summary strong { background: #eaf3ff; border-color: #ccdef3; color: #0753a8; }
+body .portal-main .catalogue-import-table-wrap { background: #fff; border: 1px solid #e3e9f1; border-radius: 12px; max-width: 100%; overflow: auto; overscroll-behavior-x: contain; }
+body .portal-main .catalogue-import-table { min-width: 940px; }
+body .portal-main .catalogue-import-table td { color: #344a63; font-size: 12px; line-height: 1.45; max-width: 240px; overflow-wrap: anywhere; vertical-align: top; }
+body .portal-main .catalogue-import-errors { background: #fff5f3; border: 1px solid #f1d2cb; border-radius: 12px; color: #8c3426; display: grid; font-size: 12px; gap: 7px; line-height: 1.5; margin: 0; padding: 14px 14px 14px 32px; }
+body .portal-main .catalogue-import-progress { background: #eaf3ff; border-radius: 10px; color: #0753a8; font-size: 12px; font-weight: 700; margin: 0; padding: 12px 14px; }
+body .portal-main .catalogue-import-preview .button:disabled { cursor: not-allowed; opacity: .58; transform: none; }
+body .portal-main .catalogue-import-jobs { margin-top: 22px; }
+body .portal-main .catalogue-import-jobs h2 { font-size: 21px; margin: 5px 0 8px; }
+body .portal-main .catalogue-import-jobs > p:not(.eyebrow) { color: #52627a; font-size: 12px; line-height: 1.6; margin: 0; }
+body .portal-main .catalogue-import-jobs ul { display: grid; gap: 8px; list-style: none; margin: 16px 0 0; padding: 0; }
+body .portal-main .catalogue-import-jobs li { align-items: center; border-top: 1px solid #e9eef4; display: flex; flex-wrap: wrap; gap: 10px 18px; justify-content: space-between; padding-top: 12px; }
+body .portal-main .catalogue-import-jobs li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+body .portal-main .catalogue-import-jobs li strong { color: #10243b; display: block; font-size: 13px; }
+body .portal-main .catalogue-import-jobs li small { color: #748397; font-size: 11px; margin-top: 4px; }
+body .portal-main .catalogue-import-job-status { background: #eaf3ff; border-radius: 999px; color: #0753a8; font-size: 10px; font-weight: 800; padding: 6px 10px; }
+body .portal-main .catalogue-import-job-status.is-requires_review { background: #fff1e0; color: #a8610a; }
+body .portal-main .catalogue-import-job-status.is-processing_failed { background: #ffeef0; color: #c9304a; }
+body .portal-main .catalogue-import-load-error { background: #fff5f3; border: 1px solid #f1d2cb; border-radius: 12px; color: #8c3426; font-size: 13px; line-height: 1.5; padding: 12px 16px; }
+
+@media (max-width: 600px) {
+  body .portal-main .import-centre { border-radius: 16px; }
+  body .portal-main .catalogue-import-preview { padding: 12px; }
+  body .portal-main .catalogue-import-table { min-width: 860px; }
+  body .portal-main .catalogue-import-preview .button { justify-content: center; width: 100%; }
+}

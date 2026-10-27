@@ -9,7 +9,14 @@ async function getInboxItems() {
   try {
     const supabase = createSupabaseServiceClient();
 
-    const [{ data: matches }, { data: productJobs }] = await Promise.all([
+    const [
+      { data: matches, error: matchesError },
+      { data: productJobs, error: jobsError },
+      { data: catalogueJobs, error: catalogueJobsError },
+      { data: departments, error: departmentsError },
+      { data: categories, error: categoriesError },
+      { data: brands, error: brandsError },
+    ] = await Promise.all([
       supabase
         ?.from("product_matches")
         ?.select("id, product_id, source_name, normalized_name, match_status, confidence, supplier_sku")
@@ -19,15 +26,29 @@ async function getInboxItems() {
         ?.from("automation_jobs")
         ?.select("id, source, status, payload, created_at")
         ?.eq("workflow_name", "PRODUCT_INGESTION")
+        ?.neq("source", "CENTRE_CATALOGUE_CSV")
         ?.in("status", ["RECEIVED", "REQUIRES_REVIEW"])
         ?.order("created_at", { ascending: false })
         ?.limit(8),
+      supabase
+        .from("automation_jobs")
+        .select("id,status,source_reference,created_at")
+        .eq("workflow_name", "PRODUCT_INGESTION")
+        .eq("source", "CENTRE_CATALOGUE_CSV")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase.from("departments").select("id,name").eq("is_active", true).order("sort_order"),
+      supabase.from("categories").select("id,name,department_id,parent_id").eq("is_active", true).order("sort_order"),
+      supabase.from("brands").select("id,name").eq("is_active", true).order("name"),
     ]);
+    const queryError = matchesError ?? jobsError ?? catalogueJobsError ?? departmentsError ?? categoriesError ?? brandsError;
+    if (queryError) throw queryError;
 
     const productIds = [...new Set((matches ?? []).map((match) => match.product_id).filter((productId): productId is string => Boolean(productId)))];
-    const { data: products } = productIds.length
+    const { data: products, error: productsError } = productIds.length
       ? await supabase.from("products").select("id,name,sku,retail_price,cost_price").in("id", productIds)
       : { data: [] };
+    if (productsError) throw productsError;
 
     const productMap = new Map((products ?? []).map((product) => [product.id, product]));
 
@@ -37,16 +58,29 @@ async function getInboxItems() {
         existingProduct: match.product_id ? productMap.get(match.product_id) ?? null : null,
       })),
       productJobs: productJobs ?? [],
+      catalogueJobs: catalogueJobs ?? [],
+      departments: departments ?? [],
+      categories: categories ?? [],
+      brands: brands ?? [],
+      loadError: null,
     };
   } catch (error) {
     console.error("Failed to load automation inbox:", error);
-    return { matches: [], productJobs: [] };
+    return {
+      matches: [],
+      productJobs: [],
+      catalogueJobs: [],
+      departments: [],
+      categories: [],
+      brands: [],
+      loadError: "Inbox data could not be loaded. Check server logs or try again.",
+    };
   }
 }
 
 export default async function AutomationInboxPage() {
   const context = await requireAuthorizedPermission("automation.read");
-  const { matches, productJobs } = await getInboxItems();
+  const { matches, productJobs, catalogueJobs, departments, categories, brands, loadError } = await getInboxItems();
   const canApproveProducts = context.permissions.includes("automation.manage") && context.permissions.includes("products.update");
 
   return (
@@ -61,7 +95,25 @@ export default async function AutomationInboxPage() {
         { label: "Pricing", href: "/admin/automation/pricing", permission: "pricing.read" },
       ]}
     >
-      {canApproveProducts ? <ImportCentre /> : <div className="portal-card import-centre-permission">Import and review permission is required to submit supplier files.</div>}
+      {canApproveProducts
+        ? <ImportCentre departments={departments} categories={categories} brands={brands} />
+        : <div className="portal-card import-centre-permission">Import and review permission is required to submit supplier files.</div>}
+
+      {loadError && <p className="catalogue-import-load-error" role="alert">{loadError}</p>}
+
+      {catalogueJobs.length > 0 && (
+        <section className="portal-card catalogue-import-jobs" aria-labelledby="catalogue-import-jobs-heading">
+          <p className="eyebrow">Catalogue staging history</p>
+          <h2 id="catalogue-import-jobs-heading">Recent full-catalogue imports</h2>
+          <p>These jobs stage product candidates for review only. To resume an interrupted upload, select the same CSV again above.</p>
+          <ul>{catalogueJobs.map((job) => (
+            <li key={job.id}>
+              <span><strong>{job.source_reference || "Catalogue CSV"}</strong><small>{new Date(job.created_at).toLocaleString()}</small></span>
+              <span className={`catalogue-import-job-status is-${job.status.toLowerCase()}`}>{job.status.replaceAll("_", " ")}</span>
+            </li>
+          ))}</ul>
+        </section>
+      )}
 
       <div className="portal-grid">
         <article className="portal-card">
