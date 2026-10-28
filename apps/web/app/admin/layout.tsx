@@ -12,7 +12,7 @@ export const metadata = centreAppMetadata;
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const context = await getAuthorizationContext();
-  if (!context) return children;
+  if (!context) redirect("/login");
 
   const isBypassUser = shouldBypassAuth() && context.userId === "dev-bypass-user";
   const hasCentreAccess = ["orders.read", "inventory.read", "users.read", "reports.read"].some((permission) => hasPermission(context, permission as Permission));
