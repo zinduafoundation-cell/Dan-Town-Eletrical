@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { createAuthClient } from "@dantown/auth";
 import { buttonClassName } from "@dantown/ui";
 import { BiometricSignIn } from "@/components/auth/biometric-sign-in";
+import { useAuthSession } from "@/components/auth-session-provider";
 import { isStaffDestination } from "@/lib/auth/post-login";
 
 function requestedNextPath() {
@@ -22,6 +23,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [staffSignIn, setStaffSignIn] = useState(false);
+  const { status: sessionStatus, userId } = useAuthSession();
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setStaffSignIn(isStaffDestination(requestedNextPath())));
@@ -29,19 +31,8 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    void createAuthClient().auth.getSession()
-      .then(({ data: { session } }) => {
-        if (active && session) window.location.assign(completePath());
-      })
-      .catch((sessionError: unknown) => {
-        console.error("EXISTING SESSION CHECK ERROR", sessionError);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+    if (sessionStatus === "ready" && userId) window.location.assign(completePath());
+  }, [sessionStatus, userId]);
 
   async function signInWithGoogle() {
     setLoading(true);

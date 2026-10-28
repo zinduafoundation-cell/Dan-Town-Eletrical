@@ -3,20 +3,10 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, Bolt, ChevronRight, ShieldCheck, SunMedium, Truck, Wrench, Zap } from "lucide-react";
 import { ProductCard, StorefrontShell } from "@/components/storefront";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { getHomepageCampaigns } from "@/lib/homepage-campaigns";
 import { getCatalogCategories, getCatalogProducts } from "@dantown/database";
 
 export const dynamic = "force-dynamic";
-
-type HomeCampaign = {
-  id: string;
-  title: string;
-  description: string;
-  badge: string;
-  image_url: string | null;
-  mobile_image_url: string | null;
-  cta_label: string;
-  destination_url: string;
-};
 
 function categoryHeroImage(name: string) {
   if (/solar|battery|backup|power/i.test(name)) return "/images/categories/solar.jpg";
@@ -24,36 +14,6 @@ function categoryHeroImage(name: string) {
   if (/tools|equipment|repair/i.test(name)) return "/images/categories/tools.jpg";
   if (/cable|switch|socket|electrical|conduit|panel/i.test(name)) return "/images/categories/electrical.jpg";
   return "/images/categories/accessories.jpg";
-}
-
-async function getHomepageCampaigns(supabase: ReturnType<typeof createSupabaseServiceClient>): Promise<HomeCampaign[]> {
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("storefront_promotions")
-    .select("id,title,description,badge,image_url,mobile_image_url,cta_label,destination_url")
-    .eq("is_active", true)
-    .eq("show_on_homepage", true)
-    .or(`starts_at.is.null,starts_at.lte.${now}`)
-    .or(`ends_at.is.null,ends_at.gte.${now}`)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false })
-    .limit(6);
-
-  if (error) {
-    console.error("Unable to load homepage campaigns:", error.message);
-    return [];
-  }
-
-  return (data ?? []).map((item) => ({
-    id: item.id,
-    title: item.title,
-    description: item.description,
-    badge: item.badge,
-    image_url: item.image_url ?? null,
-    mobile_image_url: item.mobile_image_url ?? item.image_url ?? null,
-    cta_label: item.cta_label || "Shop now",
-    destination_url: item.destination_url,
-  }));
 }
 
 export default async function HomePage() {

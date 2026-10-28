@@ -4,12 +4,15 @@ import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createCustomerNotificationPoller } from "@/lib/customer-notification-polling";
+import { useAuthSession } from "@/components/auth-session-provider";
 
 export function CustomerNotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [signedIn, setSignedIn] = useState(false);
+  const [unauthorizedUserId, setUnauthorizedUserId] = useState<string | null>(null);
+  const { status: sessionStatus, userId } = useAuthSession();
 
   useEffect(() => {
+    if (sessionStatus !== "ready" || !userId) return;
     let active = true;
     const poller = createCustomerNotificationPoller({
       request: async () => {
@@ -19,13 +22,10 @@ export function CustomerNotificationBell() {
         return response;
       },
       onUnreadCount: (count) => {
-        if (active) {
-          setSignedIn(true);
-          setUnreadCount(count);
-        }
+        if (active) setUnreadCount(count);
       },
       onUnauthorized: () => {
-        if (active) setSignedIn(false);
+        if (active) setUnauthorizedUserId(userId);
       },
       onError: (error) => console.error("Customer notification badge could not refresh.", error),
     });
@@ -38,9 +38,9 @@ export function CustomerNotificationBell() {
       poller.stop();
       window.removeEventListener("focus", refreshOnFocus);
     };
-  }, []);
+  }, [sessionStatus, userId]);
 
-  if (!signedIn) return null;
+  if (sessionStatus !== "ready" || !userId || unauthorizedUserId === userId) return null;
   return (
     <Link
       className="customer-notification-bell"

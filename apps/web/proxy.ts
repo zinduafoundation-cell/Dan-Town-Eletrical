@@ -12,7 +12,7 @@ function shouldBypassRouteAuth() {
 }
 
 export async function proxy(request: NextRequest) {
-  const response = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
   if (shouldBypassRouteAuth()) return response;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,10 +25,16 @@ export async function proxy(request: NextRequest) {
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
-      setAll: (cookiesToSet) =>
+      setAll: (cookiesToSet, headers) => {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
+        for (const [name, value] of Object.entries(headers)) {
+          response.headers.set(name, value);
+        }
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, applySessionPersistence(options, sessionPersistence)),
-        ),
+        );
+      },
     },
   });
 
@@ -38,11 +44,19 @@ export async function proxy(request: NextRequest) {
   );
   if (!isProtected) return response;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const { data: { claims }, error } = await supabase.auth.getClaims();
+  if (error || !claims?.sub) {
     const loginUrl = new URL(isCentreLogin ? "/centre/login" : "/login", request.url);
     loginUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    for (const cookie of response.cookies.getAll()) {
+      redirectResponse.cookies.set(cookie);
+    }
+    for (const header of ["Cache-Control", "Expires", "Pragma"]) {
+      const value = response.headers.get(header);
+      if (value) redirectResponse.headers.set(header, value);
+    }
+    return redirectResponse;
   }
   return response;
 }

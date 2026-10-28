@@ -3,6 +3,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Cart, CartItem } from "./cart-types";
 import { CartContext, CartContextType } from "./cart-context";
+import { useAuthSession } from "@/components/auth-session-provider";
 
 const STORAGE_KEY_PREFIX = "dantown-cart:";
 const LEGACY_STORAGE_KEY = "dantown-cart";
@@ -11,15 +12,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [storageKey, setStorageKey] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const { status: sessionStatus, userId } = useAuthSession();
 
   useEffect(() => {
+    if (sessionStatus !== "ready") return;
     let cancelled = false;
 
-    async function loadUserCart() {
+    function loadUserCart() {
+      setItems([]);
+      setStorageKey(null);
       try {
-        const response = await fetch("/api/auth/session", { cache: "no-store" });
-        const session = response.ok ? await response.json() : { userId: null };
-        const key = `${STORAGE_KEY_PREFIX}${session.userId ?? "guest"}`;
+        const key = `${STORAGE_KEY_PREFIX}${userId ?? "guest"}`;
         const stored = window.localStorage.getItem(key);
         const parsed = stored ? JSON.parse(stored) : [];
         if (!cancelled) {
@@ -37,9 +40,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    void loadUserCart();
+    loadUserCart();
     return () => { cancelled = true; };
-  }, []);
+  }, [sessionStatus, userId]);
 
   useEffect(() => {
     if (!storageKey) return;

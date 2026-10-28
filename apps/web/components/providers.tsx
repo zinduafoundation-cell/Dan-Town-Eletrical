@@ -6,15 +6,18 @@ import { PendingPaymentReminder } from "@/components/pending-payment-reminder";
 import { CompareTray } from "@/components/compare/compare-tray";
 import { DatabaseDataRefresh } from "@/components/database-data-refresh";
 import { ReceiptEffect } from "@/components/pos/receipt-effect";
+import { AuthSessionProvider } from "@/components/auth-session-provider";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <CartProvider>
-      {children}
-      <DatabaseDataRefresh />
-      <PendingPaymentReminder />
-      <CompareTray />
-      <ReceiptEffect />
-    </CartProvider>
+    <AuthSessionProvider>
+      <CartProvider>
+        {children}
+        <DatabaseDataRefresh />
+        <PendingPaymentReminder />
+        <CompareTray />
+        <ReceiptEffect />
+      </CartProvider>
+    </AuthSessionProvider>
   );
 }

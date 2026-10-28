@@ -8,7 +8,7 @@ Set public values in `.cal` from `.env.example`. Never expose `SUPABASE_SERVICE_
 
 Customer registration is handled by `POST /api/auth/register`. The server validates input, creates the Supabase Auth user, creates the customer record, and assigns the CUSTOMER role. Staff accounts are not publicly registered; they must be created by an authorized administrator through an invitation workflow.
 
-Login and password recovery use the browser Supabase client. Session cookies are refreshed by `apps/web/proxy.ts`, and logout calls the server-side sign-out route. Tokens are not stored manually in localStorage.
+Login and password recovery use the browser Supabase client. The proxy uses `auth.getClaims()` and passes refreshed cookies to both the response and the downstream request before protected pages verify the user. The root provider shares one in-flight `/api/auth/session` lookup across the account menu and cart; the customer notification bell only polls after that endpoint confirms a signed-in user. The session endpoint distinguishes anonymous, reauthentication-required, and unavailable states. Logout calls the server-side sign-out route. Tokens are not stored manually in localStorage.
 
 ## Protection Model
 

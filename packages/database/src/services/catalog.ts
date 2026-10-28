@@ -463,11 +463,11 @@ export async function getCatalogProducts(
 
     return products;
   } catch (err) {
-      if (options.allowFallback) {
+      if (options.allowFallback && process.env.NODE_ENV === "development") {
         return getFilteredProducts(options);
       }
 
-      console.error("Exception fetching products:", err);
+      console.error("Exception fetching catalog products:", err);
       return [];
   }
 }
