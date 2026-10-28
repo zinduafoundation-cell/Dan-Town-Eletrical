@@ -1,7 +1,63 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parseProductCsv } from "./import-csv";
-import * as XLSX from "xlsx";
-import { parseProductSpreadsheet } from "./import-spreadsheet";describe("Centre product CSV import", () => {it("normalizes supported supplier headers and numeric fields", () => {const rows = parseProductCsv("Product Name,Supplier SKU,Qty,Buying Price\nLED Panel,LGT-01,4,1250");expect(rows).toEqual([{ name : "LED Panel", sku: "LGT-01", barcode: null, quantity: 4, unitCost: 1250 }]);});it("handles quoted CSV values with embedded commas", () => {const rows = parseProductCsv('Product Name,Supplier SKU,Qty,Buying Price\n"LED, Panel","LGT-01",4,1250');expect(rows).toEqual([{ name : "LED, Panel", sku: "LGT-01", barcode: null, quantity: 4, unitCost: 1250 }]);});it("returns no rows when a product name column is missing", () => {expect(parseProductCsv("sku,quantity\nLGT-01,4")).toEqual([]);});it("clamps invalid negative stock and cost values", () => {expect(parseProductCsv("name,quantity,cost\nCable,-2,-5")[0]).toMatchObject({ name : "Cable", quantity: 0, unitCost: 0 });});it("previews xlsx rows and reports rows without product names", () => {const workbook = XLSX.utils.book_new();const sheet = XLSX.utils.aoa_to_sheet([["Product Name", "Code", "Qty", "Cost"], ["LED Panel", "LGT-01", 4, 1250], ["", "BAD-01", 2, 10]]);XLSX.utils.book_append_sheet(workbook, sheet, "Products");const buffer = XLSX.write(workbook, { type : "array", bookType: "xlsx" });expect(parseProductSpreadsheet(buffer)).toMatchObject({rows : [{ name: "LED Panel", sku: "LGT-01", quantity: 4, unitCost: 1250 }],invalidRows : [3]});});
+import type { Row } from "read-excel-file/universal";
+import { parseProductSpreadsheet } from "./import-spreadsheet";
+
+const { readSheetMock } = vi.hoisted(() => ({
+  readSheetMock: vi.fn<(buffer: ArrayBuffer) => Promise<Row[]>>(),
+}));
+vi.mock("read-excel-file/universal", () => ({ readSheet: readSheetMock }));
+
+describe("Centre product CSV import", () => {
+  beforeEach(() => readSheetMock.mockReset());
+
+  it("normalizes supported supplier headers and numeric fields", () => {
+    const rows = parseProductCsv("Product Name,Supplier SKU,Qty,Buying Price\nLED Panel,LGT-01,4,1250");
+    expect(rows).toEqual([{ name: "LED Panel", sku: "LGT-01", barcode: null, quantity: 4, unitCost: 1250 }]);
+  });
+
+  it("handles quoted CSV values with embedded commas", () => {
+    const rows = parseProductCsv('Product Name,Supplier SKU,Qty,Buying Price\n"LED, Panel","LGT-01",4,1250');
+    expect(rows).toEqual([{ name: "LED, Panel", sku: "LGT-01", barcode: null, quantity: 4, unitCost: 1250 }]);
+  });
+
+  it("returns no rows when a product name column is missing", () => {
+    expect(parseProductCsv("sku,quantity\nLGT-01,4")).toEqual([]);
+  });
+
+  it("clamps invalid negative stock and cost values", () => {
+    expect(parseProductCsv("name,quantity,cost\nCable,-2,-5")[0]).toMatchObject({ name: "Cable", quantity: 0, unitCost: 0 });
+  });
+
+  it("previews xlsx rows and reports rows without product names", async () => {
+    readSheetMock.mockResolvedValue([
+      ["Product Name", "Code", "Qty", "Cost"],
+      ["LED Panel", "LGT-01", 4, 1250],
+      [null, "BAD-01", 2, 10],
+    ]);
+
+    const preview = await parseProductSpreadsheet(new ArrayBuffer(0));
+
+    expect(readSheetMock).toHaveBeenCalledWith(expect.any(ArrayBuffer));
+    expect(preview).toMatchObject({
+      rows: [{ name: "LED Panel", sku: "LGT-01", quantity: 4, unitCost: 1250 }],
+      invalidRows: [3],
+    });
+  });
+
+  it("preserves empty spreadsheet columns when mapping headers", async () => {
+    readSheetMock.mockResolvedValue([
+      ["Product Name", null, "Qty", "Cost"],
+      ["LED Panel", "unused", 4, 1250],
+    ]);
+
+    const preview = await parseProductSpreadsheet(new ArrayBuffer(0));
+
+    expect(preview.headers).toEqual(["Product Name", "", "Qty", "Cost"]);
+    expect(preview.rows).toEqual([
+      { name: "LED Panel", sku: null, barcode: null, quantity: 4, unitCost: 1250 },
+    ]);
+  });
 });
 
 import { findDuplicateCatalogueIdentifiers, matchCatalogueTaxonomy, parseCatalogueCsv } from "./catalogue-import";

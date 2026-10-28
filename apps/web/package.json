@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit --incremental false",
     "test": "vitest run",
     "test:e2e": "node ../../scripts/run-e2e.mjs"
   },
@@ -21,12 +22,12 @@
     "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "latest",
     "lucide-react": "latest",
-    "next": "latest",
+    "next": "16.4.3",
     "react": "latest",
     "react-dom": "latest",
+    "read-excel-file": "9.3.13",
     "web-push": "3.6.7",
-    "xlsx": "^0.18.5",
-    "zod": "latest"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "latest",
@@ -35,9 +36,9 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "latest",
-    "eslint-config-next": "latest",
+    "eslint-config-next": "16.4.3",
     "tailwindcss": "latest",
     "typescript": "latest",
-    "vitest": "latest"
+    "vitest": "4.1.12"
   }
 }

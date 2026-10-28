@@ -40,6 +40,7 @@ Copy `.env.example` to `.env.local` and provide public Supabase values when conn
 ```bash
 npm run dev
 npm run lint
+npm run typecheck
 npm run build
 npm run start
 npm run test

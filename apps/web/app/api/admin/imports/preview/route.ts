@@ -19,7 +19,8 @@ export async function POST(request: Request) {
     if (file.size === 0 || file.size > MAX_IMPORT_FILE_BYTES) {
       return NextResponse.json({ error: "Excel files must be between 1 byte and 10 MB." }, { status: 400 });
     }
-    return NextResponse.json({ fileName: file.name, ...parseProductSpreadsheet(await file.arrayBuffer()) });
+    const preview = await parseProductSpreadsheet(await file.arrayBuffer());
+    return NextResponse.json({ fileName: file.name, ...preview });
   } catch (error) {
     console.error("EXCEL IMPORT PREVIEW ERROR", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to preview Excel file." }, { status: 500 });

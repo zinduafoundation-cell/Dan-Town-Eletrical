@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -21,13 +22,36 @@ async function waitForServer(server) {
     if (server.exitCode !== null) throw new Error(`Next.js exited before E2E tests could start (code ${server.exitCode}).`);
     try {
       const response = await fetch(`${baseURL}/login`, { redirect: "manual" });
-      if (response.status < 500) return;
+      if (response.status < 500) {
+        await new Promise((resolveDelay) => setTimeout(resolveDelay, 100));
+        if (server.exitCode !== null) {
+          throw new Error(`Next.js exited before E2E tests could start (code ${server.exitCode}).`);
+        }
+        return;
+      }
     } catch {
       // Next.js is still starting.
     }
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
   }
   throw new Error(`Timed out waiting for ${baseURL}.`);
+}
+
+async function assertPortAvailable(port) {
+  const probe = createServer();
+
+  await new Promise((resolvePort, rejectPort) => {
+    probe.once("error", (error) => {
+      if (error.code === "EADDRINUSE") {
+        rejectPort(new Error(`Port ${port} is already in use. Stop that server or set E2E_BASE_URL to use it explicitly.`));
+        return;
+      }
+      rejectPort(error);
+    });
+    probe.listen(port, "127.0.0.1", () => {
+      probe.close((error) => (error ? rejectPort(error) : resolvePort()));
+    });
+  });
 }
 
 function stopServer(server) {
@@ -51,6 +75,7 @@ async function runPlaywright() {
 let server;
 try {
   if (!process.env.E2E_BASE_URL) {
+    await assertPortAvailable(3001);
     server = spawn(
       process.execPath,
       [resolve(root, "node_modules/next/dist/bin/next"), "dev", "--hostname", "127.0.0.1", "--port", "3001"],
