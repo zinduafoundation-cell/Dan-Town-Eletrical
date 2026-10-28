@@ -18,4 +18,4 @@ The service-role client is never imported by client components. Protected API ro
 
 ## Staff Invitations
 
-`POST /api/admin/team/invite` requires `users.create`. The request validates email, name, and a centralized role value. CEO assignment additionally requires the caller to have the CEO role. Successful invitations create an audit record with `STAFF_INVITED`; public registration can never create staff roles.
+`POST /api/admin/team/invite` requires `users.create` and the protected BSK account. The request validates email, name, and a centralized role value before sending an invitation. CEO assignment additionally requires the caller to have the CEO role. Successful invitations create an audit record with `STAFF_INVITED`; public registration can never create staff roles. If role assignment or audit recording fails after the email is sent, the API reports that partial failure and tells staff not to retry the invitation.
