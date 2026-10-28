@@ -8,6 +8,7 @@ type PollingOptions = {
   request: () => Promise<NotificationResponse>;
   onUnreadCount: (count: number) => void;
   onUnauthorized: () => void;
+  onForbidden: () => void;
   onError: (error: unknown) => void;
   intervalMs?: number;
   retryBaseMs?: number;
@@ -17,6 +18,7 @@ export function createCustomerNotificationPoller({
   request,
   onUnreadCount,
   onUnauthorized,
+  onForbidden,
   onError,
   intervalMs = 120_000,
   retryBaseMs = 5_000,
@@ -53,6 +55,12 @@ export function createCustomerNotificationPoller({
         unauthorized = true;
         clearTimer();
         onUnauthorized();
+        return;
+      }
+      if (response.status === 403) {
+        unauthorized = true;
+        clearTimer();
+        onForbidden();
         return;
       }
 

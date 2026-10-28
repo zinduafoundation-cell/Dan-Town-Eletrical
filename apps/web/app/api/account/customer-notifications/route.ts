@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { shouldBypassAuth } from "@/lib/auth/server";
 import { getAuthenticatedUserId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -13,11 +14,38 @@ const querySchema = z.object({
   offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });
 
+async function getCustomerAccessStatus(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+) {
+  const userId = await getAuthenticatedUserId(supabase);
+  if (!userId) return { userId: null, status: 401 as const };
+  if (userId === "dev-bypass-user" || shouldBypassAuth()) return { userId, status: 200 as const };
+
+  const { data: assignments, error: assignmentError } = await supabase
+    .from("user_roles")
+    .select("role_id")
+    .eq("user_id", userId);
+  if (assignmentError) throw assignmentError;
+  const roleIds = (assignments ?? []).map((assignment) => assignment.role_id);
+  if (!roleIds.length) return { userId: null, status: 403 as const };
+
+  const { data: roles, error: roleError } = await supabase
+    .from("roles")
+    .select("code")
+    .in("id", roleIds);
+  if (roleError) throw roleError;
+  return roles?.some((role) => role.code === "CUSTOMER")
+    ? { userId, status: 200 as const }
+    : { userId: null, status: 403 as const };
+}
+
 export async function GET(request: Request) {
   try {
     const supabase = await createSupabaseServerClient();
-    const userId = await getAuthenticatedUserId(supabase);
-    if (!userId) return NextResponse.json({ error: "Sign in to view your notifications." }, { status: 401 });
+    const access = await getCustomerAccessStatus(supabase);
+    if (access.status === 401) return NextResponse.json({ error: "Sign in to view your notifications." }, { status: 401 });
+    if (access.status === 403) return NextResponse.json({ error: "Customer account access is required." }, { status: 403 });
+    const userId = access.userId!;
     if (userId === "dev-bypass-user") {
       return NextResponse.json({ notifications: [], unreadCount: 0, persisted: false });
     }
@@ -65,8 +93,10 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const supabase = await createSupabaseServerClient();
-    const userId = await getAuthenticatedUserId(supabase);
-    if (!userId) return NextResponse.json({ error: "Sign in to update your notifications." }, { status: 401 });
+    const access = await getCustomerAccessStatus(supabase);
+    if (access.status === 401) return NextResponse.json({ error: "Sign in to update your notifications." }, { status: 401 });
+    if (access.status === 403) return NextResponse.json({ error: "Customer account access is required." }, { status: 403 });
+    const userId = access.userId!;
     if (userId === "dev-bypass-user") return NextResponse.json({ updated: 0, persisted: false });
 
     const schema = z.union([

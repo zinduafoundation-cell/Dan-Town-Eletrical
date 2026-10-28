@@ -27,6 +27,9 @@ export function CustomerNotificationBell() {
       onUnauthorized: () => {
         if (active) setUnauthorizedUserId(userId);
       },
+      onForbidden: () => {
+        if (active) setUnauthorizedUserId(userId);
+      },
       onError: (error) => console.error("Customer notification badge could not refresh.", error),
     });
 

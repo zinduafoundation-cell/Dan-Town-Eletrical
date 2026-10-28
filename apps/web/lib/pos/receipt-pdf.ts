@@ -57,7 +57,7 @@ export function createReceiptPdf(sale: ReceiptEffectSale) {
     `Delivery: ${amount(sale.delivery, sale.currency)}`,
     `Total: ${amount(sale.total, sale.currency)}`
   ];
-  const itemsPerPage = 20;
+  const itemsPerPage = 19;
   const itemPages = itemLines.length
     ? Array.from({ length: Math.ceil(itemLines.length / itemsPerPage) }, (_, index) =>
       itemLines.slice(index * itemsPerPage, (index + 1) * itemsPerPage))

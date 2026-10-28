@@ -20,6 +20,7 @@ describe("customer notification polling", () => {
       request,
       onUnreadCount: vi.fn(),
       onUnauthorized,
+      onForbidden: vi.fn(),
       onError: vi.fn(),
       intervalMs: 120_000,
     });
@@ -33,6 +34,29 @@ describe("customer notification polling", () => {
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
 
+  it("stops polling after a forbidden role response", async () => {
+    const request = vi.fn().mockResolvedValue(response(403, { error: "Customer account access is required." }));
+    const onForbidden = vi.fn();
+    const onError = vi.fn();
+    const poller = createCustomerNotificationPoller({
+      request,
+      onUnreadCount: vi.fn(),
+      onUnauthorized: vi.fn(),
+      onForbidden,
+      onError,
+      intervalMs: 120_000,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    poller.refreshNow();
+    await vi.advanceTimersByTimeAsync(120_000);
+
+    expect(request).toHaveBeenCalledOnce();
+    expect(onForbidden).toHaveBeenCalledOnce();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it("backs off after network errors and resumes the normal interval after recovery", async () => {
     const request = vi
       .fn()
@@ -44,6 +68,7 @@ describe("customer notification polling", () => {
       request,
       onUnreadCount,
       onUnauthorized: vi.fn(),
+      onForbidden: vi.fn(),
       onError,
       intervalMs: 120_000,
       retryBaseMs: 5_000,
@@ -78,6 +103,7 @@ describe("customer notification polling", () => {
       request,
       onUnreadCount: vi.fn(),
       onUnauthorized: vi.fn(),
+      onForbidden: vi.fn(),
       onError: vi.fn(),
     });
 

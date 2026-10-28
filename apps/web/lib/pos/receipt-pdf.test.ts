@@ -53,6 +53,24 @@ describe("createReceiptPdf", () => {
     expect(content.match(/\/Type \/Page \/Parent/g)).toHaveLength(2);
   });
 
+  it("keeps totals inside the printable area when a full page of items is present", async () => {
+    const blob = createReceiptPdf({
+      ...receipt,
+      items: Array.from({ length: 20 }, (_, index) => ({
+        name: `Product ${index + 1}`,
+        qty: 1,
+        total: 60,
+      })),
+    });
+
+    const content = await blob.text();
+    const pageContents = [...content.matchAll(/\/Contents (\d+) 0 R/g)];
+    expect(pageContents).toHaveLength(2);
+    const yPositions = [...content.matchAll(/1 0 0 1 48 (\d+) Tm/g)].map((match) => Number(match[1]));
+    expect(Math.min(...yPositions)).toBeGreaterThanOrEqual(66);
+    expect(content).toContain("Total: KES 1,200.00");
+  });
+
   it("wraps long product descriptions within the printable page area", async () => {
     const blob = createReceiptPdf({
       ...receipt,
