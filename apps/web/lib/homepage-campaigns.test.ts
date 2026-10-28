@@ -31,30 +31,33 @@ function createClient(results: ReturnType<typeof createQuery>[]) {
 describe("homepage campaign loading", () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  it("uses desktop campaign images if the optional mobile-image migration is not deployed", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const campaigns = [{
-      id: "campaign-1",
-      title: "Solar offer",
-      description: "Save on solar",
-      badge: "Offer",
-      image_url: "/solar.jpg",
-      cta_label: "",
-      destination_url: "/deals",
-    }];
-    const client = createClient([
-      createQuery({ data: null, error: { code: "42703", message: "column mobile_image_url does not exist" } }),
-      createQuery({ data: campaigns, error: null }),
-    ]);
+  it.each(["42703", "PGRST204"])(
+    "uses desktop campaign images if the optional mobile-image migration is not deployed (%s)",
+    async (databaseCode) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const campaigns = [{
+        id: "campaign-1",
+        title: "Solar offer",
+        description: "Save on solar",
+        badge: "Offer",
+        image_url: "/solar.jpg",
+        cta_label: "",
+        destination_url: "/deals",
+      }];
+      const client = createClient([
+        createQuery({ data: null, error: { code: databaseCode, message: "column mobile_image_url does not exist" } }),
+        createQuery({ data: campaigns, error: null }),
+      ]);
 
-    await expect(getHomepageCampaigns(client)).resolves.toEqual([{
-      ...campaigns[0],
-      mobile_image_url: "/solar.jpg",
-      cta_label: "Shop now",
-    }]);
-    expect(client.from).toHaveBeenCalledTimes(2);
-    expect(warn).toHaveBeenCalledOnce();
-  });
+      await expect(getHomepageCampaigns(client)).resolves.toEqual([{
+        ...campaigns[0],
+        mobile_image_url: "/solar.jpg",
+        cta_label: "Shop now",
+      }]);
+      expect(client.from).toHaveBeenCalledTimes(2);
+      expect(warn).toHaveBeenCalledOnce();
+    },
+  );
 
   it("does not retry unrelated database failures", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);

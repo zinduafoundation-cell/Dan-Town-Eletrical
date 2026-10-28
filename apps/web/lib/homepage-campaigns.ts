@@ -43,7 +43,10 @@ export async function getHomepageCampaigns(supabase: ServiceClient): Promise<Hom
     .order("created_at", { ascending: false })
     .limit(6);
 
-  if (error?.code === "42703" && error.message.includes("mobile_image_url")) {
+  if (
+    error?.message.includes("mobile_image_url") &&
+    (error.code === "42703" || error.code === "PGRST204")
+  ) {
     console.warn("Homepage campaign schema is missing mobile_image_url; using campaign desktop images instead.");
     const fallback = await supabase
       .from("storefront_promotions")
